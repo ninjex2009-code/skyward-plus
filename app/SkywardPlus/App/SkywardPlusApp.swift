@@ -48,6 +48,7 @@ struct AppCommands: Commands {
         }
         CommandGroup(after: .appInfo) {
             Button("Check for Updates…") { Task { await model.checkForUpdates(manual: true) } }
+            Button("Replay Welcome Animation (“hello”)") { AppDelegate.shared?.replayHello() }
         }
         CommandGroup(replacing: .newItem) {}
         CommandGroup(after: .toolbar) {
@@ -96,6 +97,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if CommandLine.arguments.contains("--render-screens") {
             Task { await ScreenRenderer.run(model: model) }
             return
+        }
+        if let index = CommandLine.arguments.firstIndex(of: "--model-selftest"), CommandLine.arguments.count > index + 1 {
+            RememberTest.modelUpdates(model: model, report: CommandLine.arguments[index + 1])
+            exit(0)
         }
         if CommandLine.arguments.contains("--remember-test") {
             Task { await RememberTest.run() }
@@ -188,7 +193,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // MARK: First launch
 
-    private func playHello() {
+    func replayHello() {
+        guard hello == nil else { return }
+        playHello()
+    }
+
+    func playHello() {
         let controller = HelloOverlayController(model: model) { [weak self] in
             guard let self else { return }
             self.model.updateSettings { $0.helloShown = true }

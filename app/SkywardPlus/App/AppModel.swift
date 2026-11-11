@@ -287,9 +287,15 @@ final class AppModel {
         store.saveState(Store.State(profiles: profiles, settings: settings))
     }
 
+    // These work on a copy and write it back. Changing the stored value in place
+    // would hold exclusive access to it while `change` runs, and a closure that
+    // reads anything from the model (as most do) would then crash the app.
     func updateActive(_ change: (inout Profile) -> Void) {
         guard let id = active?.id, let index = profiles.firstIndex(where: { $0.id == id }) else { return }
-        change(&profiles[index])
+        var profile = profiles[index]
+        change(&profile)
+        guard let current = profiles.firstIndex(where: { $0.id == id }) else { return }
+        profiles[current] = profile
         save()
     }
 
@@ -298,7 +304,9 @@ final class AppModel {
     }
 
     func updateSettings(_ change: (inout AppSettings) -> Void) {
-        change(&settings)
+        var copy = settings
+        change(&copy)
+        settings = copy
         save()
     }
 

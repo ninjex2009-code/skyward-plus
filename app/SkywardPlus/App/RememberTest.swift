@@ -60,5 +60,23 @@ enum RememberTest {
         check("forgetting removes it", Keychain.loadDistrict(address: address) == nil)
         try? lines.joined(separator: "\n").write(toFile: path, atomically: true, encoding: .utf8)
     }
+
+    /// Changes the model from closures that also read it, the way buttons do.
+    /// Doing that in place is a memory-exclusivity violation, which aborts the app;
+    /// reaching the end of this function at all is the pass.
+    @MainActor
+    static func modelUpdates(model: AppModel, report path: String) {
+        var lines: [String] = ["profiles: \(model.profiles.count), marking periods: \(model.data.buckets.count)"]
+        for bucket in model.data.buckets {
+            model.updatePrefs { $0.selectedLit = bucket.lit == model.data.currentLit ? nil : bucket.lit }
+            lines.append("switched to \(bucket.lit): showing \(model.selectedLit ?? "-")")
+        }
+        model.updatePrefs { $0.selectedLit = nil }
+        model.updateSettings { $0.compactRows = model.settings.compactRows }
+        model.updateActive { $0.theme = model.theme }
+        model.updateBell { _ = $0; _ = model.prefs.bell }
+        lines.append("pass  model changed from closures that read it")
+        try? lines.joined(separator: "\n").write(toFile: path, atomically: true, encoding: .utf8)
+    }
 }
 #endif

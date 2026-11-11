@@ -47,26 +47,16 @@ final class Updater {
     // MARK: Steps
 
     private func download(_ url: URL) async throws -> URL {
-        let (bytes, response) = try await URLSession.shared.bytes(from: url)
-        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw UpdateError("The download isn't available.") }
-        let total = max(response.expectedContentLength, 1)
-        let file = FileManager.default.temporaryDirectory.appendingPathComponent("SkywardPlusUpdate-\(UUID().uuidString).dmg")
-        FileManager.default.createFile(atPath: file.path, contents: nil)
-        let handle = try FileHandle(forWritingTo: file)
-        defer { try? handle.close() }
-        var buffer = Data()
-        buffer.reserveCapacity(1 << 16)
-        var received: Int64 = 0
-        for try await byte in bytes {
-            buffer.append(byte)
-            if buffer.count >= 1 << 16 {
-                try handle.write(contentsOf: buffer)
-                received += Int64(buffer.count)
-                buffer.removeAll(keepingCapacity: true)
-                phase = .downloading(min(1, Double(received) / Double(total)))
+        let progress = DownloadProgress { [weak self] fraction in
+            Task { @MainActor in
+                guard let self, case .downloading = self.phase else { return }
+                self.phase = .downloading(fraction)
             }
         }
-        if !buffer.isEmpty { try handle.write(contentsOf: buffer) }
+        let (temporary, response) = try await URLSession.shared.download(from: url, delegate: progress)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw UpdateError("The download isn't available.") }
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("SkywardPlusUpdate-\(UUID().uuidString).dmg")
+        try FileManager.default.moveItem(at: temporary, to: file)
         phase = .downloading(1)
         return file
     }
@@ -77,7 +67,10 @@ final class Updater {
         try FileManager.default.createDirectory(at: mount, withIntermediateDirectories: true)
         try await run("/usr/bin/hdiutil", ["attach", dmg.path, "-nobrowse", "-noverify", "-noautoopen", "-mountpoint", mount.path])
         defer {
-            Task.detached { _ = try? await Updater.runDetached("/usr/bin/hdiutil", ["detach", mount.path, "-force"]) }
+            Task.detached {
+                _ = try? await Updater.runDetached("/usr/bin/hdiutil", ["detach", mount.path, "-force"])
+                try? FileManager.default.removeItem(at: mount)
+            }
         }
         guard let appName = try FileManager.default.contentsOfDirectory(atPath: mount.path).first(where: { $0.hasSuffix(".app") }) else {
             throw UpdateError("The download didn't contain the app.")
@@ -108,6 +101,7 @@ final class Updater {
         /usr/bin/xattr -dr com.apple.quarantine "\(current.path)" 2>/dev/null
         /usr/bin/open "\(current.path)"
         rm -rf "\(staged.deletingLastPathComponent().path)"
+        rm -f "$0"
         """
         let scriptURL = FileManager.default.temporaryDirectory.appendingPathComponent("skywardplus-update.sh")
         try script.write(to: scriptURL, atomically: true, encoding: .utf8)
@@ -142,6 +136,22 @@ final class Updater {
                 }
             }
             do { try process.run() } catch { continuation.resume(throwing: error) }
+        }
+    }
+}
+
+/// Reports how far a download has got, from the task's own progress.
+private final class DownloadProgress: NSObject, URLSessionTaskDelegate, @unchecked Sendable {
+    private let report: @Sendable (Double) -> Void
+    private var observation: NSKeyValueObservation?
+
+    init(report: @escaping @Sendable (Double) -> Void) {
+        self.report = report
+    }
+
+    func urlSession(_ session: URLSession, didCreateTask task: URLSessionTask) {
+        observation = task.progress.observe(\.fractionCompleted) { [report] progress, _ in
+            report(progress.fractionCompleted)
         }
     }
 }

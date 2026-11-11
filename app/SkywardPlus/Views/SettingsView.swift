@@ -213,6 +213,11 @@ struct SettingsView: View {
         Section("About") {
             LabeledContent("Version", value: AppModel.currentVersion)
             #if os(macOS)
+            Button {
+                AppDelegate.shared?.replayHello()
+            } label: {
+                Label("Play Welcome Intro (“hello”)", systemImage: "hand.wave")
+            }
             UpdateRow()
             #endif
         }

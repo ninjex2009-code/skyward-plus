@@ -152,7 +152,16 @@ private struct FirstRunView: View {
             Group {
                 switch step {
                 case .hello:
-                    HelloStep { go(.district) }
+                    HelloStep(
+                        onContinue: {
+                            if model.active != nil && !model.profiles.isEmpty {
+                                go(.personalize)
+                            } else {
+                                go(.district)
+                            }
+                        },
+                        onDifferentAccount: (!model.profiles.isEmpty) ? { go(.district) } : nil
+                    )
                 case .district:
                     DistrictStep { result in
                         district = result
@@ -174,7 +183,16 @@ private struct FirstRunView: View {
                         go(.district)
                     }
                 case .personalize:
-                    PersonalizeStep { go(.done) }
+                    PersonalizeStep(
+                        onBack: {
+                            if model.active != nil && !model.profiles.isEmpty {
+                                go(.hello)
+                            } else {
+                                go(.signIn)
+                            }
+                        },
+                        onContinue: { go(.done) }
+                    )
                 case .done:
                     DoneStep(onFinish: onFinish)
                 }
@@ -293,6 +311,7 @@ private struct PrimaryButton: View {
 
 private struct HelloStep: View {
     let onContinue: () -> Void
+    var onDifferentAccount: (() -> Void)? = nil
     @State private var write: CGFloat = 0
     @State private var fill = false
     @State private var lift = false
@@ -327,6 +346,17 @@ private struct HelloStep: View {
                 .padding(.top, 34)
                 .opacity(showButton ? 1 : 0)
                 .scaleEffect(showButton ? 1 : 0.94)
+
+            if let onDifferentAccount {
+                Button("Search Districts or Add Another Student") {
+                    onDifferentAccount()
+                }
+                .buttonStyle(.plain)
+                .font(.callout)
+                .foregroundStyle(.white.opacity(0.65))
+                .padding(.top, 12)
+                .opacity(showButton ? 1 : 0)
+            }
         }
         .task { await play() }
     }
@@ -634,6 +664,7 @@ private struct SignInStep: View {
 
 private struct PersonalizeStep: View {
     @Environment(AppModel.self) private var model
+    var onBack: (() -> Void)? = nil
     let onContinue: () -> Void
 
     @State private var remember = false
@@ -702,14 +733,29 @@ private struct PersonalizeStep: View {
                     }
                 }
             }
-            PrimaryButton(title: "Continue") {
-                if remember, !rememberUser.isEmpty, !rememberPassword.isEmpty {
-                    model.rememberSignIn(username: rememberUser.trimmingCharacters(in: .whitespaces), password: rememberPassword)
+            HStack(spacing: 14) {
+                if let onBack {
+                    Button(action: onBack) {
+                        Text("Back")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .padding(.horizontal, 22)
+                            .padding(.vertical, 11)
+                            .background(Capsule().fill(.white.opacity(0.12)))
+                            .contentShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .hoverLift()
                 }
-                if model.settings.notifyNewGrades || model.settings.notifyDueTomorrow {
-                    Task { await Notifier.requestPermission() }
+                PrimaryButton(title: "Continue") {
+                    if remember, !rememberUser.isEmpty, !rememberPassword.isEmpty {
+                        model.rememberSignIn(username: rememberUser.trimmingCharacters(in: .whitespaces), password: rememberPassword)
+                    }
+                    if model.settings.notifyNewGrades || model.settings.notifyDueTomorrow {
+                        Task { await Notifier.requestPermission() }
+                    }
+                    onContinue()
                 }
-                onContinue()
             }
         }
     }

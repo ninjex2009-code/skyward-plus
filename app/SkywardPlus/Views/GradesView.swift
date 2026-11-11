@@ -103,8 +103,9 @@ struct MarkingPeriodBar: View {
                         let isOn = bucket.lit == selected
                         let hasGrades = model.courses.contains { !($0.grade(bucket.lit)?.isEmpty ?? true) }
                         Button {
+                            let choice: String? = bucket.lit == model.data.currentLit ? nil : bucket.lit
                             withAnimation(.snappy(duration: 0.25)) {
-                                model.updatePrefs { $0.selectedLit = bucket.lit == model.data.currentLit ? nil : bucket.lit }
+                                model.updatePrefs { $0.selectedLit = choice }
                             }
                         } label: {
                             Text(bucket.lit)
