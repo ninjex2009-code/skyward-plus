@@ -307,6 +307,19 @@ struct TabLayout: View {
         .onChange(of: tab) { _, value in
             if let section = AppSection(rawValue: value), section != model.section { model.section = section }
         }
+        #if DEBUG
+        .task {
+            // Opens straight to a screen, for checking each one in the simulator.
+            let env = ProcessInfo.processInfo.environment
+            if let raw = env["SKYWARDPLUS_SECTION"] {
+                if raw == "more" { tab = "more" } else if let section = AppSection(rawValue: raw) { model.section = section }
+            }
+            if env["SKYWARDPLUS_OPEN_COURSE"] != nil, let first = model.courses.first {
+                model.section = .grades
+                model.openCourse = first.id
+            }
+        }
+        #endif
     }
 }
 

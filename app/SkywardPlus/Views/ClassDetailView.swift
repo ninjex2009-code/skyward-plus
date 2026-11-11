@@ -156,9 +156,12 @@ struct ClassDetailView: View {
         return VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 20) {
                 VStack(alignment: .leading, spacing: 6) {
+                    // On iPhone the navigation bar already shows the class name in large type.
+                    #if os(macOS)
                     Text(Str.titleCase(course.name))
                         .font(.system(.largeTitle, design: .rounded).bold())
                         .lineLimit(2)
+                    #endif
                     if !meta.isEmpty {
                         Text(meta).font(.callout).foregroundStyle(.secondary)
                     }

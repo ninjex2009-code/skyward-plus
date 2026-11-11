@@ -231,20 +231,30 @@ struct ReportCardsView: View {
         }()
 
         Screen(title: "Report Cards") {
-            HStack {
-                Picker("Kind", selection: $mode.animation(.snappy)) {
-                    ForEach(Mode.allCases) { m in Text(m.rawValue).tag(m) }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
-                Spacer()
+            let kindPicker = Picker("Kind", selection: $mode.animation(.snappy)) {
+                ForEach(Mode.allCases) { m in Text(m.rawValue).tag(m) }
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            let periodPicker = Group {
                 if mode != .allGrid, !buckets.isEmpty {
                     Picker("Marking period", selection: Binding(get: { activeLit }, set: { pickedLit = $0 })) {
                         ForEach(buckets) { b in Text(b.displayName).tag(b.lit) }
                     }
                     .labelsHidden()
                     .fixedSize()
+                }
+            }
+            // One row when it fits; on a phone the period menu drops below.
+            ViewThatFits(in: .horizontal) {
+                HStack {
+                    kindPicker.fixedSize()
+                    Spacer()
+                    periodPicker
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    kindPicker
+                    periodPicker
                 }
             }
             .staggered(0)

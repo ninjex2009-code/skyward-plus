@@ -33,6 +33,7 @@ struct HomeView: View {
 
 private struct HomeHeader: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.windowMetrics) private var metrics
 
     var body: some View {
         let lit = model.selectedLit
@@ -41,24 +42,39 @@ private struct HomeHeader: View {
         let average = numbers.isEmpty ? nil : numbers.reduce(0, +) / Double(numbers.count)
         let gpa = lit.map { GPA.compute(GPA.currentEntries(data: model.data, lit: $0, settings: model.prefs.gpa)) }
 
-        HStack(alignment: .bottom, spacing: 24) {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(model.now().formatted(.dateTime.weekday(.wide).month(.wide).day()).uppercased())
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                Text(model.active?.firstName ?? "Home")
-                    .font(.system(.largeTitle, design: .rounded).bold())
-                Text(summary(lit: lit, classCount: courses.count))
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 16)
+        let compact = metrics.width < 560
+        let title = VStack(alignment: .leading, spacing: 4) {
+            Text(model.now().formatted(.dateTime.weekday(.wide).month(.wide).day()).uppercased())
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(model.active?.firstName ?? "Home")
+                .font(.system(.largeTitle, design: .rounded).bold())
+            Text(summary(lit: lit, classCount: courses.count))
+                .font(.callout)
+                .foregroundStyle(.secondary)
+        }
+        let figures = Group {
             if let average {
-                Figure(label: lit.map { "\($0) average" } ?? "Average", number: average, format: { Fmt.percent($0) }, tint: GradeColor.color(percent: average))
+                Figure(label: lit.map { "\($0) average" } ?? "Average", number: average, format: { Fmt.percent($0) }, tint: GradeColor.color(percent: average), alignment: compact ? .leading : .trailing)
             }
             if let weighted = gpa?.weighted {
-                Figure(label: "GPA", number: weighted, format: { Fmt.gpa($0) }, tint: .primary)
+                Figure(label: "GPA", number: weighted, format: { Fmt.gpa($0) }, tint: .primary, alignment: compact ? .leading : .trailing)
                     .help("Weighted. Unweighted \(Fmt.gpa(gpa?.unweighted))")
+            }
+        }
+        Group {
+            if compact {
+                // On a phone the numbers get their own row instead of squeezing the name.
+                VStack(alignment: .leading, spacing: 14) {
+                    title
+                    HStack(alignment: .bottom, spacing: 28) { figures }
+                }
+            } else {
+                HStack(alignment: .bottom, spacing: 24) {
+                    title
+                    Spacer(minLength: 16)
+                    figures
+                }
             }
         }
         .padding(.top, 8)
@@ -78,9 +94,10 @@ private struct Figure: View {
     let number: Double
     let format: (Double) -> String
     let tint: Color
+    var alignment: HorizontalAlignment = .trailing
 
     var body: some View {
-        VStack(alignment: .trailing, spacing: 2) {
+        VStack(alignment: alignment, spacing: 2) {
             RollingNumber(value: number, format: format)
                 .font(.system(size: 34, weight: .semibold, design: .rounded).monospacedDigit())
                 .foregroundStyle(tint)

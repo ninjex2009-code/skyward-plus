@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct ScheduleView: View {
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    private var compact: Bool { sizeClass == .compact }
+
     @Environment(AppModel.self) private var model
     @State private var selectedSemester: Int = 0   // 0 = all
     @State private var dayFilter: DayPattern = .every
@@ -21,24 +24,33 @@ struct ScheduleView: View {
         }
 
         Screen(title: "Schedule") {
-            HStack(spacing: 12) {
-                Picker("Semester", selection: $selectedSemester.animation(.snappy)) {
-                    Text("Full Year").tag(0)
-                    Text("Semester 1").tag(1)
-                    Text("Semester 2").tag(2)
+            let semesterPicker = Picker("Semester", selection: $selectedSemester.animation(.snappy)) {
+                Text("Full Year").tag(0)
+                Text("Semester 1").tag(1)
+                Text("Semester 2").tag(2)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .fixedSize()
+            let dayPicker = Picker("Day", selection: $dayFilter.animation(.snappy)) {
+                Text("All Days").tag(DayPattern.every)
+                Text("A Day").tag(DayPattern.a)
+                Text("B Day").tag(DayPattern.b)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .fixedSize()
+            // Side by side when there is room, stacked on a phone.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 12) {
+                    semesterPicker
+                    Spacer()
+                    dayPicker
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
-                Spacer()
-                Picker("Day", selection: $dayFilter.animation(.snappy)) {
-                    Text("All Days").tag(DayPattern.every)
-                    Text("A Day").tag(DayPattern.a)
-                    Text("B Day").tag(DayPattern.b)
+                VStack(alignment: .leading, spacing: 8) {
+                    semesterPicker
+                    dayPicker
                 }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
             }
             .staggered(0)
 
@@ -56,11 +68,11 @@ struct ScheduleView: View {
                     VStack(spacing: 0) {
                         ForEach(Array(filtered.enumerated()), id: \.element.id) { index, course in
                             let pattern = model.prefs.dayPatterns[course.id] ?? .every
-                            HStack(spacing: 14) {
+                            HStack(spacing: compact ? 8 : 14) {
                                 Text(course.period.isEmpty ? "–" : course.period)
                                     .font(.system(.title3, design: .rounded).weight(.semibold).monospacedDigit())
                                     .foregroundStyle(.secondary)
-                                    .frame(width: 54, alignment: .leading)
+                                    .frame(width: compact ? 28 : 54, alignment: .leading)
                                     .lineLimit(1)
                                     .minimumScaleFactor(0.7)
 
@@ -80,15 +92,36 @@ struct ScheduleView: View {
                                 }
                                 .buttonStyle(.plain)
 
-                                Picker("Meets", selection: Binding(
+                                let meets = Binding(
                                     get: { pattern },
                                     set: { p in withAnimation(.snappy) { model.updatePrefs { $0.dayPatterns[course.id] = p } } }
-                                )) {
-                                    ForEach(DayPattern.allCases) { Text($0.title).tag($0) }
+                                )
+                                if compact {
+                                    // No room for the menu's label on a phone: a small button
+                                    // that shows the current choice only when it isn't every day.
+                                    Menu {
+                                        Picker("Meets", selection: meets) {
+                                            ForEach(DayPattern.allCases) { Text($0.title).tag($0) }
+                                        }
+                                    } label: {
+                                        Group {
+                                            if pattern == .every {
+                                                Image(systemName: "calendar")
+                                            } else {
+                                                Text(pattern.title).font(.subheadline.weight(.medium))
+                                            }
+                                        }
+                                        .frame(minWidth: 30, minHeight: 30)
+                                    }
+                                    .accessibilityLabel("Which days this class meets")
+                                } else {
+                                    Picker("Meets", selection: meets) {
+                                        ForEach(DayPattern.allCases) { Text($0.title).tag($0) }
+                                    }
+                                    .labelsHidden()
+                                    .fixedSize()
+                                    .help("Which days this class meets on an A/B schedule")
                                 }
-                                .labelsHidden()
-                                .fixedSize()
-                                .help("Which days this class meets on an A/B schedule")
 
                                 if !lit.isEmpty {
                                     GradeBubble(text: model.gradeText(course, lit), percent: model.percent(course, lit), size: .small)
