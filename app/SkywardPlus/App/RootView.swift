@@ -93,6 +93,12 @@ struct RootView: View {
             }
         }
         .windowEffects()
+        #if os(iOS)
+        .fullScreenCover(isPresented: Binding(get: { !model.settings.helloShown }, set: { _ in })) {
+            PhoneWelcome()
+                .environment(model)
+        }
+        #endif
         .tint(model.theme.color)
         .environment(\.backgroundTheme, model.settings.backgroundTheme)
         .environment(\.accentTheme, model.theme)
@@ -226,7 +232,7 @@ struct MainView: View {
                 }
                 .animation(.spring(response: 0.3, dampingFraction: 0.85), value: model.showPalette)
             #else
-            if sizeClass == .compact { TabLayout() } else { SidebarLayout() }
+            if sizeClass == .compact { PhoneTabs() } else { SidebarLayout() }
             #endif
         }
     }
@@ -270,148 +276,6 @@ struct SectionScreen: View {
         case .reports, .transcript: ReportsHub()
         case .students: StudentsView()
         case .settings: SettingsView()
-        }
-    }
-}
-
-// MARK: - iPhone
-
-struct TabLayout: View {
-    @Environment(AppModel.self) private var model
-    @State private var tab = AppSection.home.rawValue
-    @State private var morePath = NavigationPath()
-
-    var body: some View {
-        TabView(selection: $tab) {
-            ForEach(AppSection.tabs) { section in
-                SectionHost(section: section)
-                    .tabItem { Label(section.title, systemImage: section.symbol) }
-                    .tag(section.rawValue)
-            }
-            NavigationStack(path: $morePath) {
-                MoreView()
-                    .navigationDestination(for: AppSection.self) { SectionScreen(section: $0) }
-                    .navigationDestination(for: CourseRoute.self) { ClassDetailView(courseID: $0.courseID) }
-            }
-            .tabItem { Label("More", systemImage: "ellipsis.circle") }
-            .tag("more")
-        }
-        .onChange(of: model.section) { _, section in
-            if AppSection.tabs.contains(section) {
-                tab = section.rawValue
-            } else {
-                morePath = NavigationPath([section])
-                tab = "more"
-            }
-        }
-        .onChange(of: tab) { _, value in
-            if let section = AppSection(rawValue: value), section != model.section { model.section = section }
-        }
-        #if DEBUG
-        .task {
-            // Opens straight to a screen, for checking each one in the simulator.
-            let env = ProcessInfo.processInfo.environment
-            if let raw = env["SKYWARDPLUS_SECTION"] {
-                if raw == "more" { tab = "more" } else if let section = AppSection(rawValue: raw) { model.section = section }
-            }
-            if env["SKYWARDPLUS_OPEN_COURSE"] != nil, let first = model.courses.first {
-                model.section = .grades
-                model.openCourse = first.id
-            }
-        }
-        #endif
-    }
-}
-
-struct MoreView: View {
-    @Environment(AppModel.self) private var model
-
-    var body: some View {
-        Screen(title: "More") {
-            if let profile = model.active {
-                NavigationLink(value: AppSection.students) {
-                    Card(tint: model.theme.color) {
-                        HStack(spacing: 12) {
-                            AvatarView(profile: profile, size: 50)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(profile.name).font(.headline).foregroundStyle(.primary)
-                                Text(profile.districtName.isEmpty ? profile.username : profile.districtName)
-                                    .font(.subheadline).foregroundStyle(.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
-                        }
-                    }
-                }
-                .buttonStyle(ScaleButtonStyle())
-                .staggered(0)
-            }
-
-            VStack(alignment: .leading, spacing: 10) {
-                SectionHeader("School")
-                Card(padding: 0) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(AppSection.school.enumerated()), id: \.element.id) { index, section in
-                            NavigationLink(value: section) {
-                                HoverRow {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: section.symbol)
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundStyle(model.theme.color)
-                                            .frame(width: 30, height: 30)
-                                            .background(model.theme.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                        Text(section.title)
-                                            .font(.body.weight(.medium))
-                                            .foregroundStyle(.primary)
-                                        Spacer()
-                                        Image(systemName: "chevron.right")
-                                            .font(.caption.weight(.semibold))
-                                            .foregroundStyle(.tertiary)
-                                    }
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 11)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .rowDivider(index < AppSection.school.count - 1)
-                        }
-                    }
-                }
-            }
-            .staggered(1)
-
-            VStack(alignment: .leading, spacing: 10) {
-                SectionHeader("App")
-                Card(padding: 0) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(AppSection.app.enumerated()), id: \.element.id) { index, section in
-                            NavigationLink(value: section) {
-                                HoverRow {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: section.symbol)
-                                            .font(.subheadline.weight(.semibold))
-                                            .foregroundStyle(model.theme.color)
-                                            .frame(width: 30, height: 30)
-                                            .background(model.theme.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-                                        Text(section.title)
-                                            .font(.body.weight(.medium))
-                                            .foregroundStyle(.primary)
-                                        Spacer()
-                                        Image(systemName: "chevron.right")
-                                            .font(.caption.weight(.semibold))
-                                            .foregroundStyle(.tertiary)
-                                    }
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 11)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                            .rowDivider(index < AppSection.app.count - 1)
-                        }
-                    }
-                }
-            }
-            .staggered(2)
         }
     }
 }

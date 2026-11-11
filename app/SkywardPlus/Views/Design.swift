@@ -1363,3 +1363,75 @@ struct SyncLine: View {
         .accessibilityHidden(true)
     }
 }
+
+
+// MARK: - Row groups
+
+/// A list of tappable rows. On the Mac and iPad they share one card with hairlines
+/// between them; on a phone each row is its own lifted bubble, which gives every
+/// option a bigger, clearly separate target for a thumb.
+struct RowGroup<Data: RandomAccessCollection, Row: View>: View where Data.Element: Identifiable {
+    let items: Data
+    @ViewBuilder var row: (Data.Element) -> Row
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    var body: some View {
+        if isPhone {
+            VStack(spacing: 10) {
+                ForEach(items) { item in
+                    row(item).bubble()
+                }
+            }
+        } else {
+            let list = Array(items)
+            Card(padding: 0) {
+                VStack(spacing: 0) {
+                    ForEach(Array(list.enumerated()), id: \.element.id) { index, item in
+                        row(item).rowDivider(index < list.count - 1)
+                    }
+                }
+            }
+        }
+    }
+
+    private var isPhone: Bool {
+        #if os(iOS)
+        sizeClass == .compact
+        #else
+        false
+        #endif
+    }
+}
+
+/// The lifted surface behind a single option on the phone.
+private struct Bubble: ViewModifier {
+    @Environment(\.backgroundTheme) private var bgTheme
+    @Environment(\.colorScheme) private var scheme
+    var cornerRadius: CGFloat = 16
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        content
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(bgTheme.cardColor(for: scheme), in: shape)
+            .overlay { shape.strokeBorder(Palette.hairline, lineWidth: 0.5) }
+            .shadow(color: .black.opacity(scheme == .dark ? 0.28 : 0.07), radius: 9, y: 4)
+            .contentShape(shape)
+    }
+}
+
+extension View {
+    func bubble(cornerRadius: CGFloat = 16) -> some View {
+        modifier(Bubble(cornerRadius: cornerRadius))
+    }
+}
+
+/// Press feedback for a bubble: it settles into the page while your finger is on it.
+struct BubbleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.975 : 1)
+            .opacity(configuration.isPressed ? 0.9 : 1)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}

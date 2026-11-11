@@ -63,18 +63,13 @@ struct GradesView: View {
                 )
             }
         } else {
-            Card(padding: 0) {
-                VStack(spacing: 0) {
-                    ForEach(Array(courses.enumerated()), id: \.element.id) { index, course in
-                        NavigationLink(value: CourseRoute(courseID: course.id)) {
-                            HoverRow {
-                                ClassRow(course: course, lit: lit)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .rowDivider(index < courses.count - 1)
+            RowGroup(items: courses) { course in
+                NavigationLink(value: CourseRoute(courseID: course.id)) {
+                    HoverRow {
+                        ClassRow(course: course, lit: lit)
                     }
                 }
+                .buttonStyle(BubbleButtonStyle())
             }
             let hidden = model.prefs.hiddenCourses.count
             if hidden > 0 {
@@ -91,9 +86,74 @@ struct GradesView: View {
 struct MarkingPeriodBar: View {
     @Environment(AppModel.self) private var model
     @Environment(\.colorScheme) private var scheme
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @Namespace private var bucketNamespace
 
     var body: some View {
+        #if os(iOS)
+        if sizeClass == .compact {
+            chips
+        } else {
+            track
+        }
+        #else
+        track
+        #endif
+    }
+
+    /// Phone: each marking period is its own bubble, big enough for a thumb.
+    private var chips: some View {
+        let selected = model.selectedLit
+        let current = model.data.skywardCurrentLit ?? model.data.currentLit
+        return ScrollViewReader { proxy in
+            ScrollView(.horizontal) {
+                HStack(spacing: 8) {
+                    ForEach(model.data.buckets) { bucket in
+                        let isOn = bucket.lit == selected
+                        let hasGrades = model.courses.contains { !($0.grade(bucket.lit)?.isEmpty ?? true) }
+                        Button {
+                            let choice: String? = bucket.lit == model.data.currentLit ? nil : bucket.lit
+                            withAnimation(.snappy(duration: 0.25)) {
+                                model.updatePrefs { $0.selectedLit = choice }
+                            }
+                        } label: {
+                            HStack(spacing: 5) {
+                                if bucket.lit == current {
+                                    Circle().fill(isOn ? Color.white : model.theme.color).frame(width: 5, height: 5)
+                                }
+                                Text(bucket.lit)
+                                    .font(.subheadline.weight(isOn ? .semibold : .medium))
+                            }
+                            .foregroundStyle(isOn ? Color.white : (hasGrades ? Color.primary : Color.secondary.opacity(0.6)))
+                            .padding(.horizontal, 16)
+                            .frame(minHeight: 40)
+                            .background {
+                                if isOn {
+                                    Capsule().fill(model.theme.color)
+                                        .shadow(color: model.theme.color.opacity(0.35), radius: 6, y: 3)
+                                } else {
+                                    Capsule().fill(Palette.inset)
+                                }
+                            }
+                            .contentShape(Capsule())
+                        }
+                        .buttonStyle(BubbleButtonStyle())
+                        .id(bucket.lit)
+                        .accessibilityLabel(bucket.displayName + (bucket.lit == current ? ", current" : ""))
+                        .accessibilityAddTraits(isOn ? .isSelected : [])
+                    }
+                }
+                .padding(.vertical, 6)
+                .padding(.horizontal, 1)
+            }
+            .scrollIndicators(.hidden)
+            .scrollClipDisabled()
+            .sensoryFeedback(.selection, trigger: selected)
+            .onAppear { if let selected { proxy.scrollTo(selected, anchor: .center) } }
+        }
+    }
+
+    @ViewBuilder private var track: some View {
         let selected = model.selectedLit
         let current = model.data.skywardCurrentLit ?? model.data.currentLit
         ScrollViewReader { proxy in
@@ -147,6 +207,7 @@ struct MarkingPeriodBar: View {
 
 struct GradesSummary: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.horizontalSizeClass) private var sizeClass
     let lit: String
 
     var body: some View {
@@ -156,6 +217,16 @@ struct GradesSummary: View {
         let gpa = GPA.compute(GPA.currentEntries(data: model.data, lit: lit, settings: model.prefs.gpa))
         let missing = lit == model.data.currentLit ? model.missingAssignments.count : 0
 
+        if sizeClass == .compact {
+            // On a phone: one row of three figures instead of three tiles.
+            Card {
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    figure(average.map { Fmt.percent($0) } ?? "—", "Average", average.map { GradeColor.color(percent: $0) } ?? .primary)
+                    figure(Fmt.gpa(gpa.weighted), "GPA", .primary)
+                    figure("\(missing)", "Missing", missing == 0 ? .secondary : Palette.bad)
+                }
+            }
+        } else {
         StatGrid(count: 3) {
             StatTile(
                 title: "Average",
@@ -179,6 +250,19 @@ struct GradesSummary: View {
                 symbol: missing == 0 ? "checkmark.circle.fill" : "exclamationmark.circle.fill"
             )
         }
+        }
+    }
+
+    private func figure(_ value: String, _ label: String, _ tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(value)
+                .font(.system(.title2, design: .rounded).weight(.semibold).monospacedDigit())
+                .foregroundStyle(tint)
+                .contentTransition(.numericText())
+            Text(label).font(.footnote).foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -188,8 +272,21 @@ struct ClassRow: View {
     let course: Course
     let lit: String
     @State private var hovering = false
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
+        #if os(iOS)
+        if sizeClass == .compact {
+            PhoneClassRow(course: course, lit: lit)
+        } else {
+            wideRow
+        }
+        #else
+        wideRow
+        #endif
+    }
+
+    @ViewBuilder private var wideRow: some View {
         let percent = model.percent(course, lit)
         let missing = model.detail(course.id, lit)?.assignments.filter { $0.missing }.count ?? 0
         let level = model.prefs.gpa.level(for: course.name)

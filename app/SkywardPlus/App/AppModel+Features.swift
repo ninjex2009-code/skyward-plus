@@ -257,6 +257,20 @@ extension AppModel {
         Keychain.loadDistrict(address: profile.address) != nil
     }
 
+    /// Marks a due item (a planner task or a Skyward assignment) done or not done.
+    func toggleDue(_ id: String) {
+        if id.hasPrefix("task|"), let uuid = UUID(uuidString: String(id.dropFirst(5))) {
+            toggleTask(uuid)
+        } else if id.hasPrefix("sky|") {
+            let key = String(id.dropFirst(4))
+            updatePrefs { prefs in
+                if prefs.doneAssignments.contains(key) { prefs.doneAssignments.remove(key) } else { prefs.doneAssignments.insert(key) }
+            }
+        }
+        rescheduleDueReminders()
+        exportDueDates()
+    }
+
     /// The saved sign-in was refused by the district and has been retired.
     func rememberedSignInFailed(_ profile: Profile) -> Bool {
         Keychain.loadDistrict(address: profile.address)?.rejected == true

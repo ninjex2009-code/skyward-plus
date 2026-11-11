@@ -9,6 +9,7 @@ struct PlannerView: View {
     }
 
     @Environment(AppModel.self) private var model
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var filter: FilterMode = .upcoming
     @State private var selectedDay: Date = Date()
     @State private var editingTask: PlannerTask?
@@ -78,22 +79,34 @@ struct PlannerView: View {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader("Your Tasks", subtitle: "\(openTasks.count) open")
                 if openTasks.isEmpty {
-                    Card {
-                        EmptyState(
-                            symbol: "checklist",
-                            title: "No open tasks",
-                            message: "Add homework, study goals or test reminders and link them to your classes."
-                        )
+                    if sizeClass == .compact {
+                        // On a phone an empty list is one tappable line, not a tall placeholder.
+                        Button {
+                            creatingTask = true
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: "plus.circle.fill").font(.title3).foregroundStyle(model.theme.color)
+                                Text("Add a task").foregroundStyle(.primary)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 14)
+                            .frame(minHeight: 52)
+                            .bubble()
+                        }
+                        .buttonStyle(BubbleButtonStyle())
+                    } else {
+                        Card {
+                            EmptyState(
+                                symbol: "checklist",
+                                title: "No open tasks",
+                                message: "Add homework, study goals or test reminders and link them to your classes."
+                            )
+                        }
                     }
                 } else {
-                    Card(padding: 0) {
-                        VStack(spacing: 0) {
-                            ForEach(Array(openTasks.enumerated()), id: \.element.id) { index, task in
-                                HoverRow {
-                                    taskRow(task)
-                                }
-                                .rowDivider(index < openTasks.count - 1)
-                            }
+                    RowGroup(items: openTasks) { task in
+                        HoverRow {
+                            taskRow(task)
                         }
                     }
                 }
@@ -110,14 +123,9 @@ struct PlannerView: View {
                         )
                     }
                 } else {
-                    Card(padding: 0) {
-                        VStack(spacing: 0) {
-                            ForEach(Array(skywardWork.enumerated()), id: \.element.id) { index, item in
-                                HoverRow {
-                                    skywardAssignmentRow(item)
-                                }
-                                .rowDivider(index < skywardWork.count - 1)
-                            }
+                    RowGroup(items: skywardWork) { item in
+                        HoverRow {
+                            skywardAssignmentRow(item)
                         }
                     }
                 }
@@ -248,19 +256,33 @@ struct PlannerView: View {
             }
             .buttonStyle(.plain)
 
-            Button(role: .destructive) {
-                withAnimation(Motion.snappy) {
-                    model.deleteTask(task.id)
+            if sizeClass != .compact {
+                Button(role: .destructive) {
+                    withAnimation(Motion.snappy) {
+                        model.deleteTask(task.id)
+                    }
+                } label: {
+                    Image(systemName: "trash").font(.callout).foregroundStyle(.secondary)
                 }
-            } label: {
-                Image(systemName: "trash").font(.callout).foregroundStyle(.secondary)
+                .buttonStyle(.borderless)
+                .help("Delete task")
+                .accessibilityLabel("Delete \(task.title)")
             }
-            .buttonStyle(.borderless)
-            .help("Delete task")
-            .accessibilityLabel("Delete \(task.title)")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
+        .frame(minHeight: 56)
+        .contentShape(Rectangle())
+        .swipeToComplete(done: task.done) {
+            withAnimation(Motion.snappy) { model.toggleTask(task.id) }
+        }
+        .contextMenu {
+            Button("Edit", systemImage: "pencil") { editingTask = task }
+            Button("Delete", systemImage: "trash", role: .destructive) {
+                withAnimation(Motion.snappy) { model.deleteTask(task.id) }
+            }
+        }
+        .sensoryFeedback(.success, trigger: task.done) { _, now in now }
     }
 
     private func skywardAssignmentRow(_ item: AppModel.DatedAssignment) -> some View {
@@ -307,6 +329,12 @@ struct PlannerView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 11)
+        .frame(minHeight: 56)
+        .contentShape(Rectangle())
+        .swipeToComplete(done: isDone) {
+            withAnimation(Motion.snappy) { model.toggleAssignmentDone(item) }
+        }
+        .sensoryFeedback(.success, trigger: isDone) { _, now in now }
     }
 }
 

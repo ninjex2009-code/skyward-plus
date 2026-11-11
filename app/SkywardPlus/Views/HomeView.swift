@@ -293,16 +293,7 @@ private struct DueRow: View {
     }
 
     private func toggle() {
-        if item.id.hasPrefix("task|"), let uuid = UUID(uuidString: String(item.id.dropFirst(5))) {
-            model.toggleTask(uuid)
-        } else if item.id.hasPrefix("sky|") {
-            let key = String(item.id.dropFirst(4))
-            model.updatePrefs { prefs in
-                if prefs.doneAssignments.contains(key) { prefs.doneAssignments.remove(key) } else { prefs.doneAssignments.insert(key) }
-            }
-        }
-        model.rescheduleDueReminders()
-        model.exportDueDates()
+        model.toggleDue(item.id)
     }
 }
 

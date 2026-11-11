@@ -1,7 +1,10 @@
 #if os(macOS)
 import AppKit
+#endif
 import CoreText
 import SwiftUI
+
+#if os(macOS)
 
 /// First launch: the screen dims, "hello" is written out, and setup happens
 /// right there in floating glass panels. When it's done the overlay dissolves
@@ -124,13 +127,17 @@ final class HelloWindow: NSWindow {
     override var canBecomeMain: Bool { true }
 }
 
+#endif
+
 // MARK: - Flow
 
 private enum SetupStep: Int, CaseIterable {
     case hello, district, signIn, personalize, done
 }
 
-private struct FirstRunView: View {
+/// The setup flow itself. The Mac shows it in a full-screen overlay window; the
+/// iPhone shows it as a full-screen cover.
+struct FirstRunView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     let onFinish: () -> Void
@@ -197,6 +204,9 @@ private struct FirstRunView: View {
                     DoneStep(onFinish: onFinish)
                 }
             }
+            #if os(iOS)
+            .padding(.horizontal, 20)
+            #endif
             .id(step)
             .transition(reduceMotion ? .opacity : .asymmetric(
                 insertion: .opacity.combined(with: .offset(y: 24)).combined(with: .scale(scale: 0.97)),
@@ -275,7 +285,7 @@ private struct GlassPanel<Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) { content }
             .padding(22)
-            .frame(width: width)
+            .frame(maxWidth: width)
             .glassSurface(cornerRadius: 24)
             .overlay { RoundedRectangle(cornerRadius: 24).strokeBorder(.white.opacity(0.12), lineWidth: 0.5) }
             .shadow(color: .black.opacity(0.25), radius: 30, y: 16)
@@ -328,7 +338,9 @@ private struct HelloStep: View {
                     .fill(Color.white)
                     .opacity(fill ? 1 : 0)
             }
-            .frame(width: 520, height: 230)
+            .aspectRatio(520.0 / 230.0, contentMode: .fit)
+            .frame(maxWidth: 520)
+            .padding(.horizontal, 12)
             .shadow(color: .black.opacity(0.25), radius: 20, y: 6)
             .offset(y: lift ? -14 : 0)
 
@@ -413,17 +425,30 @@ private struct DistrictStep: View {
                         PrimaryButton(title: "Continue", disabled: address.trimmingCharacters(in: .whitespaces).isEmpty, action: useAddress)
                     }
                 } else {
+                    let statePicker = Picker("State", selection: $stateID) {
+                        Text(states.isEmpty ? "Loading…" : "Choose").tag("")
+                        ForEach(states) { Text($0.name).tag($0.id) }
+                    }
+                    .labelsHidden()
+                    .disabled(states.isEmpty)
+                    #if os(iOS)
+                    // A phone has no room for the two side by side.
+                    HStack {
+                        Text("State").foregroundStyle(.white.opacity(0.7))
+                        Spacer()
+                        statePicker
+                    }
                     HStack(spacing: 10) {
-                        Picker("State", selection: $stateID) {
-                            Text(states.isEmpty ? "Loading…" : "State").tag("")
-                            ForEach(states) { Text($0.name).tag($0.id) }
-                        }
-                        .labelsHidden()
-                        .frame(width: 150)
-                        .disabled(states.isEmpty)
                         GlassField(text: $query, prompt: "District name", focused: $focused)
                         if searching { ProgressView().controlSize(.small) }
                     }
+                    #else
+                    HStack(spacing: 10) {
+                        statePicker.frame(width: 150)
+                        GlassField(text: $query, prompt: "District name", focused: $focused)
+                        if searching { ProgressView().controlSize(.small) }
+                    }
+                    #endif
                     if !results.isEmpty {
                         VStack(spacing: 0) {
                             ForEach(results.prefix(6)) { result in
@@ -590,7 +615,7 @@ private struct SignInStep: View {
             }
             if !webReady { ProgressView().controlSize(.large) }
         }
-        .frame(width: 820, height: 540)
+        .frame(maxWidth: 820, maxHeight: 540)
         .padding(6)
         .glassSurface(cornerRadius: 24)
         .shadow(color: .black.opacity(0.3), radius: 30, y: 16)
@@ -677,7 +702,7 @@ private struct PersonalizeStep: View {
             StepTitle(title: "Make it yours", subtitle: "You can change all of this later in Settings.")
             GlassPanel(width: 480) {
                 row("Colour") {
-                    HStack(spacing: 8) {
+                    HStack(spacing: 5) {
                         ForEach(ThemeColor.allCases) { theme in
                             let selected = model.theme == theme
                             Button {
@@ -710,11 +735,13 @@ private struct PersonalizeStep: View {
                 Divider().overlay(.white.opacity(0.1))
                 toggle("Tell me about new grades", \.notifyNewGrades, asksPermission: true)
                 toggle("Remind me the night before work is due", \.notifyDueTomorrow, asksPermission: true)
+                #if os(macOS)
                 toggle("Keep grades in the menu bar", \.showMenuBarIcon)
                 Toggle(isOn: Binding(get: { model.settings.launchAtLogin }, set: { model.setLaunchAtLogin($0) })) {
                     Text("Open when I log in").frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .toggleStyle(.switch)
+                #endif
 
                 if let profile = model.active, model.isQmlativ(profile) {
                     Divider().overlay(.white.opacity(0.1))
@@ -761,10 +788,17 @@ private struct PersonalizeStep: View {
     }
 
     private func row<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
-        HStack {
-            Text(title)
-            Spacer()
-            content()
+        let control = content()
+        return ViewThatFits(in: .horizontal) {
+            HStack {
+                Text(title)
+                Spacer()
+                control
+            }
+            VStack(alignment: .leading, spacing: 10) {
+                Text(title)
+                control
+            }
         }
     }
 
@@ -850,8 +884,13 @@ private struct HelloLettering: Shape {
 
     static let outline: CGPath = {
         let names = ["SnellRoundhand-Bold", "SnellRoundhand", "Zapfino", "Noteworthy-Bold"]
-        let font = names.lazy.compactMap { NSFont(name: $0, size: 200) }.first ?? NSFont.systemFont(ofSize: 200, weight: .light)
-        let line = CTLineCreateWithAttributedString(NSAttributedString(string: "hello", attributes: [.font: font]))
+        // Core Text quietly substitutes a font it cannot find, so check the name it gives back.
+        let font: CTFont = names.lazy.compactMap { name -> CTFont? in
+            let candidate = CTFontCreateWithName(name as CFString, 200, nil)
+            return (CTFontCopyPostScriptName(candidate) as String).caseInsensitiveCompare(name) == .orderedSame ? candidate : nil
+        }.first ?? CTFontCreateWithName("HelveticaNeue-Light" as CFString, 200, nil)
+        let key = NSAttributedString.Key(kCTFontAttributeName as String)
+        let line = CTLineCreateWithAttributedString(NSAttributedString(string: "hello", attributes: [key: font]))
         let path = CGMutablePath()
         let runs = CTLineGetGlyphRuns(line) as? [CTRun] ?? []
         for run in runs {
@@ -861,7 +900,7 @@ private struct HelloLettering: Shape {
             CTRunGetGlyphs(run, CFRange(location: 0, length: count), &glyphs)
             CTRunGetPositions(run, CFRange(location: 0, length: count), &positions)
             let runFont = (CTRunGetAttributes(run) as NSDictionary)[kCTFontAttributeName]
-            let ctFont: CTFont = runFont.map { unsafeBitCast($0 as AnyObject, to: CTFont.self) } ?? (font as CTFont)
+            let ctFont: CTFont = runFont.map { unsafeBitCast($0 as AnyObject, to: CTFont.self) } ?? font
             for i in 0..<count {
                 guard let glyph = CTFontCreatePathForGlyph(ctFont, glyphs[i], nil) else { continue }
                 path.addPath(glyph, transform: CGAffineTransform(translationX: positions[i].x, y: positions[i].y))
@@ -870,4 +909,3 @@ private struct HelloLettering: Shape {
         return path
     }()
 }
-#endif

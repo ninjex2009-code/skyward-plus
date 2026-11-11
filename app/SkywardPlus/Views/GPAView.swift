@@ -2,6 +2,7 @@ import SwiftUI
 
 struct GPAView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var editingScale = false
     @State private var overrides: [String: Double] = [:]
     @State private var editingCourse: Course?
@@ -60,11 +61,10 @@ struct GPAView: View {
             .padding(.top, 8)
             .staggered(1)
 
-            HStack(spacing: 12) {
-                Text("\(settings.scale.name) · Honors +\(Fmt.points(settings.scale.honorsBonus)) · AP/IB +\(Fmt.points(settings.scale.apBonus))")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                Spacer()
+            let scaleLine = Text("\(settings.scale.name) · Honors +\(Fmt.points(settings.scale.honorsBonus)) · AP/IB +\(Fmt.points(settings.scale.apBonus))")
+                .font(.callout)
+                .foregroundStyle(.secondary)
+            let transcriptToggle = Group {
                 if !(model.isActiveQmlativ && model.data.history.isEmpty) {
                     Toggle("Include transcript", isOn: Binding(
                         get: { model.prefs.gpa.includeTranscript },
@@ -73,6 +73,20 @@ struct GPAView: View {
                     #if os(macOS)
                     .toggleStyle(.checkbox)
                     #endif
+                }
+            }
+            Group {
+                if sizeClass == .compact {
+                    VStack(alignment: .leading, spacing: 10) {
+                        scaleLine
+                        transcriptToggle
+                    }
+                } else {
+                    HStack(spacing: 12) {
+                        scaleLine
+                        Spacer()
+                        transcriptToggle
+                    }
                 }
             }
             .staggered(2)
@@ -131,7 +145,7 @@ struct GPAView: View {
 
     private func currentCoursesSection(entries: [GPAEntry], lit: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader("\(lit.isEmpty ? "Current" : lit) Classes", subtitle: "Click a grade to try a different one. Level and credits change the weighting.")
+            SectionHeader("\(lit.isEmpty ? "Current" : lit) Classes", subtitle: sizeClass == .compact ? "Tap a grade to try a different one." : "Click a grade to try a different one. Level and credits change the weighting.")
             if entries.isEmpty {
                 Card {
                     EmptyState(symbol: "graduationcap", title: "No graded classes in \(lit)", message: "Choose a marking period with grades to calculate GPA.")
@@ -246,9 +260,11 @@ struct GPAView: View {
                     .fixedSize()
 
                     if let w = entry.weighted, let uw = entry.unweighted {
-                        Text("\(Fmt.gpa(w)) weighted · \(Fmt.gpa(uw))")
+                        // The phone has room for the points this class counts for, not both.
+                        Text(sizeClass == .compact ? Fmt.gpa(w) : "\(Fmt.gpa(w)) weighted · \(Fmt.gpa(uw))")
                             .font(.subheadline.monospacedDigit())
                             .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
                 }
             }

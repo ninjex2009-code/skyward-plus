@@ -275,19 +275,13 @@ struct ReportCardsView: View {
                 if !activeLit.isEmpty {
                     GradesSummary(lit: activeLit)
                         .staggered(2)
-                    Card(padding: 0) {
-                        VStack(spacing: 0) {
-                            let courses = model.courses
-                            ForEach(Array(courses.enumerated()), id: \.element.id) { index, course in
-                                NavigationLink(value: CourseRoute(courseID: course.id)) {
-                                    HoverRow {
-                                        ClassRow(course: course, lit: activeLit)
-                                    }
-                                }
-                                .buttonStyle(.plain)
-                                .rowDivider(index < courses.count - 1)
+                    RowGroup(items: model.courses) { course in
+                        NavigationLink(value: CourseRoute(courseID: course.id)) {
+                            HoverRow {
+                                ClassRow(course: course, lit: activeLit)
                             }
                         }
+                        .buttonStyle(BubbleButtonStyle())
                     }
                     .staggered(3)
                 }
