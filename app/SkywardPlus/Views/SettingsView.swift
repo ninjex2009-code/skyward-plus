@@ -129,8 +129,12 @@ struct SettingsView: View {
             if let profile = model.active, model.isQmlativ(profile) {
                 LabeledContent("District sign-in") {
                     HStack {
-                        Text(model.hasRememberedSignIn(profile) ? "Remembered" : "Not saved")
-                            .foregroundStyle(.secondary)
+                        if model.rememberedSignInFailed(profile) {
+                            Text("Didn't work").foregroundStyle(Palette.bad)
+                        } else {
+                            Text(model.hasRememberedSignIn(profile) ? "Remembered" : "Not saved")
+                                .foregroundStyle(.secondary)
+                        }
                         Button(model.hasRememberedSignIn(profile) ? "Change…" : "Remember…") { rememberSheet = true }
                     }
                 }

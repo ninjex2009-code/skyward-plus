@@ -97,6 +97,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             Task { await ScreenRenderer.run(model: model) }
             return
         }
+        if CommandLine.arguments.contains("--remember-test") {
+            Task { await RememberTest.run() }
+            return
+        }
         #endif
         model.startScheduler()
         LoginItem.sync(model.settings.launchAtLogin)

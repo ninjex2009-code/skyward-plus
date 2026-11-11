@@ -640,11 +640,17 @@ final class AppModel {
             let updated: StudentData
             if isQmlativ(profile) {
                 let engine = try qmlativEngine(for: profile)
-                updated = try await SyncEngine.syncQmlativ(engine: engine, credentials: Keychain.loadDistrict(address: profile.address), previous: previous, now: now()) { [weak self] step in
-                    Task { @MainActor in
-                        guard let self, self.syncStates[id]?.isSyncing == true else { return }
-                        self.syncStates[id] = .syncing(step)
+                do {
+                    updated = try await SyncEngine.syncQmlativ(engine: engine, credentials: Keychain.usableDistrict(address: profile.address), previous: previous, now: now()) { [weak self] step in
+                        Task { @MainActor in
+                            guard let self, self.syncStates[id]?.isSyncing == true else { return }
+                            self.syncStates[id] = .syncing(step)
+                        }
                     }
+                } catch {
+                    // A refused saved sign-in is retired for good, not just for this run.
+                    if engine.lastSilentRejected { Keychain.markDistrictRejected(address: profile.address) }
+                    throw error
                 }
             } else {
                 let session = try await session(for: profile)
@@ -724,7 +730,8 @@ final class AppModel {
                     await engine.load("Grading/StudentSection/StudentAccess")
                 }
                 if (await engine.state())?.signedIn != true {
-                    if !(await engine.silentSignIn(credentials: Keychain.loadDistrict(address: profile.address))) {
+                    if !(await engine.silentSignIn(credentials: Keychain.usableDistrict(address: profile.address))) {
+                        if engine.lastSilentRejected { Keychain.markDistrictRejected(address: profile.address) }
                         blockedAccounts.insert(profile.accountKey)
                         syncStates[profile.id] = .needsSignIn("Sign in again to keep syncing.")
                         detailErrors[key] = "Sign in again to keep syncing."

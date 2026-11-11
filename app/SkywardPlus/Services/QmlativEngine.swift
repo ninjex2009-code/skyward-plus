@@ -131,23 +131,43 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
     /// Signs back in without showing anything: presses the district sign-in
     /// button, and when the district asks for credentials, fills in the ones the
     /// student chose to remember. One attempt only; a failure means the sheet.
+    /// True when the last silent sign-in typed the saved sign-in and the district
+    /// did not accept it. The caller must stop using those details: sending a wrong
+    /// password again is how accounts get locked.
+    private(set) var lastSilentRejected = false
+
     func silentSignIn(credentials: DistrictCredentials? = nil) async -> Bool {
         await serialized {
+            self.lastSilentRejected = false
             if (await self._state())?.signedIn == true { return true }
             _ = try? await self.callJS("return window.__sp.clickSSO()")
             let deadline = Date().addingTimeInterval(credentials == nil ? 12 : 30)
-            var filledUser = false, filledPassword = false
+            var filledUser = false, filledPassword = false, askedAgain = 0
             while Date() < deadline {
                 try? await Task.sleep(nanoseconds: 700_000_000)
                 if (await self._state())?.signedIn == true { return true }
-                guard let credentials, !filledPassword else { continue }
+                if filledPassword {
+                    // The password went in once. If the page is back to an empty
+                    // password box, it was refused: stop here rather than wait it out.
+                    let again = (try? await self.callJS("return window.__sp.passwordAskedAgain()")) == "1"
+                    askedAgain = again ? askedAgain + 1 : 0
+                    if askedAgain >= 2 {
+                        self.lastSilentRejected = true
+                        return false
+                    }
+                    continue
+                }
+                guard let credentials else { continue }
                 let step = (try? await self.callJS(
-                    "return window.__sp.fillLogin(u, p)",
-                    arguments: ["u": credentials.username, "p": credentials.password]
+                    "return window.__sp.fillLogin(u, p, sent)",
+                    arguments: ["u": credentials.username, "p": credentials.password, "sent": filledUser]
                 )) ?? "none"
                 switch step {
                 case "username":
-                    if filledUser { return false }  // asked for the username twice: it was refused
+                    if filledUser {  // asked for the username twice: it was refused
+                        self.lastSilentRejected = true
+                        return false
+                    }
                     filledUser = true
                 case "password":
                     filledPassword = true
@@ -155,7 +175,9 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
                     break
                 }
             }
-            return (await self._state())?.signedIn == true
+            let signedIn = (await self._state())?.signedIn == true
+            if !signedIn, filledPassword { self.lastSilentRejected = true }
+            return signedIn
         }
     }
 

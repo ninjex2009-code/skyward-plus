@@ -178,7 +178,7 @@ enum QmlativScript {
 
   // Fills the district's own sign-in page (not Skyward's) one step at a time:
   // username first, then the password once that field appears.
-  sp.fillLogin = (user, pass) => {
+  sp.fillLogin = (user, pass, userSent) => {
     if (/skyward\.iscorp\.com$/i.test(location.host)) return 'skyward';
     const setValue = (input, value) => {
       const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
@@ -187,28 +187,48 @@ enum QmlativScript {
       input.dispatchEvent(new Event('input', { bubbles: true }));
       input.dispatchEvent(new Event('change', { bubbles: true }));
     };
+    // The page's own button, a moment after typing so the page has enabled it.
     const submit = (input) => {
-      const form = input.closest('form');
-      const button = [...document.querySelectorAll('#authn-go-button, button[type=submit], input[type=submit], button')]
-        .filter(shown).find(b => !/qr|claim|forgot|cancel|back/i.test(T(b) || b.value || ''));
-      if (button) { button.click(); return; }
-      if (form) form.requestSubmit ? form.requestSubmit() : form.submit();
+      setTimeout(() => {
+        const form = input.closest('form');
+        const usable = b => b && shown(b) && !/qr|claim|forgot|cancel|back|show|hide|help|language/i.test(T(b) || b.value || b.getAttribute('aria-label') || '');
+        const button = [
+          document.querySelector('#authn-go-button'),
+          ...(form ? form.querySelectorAll('button[type=submit], input[type=submit]') : []),
+          ...document.querySelectorAll('button[type=submit], input[type=submit]'),
+          ...(form ? form.querySelectorAll('button') : [])
+        ].find(usable);
+        if (button) { button.click(); return; }
+        if (form) { form.requestSubmit ? form.requestSubmit() : form.submit(); return; }
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+      }, 180);
     };
     const pw = [...document.querySelectorAll('input[type=password]')].find(shown);
+    const name = [...document.querySelectorAll('#identification, input[autocomplete=username], input[type=email], input[name*=user i], input[id*=user i], input[type=text]')].find(shown);
     if (pw) {
       if (pw.value) return 'waiting';
+      // Username and password on the same page: fill both, submit once.
+      if (name && !name.value) setValue(name, user);
       setValue(pw, pass);
       submit(pw);
       return 'password';
     }
-    const name = [...document.querySelectorAll('#identification, input[autocomplete=username], input[type=email], input[name*=user i], input[id*=user i], input[type=text]')].find(shown);
     if (name) {
       if (name.value === user) return 'waiting';
+      // Already sent once and the page is asking again: it was refused. Do not resend.
+      if (userSent) return 'username';
       setValue(name, user);
       submit(name);
       return 'username';
     }
     return 'none';
+  };
+
+  // After the password has been sent: is the page asking for it again, empty?
+  sp.passwordAskedAgain = () => {
+    if (/skyward\.iscorp\.com$/i.test(location.host)) return '0';
+    const pw = [...document.querySelectorAll('input[type=password]')].find(shown);
+    return pw && !pw.value ? '1' : '0';
   };
 
   window.__sp = sp;

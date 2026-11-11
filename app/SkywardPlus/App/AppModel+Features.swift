@@ -257,6 +257,11 @@ extension AppModel {
         Keychain.loadDistrict(address: profile.address) != nil
     }
 
+    /// The saved sign-in was refused by the district and has been retired.
+    func rememberedSignInFailed(_ profile: Profile) -> Bool {
+        Keychain.loadDistrict(address: profile.address)?.rejected == true
+    }
+
     func rememberSignIn(username: String, password: String) {
         guard let profile = active else { return }
         Keychain.saveDistrict(DistrictCredentials(username: username, password: password), address: profile.address)

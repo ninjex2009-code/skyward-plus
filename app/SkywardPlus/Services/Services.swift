@@ -50,6 +50,8 @@ enum Keychain {
 struct DistrictCredentials: Codable, Equatable {
     var username: String
     var password: String
+    /// Set once the district has refused these details, so they are never sent again.
+    var rejected: Bool? = nil
 }
 
 extension Keychain {
@@ -57,6 +59,18 @@ extension Keychain {
 
     static func saveDistrict(_ creds: DistrictCredentials, address: String) {
         _ = save(AccountSecret(password: (try? String(data: JSONEncoder().encode(creds), encoding: .utf8)) ?? "", deviceCookie: nil), for: districtKey(address))
+    }
+
+    /// The saved sign-in, unless the district has already refused it.
+    static func usableDistrict(address: String) -> DistrictCredentials? {
+        guard let creds = loadDistrict(address: address), creds.rejected != true else { return nil }
+        return creds
+    }
+
+    static func markDistrictRejected(address: String) {
+        guard var creds = loadDistrict(address: address) else { return }
+        creds.rejected = true
+        saveDistrict(creds, address: address)
     }
 
     static func loadDistrict(address: String) -> DistrictCredentials? {
