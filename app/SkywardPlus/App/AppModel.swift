@@ -536,6 +536,7 @@ final class AppModel {
 
         settings.activeProfileID = profileID
         whatIfs = [:]
+        detailErrors = [:]
         qmlativSignIn = nil
         signInRequest = nil
         save()
@@ -722,10 +723,37 @@ final class AppModel {
         if loadingDetails.contains(key) { return }
         if !force, studentData[profile.id]?.details[key] != nil { return }
         guard let course = course(courseID), let grade = course.grade(lit), grade.hasDetail else { return }
-        if blockedAccounts.contains(profile.accountKey) { return }
+        if blockedAccounts.contains(profile.accountKey) {
+            if force {
+                // The person asked to try again: one attempt, then blocked again if it fails.
+                blockedAccounts.remove(profile.accountKey)
+            } else {
+                // Say why, instead of looking like the class has no assignments.
+                detailErrors[key] = "Sign in again to see assignments."
+                return
+            }
+        }
         loadingDetails.insert(key)
         detailErrors[key] = nil
         defer { loadingDetails.remove(key) }
+        // One Skyward session per account: wait for a sync that is using it, and
+        // make the next sync wait for this. Otherwise the two navigate the same
+        // page out from under each other and the class fails to open.
+        let previousTask = accountTasks[profile.accountKey]
+        let work = Task { @MainActor [weak self] in
+            await previousTask?.value
+            await self?.fetchDetail(profile: profile, courseID: courseID, lit: lit, key: key)
+        }
+        accountTasks[profile.accountKey] = work
+        await work.value
+    }
+
+    private func fetchDetail(profile: Profile, courseID: String, lit: String, key: String) async {
+        guard let course = course(courseID), let grade = course.grade(lit) else { return }
+        if blockedAccounts.contains(profile.accountKey) {
+            detailErrors[key] = "Sign in again to keep syncing."
+            return
+        }
         do {
             if isQmlativ(profile) {
                 guard !grade.bucket.isEmpty else {
@@ -749,7 +777,19 @@ final class AppModel {
                         await engine.load("Grading/StudentSection/StudentAccess")
                     }
                 }
-                let panel = try await engine.open(bucketID: grade.bucket, weights: true)
+                // Wait until the gradebook has actually drawn before clicking into it.
+                _ = try await engine.grid()
+                var panel: QmlPanel
+                do {
+                    panel = try await engine.open(bucketID: grade.bucket, weights: true)
+                } catch {
+                    // The page can be rebuilt with new cell ids since the last sync:
+                    // reload it, find this class again, and try once more.
+                    await engine.load("Grading/StudentSection/StudentAccess")
+                    let fresh = QmlativMapper.gradebook(try await engine.grid())
+                    let bucket = fresh.courses.first(where: { $0.id == courseID })?.grade(lit)?.bucket ?? ""
+                    panel = try await engine.open(bucketID: bucket.isEmpty ? grade.bucket : bucket, weights: true)
+                }
                 if var detail = QmlativMapper.detail(panel, courseID: courseID, lit: lit, bucket: grade.bucket, now: now()) {
                     detail.courseName = course.name
                     studentData[profile.id]?.details[key] = detail

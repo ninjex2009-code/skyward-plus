@@ -62,23 +62,60 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
         attachToHiddenHost()
     }
 
+    #if os(iOS)
+    private var hiddenWindow: UIWindow?
+    private static let hiddenFrame = CGRect(x: 0, y: 0, width: 1280, height: 900)
+
+    /// Keeps the web view in a window at desktop size whenever it is not being shown
+    /// to the user. Out of a window its timers are throttled; and coming back from the
+    /// sign-in sheet it still carries the sheet's Auto Layout setting, which leaves it
+    /// 0 points wide, so the page falls into a layout where class panels never open.
+    private func ensureAttachedToWindow() {
+        // In a window with constraints: it is on screen in a sign-in view. Leave it.
+        if webView.window != nil, webView.superview != nil, !webView.translatesAutoresizingMaskIntoConstraints { return }
+        if webView.window != nil, webView.superview != nil {
+            if webView.frame.size != Self.hiddenFrame.size { webView.frame = Self.hiddenFrame }
+            return
+        }
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        guard let scene = scenes.first(where: { $0.activationState == .foregroundActive })
+            ?? scenes.first(where: { $0.activationState == .foregroundInactive })
+            ?? scenes.first else { return }
+
+        webView.removeFromSuperview()
+        webView.translatesAutoresizingMaskIntoConstraints = true
+        webView.autoresizingMask = []
+        webView.frame = Self.hiddenFrame
+        webView.alpha = 0.01
+        webView.isUserInteractionEnabled = false
+        if let window = scene.windows.first(where: { $0.isKeyWindow }) ?? scene.windows.first {
+            window.insertSubview(webView, at: 0)
+        } else {
+            let window = hiddenWindow ?? UIWindow(windowScene: scene)
+            window.frame = CGRect(x: -2000, y: -2000, width: 1280, height: 900)
+            window.alpha = 0.01
+            window.isUserInteractionEnabled = false
+            window.isHidden = false
+            window.addSubview(webView)
+            hiddenWindow = window
+        }
+    }
+    #endif
+
     /// Re-attaches `webView` to the engine's offscreen host window so layout (`offsetParent`) and timers are never throttled.
     func attachToHiddenHost() {
         let frame = CGRect(x: 0, y: 0, width: 1280, height: 900)
         #if os(macOS)
         webView.removeFromSuperview()
+        webView.translatesAutoresizingMaskIntoConstraints = true
         webView.frame = frame
         webView.autoresizingMask = [.width, .height]
         hiddenWindow.contentView = webView
         #else
+        // Called when a sign-in view closes, possibly while the web view is still in
+        // it: take it out first so it is re-hidden at full size, not left behind.
         webView.removeFromSuperview()
-        webView.frame = frame
-        webView.alpha = 0.01
-        webView.isUserInteractionEnabled = false
-        if let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first,
-           let keyWindow = scene.windows.first(where: { $0.isKeyWindow }) ?? scene.windows.first {
-            keyWindow.insertSubview(webView, at: 0)
-        }
+        ensureAttachedToWindow()
         #endif
     }
 
@@ -261,6 +298,9 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
     // MARK: Internal Implementation
 
     private func _load(_ path: String) async {
+        #if os(iOS)
+        ensureAttachedToWindow()
+        #endif
         let trimmed = path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
         let targetURL = trimmed.isEmpty ? base : (URL(string: trimmed, relativeTo: base)?.absoluteURL ?? base.appendingPathComponent(trimmed))
 
@@ -289,6 +329,9 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
     }
 
     private func callJS(_ body: String, arguments: [String: Any] = [:]) async throws -> String {
+        #if os(iOS)
+        ensureAttachedToWindow()
+        #endif
         await ensureScriptInstalled()
         let result = try await webView.callAsyncJavaScript(
             body,

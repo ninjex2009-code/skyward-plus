@@ -629,24 +629,42 @@ struct Screen<Content: View>: View {
     var title: String
     var spacing: CGFloat = 16
     @ViewBuilder var content: Content
+    @State private var viewSize: CGSize = CGSize(width: 390, height: 844)
 
     var body: some View {
-        GeometryReader { geo in
-            let metrics = WindowMetrics(width: max(320, geo.size.width), height: max(320, geo.size.height))
-            ScrollView {
-                VStack(alignment: .leading, spacing: metrics.scaled(spacing)) {
-                    content
-                }
-                .frame(maxWidth: metrics.contentMaxWidth, alignment: .leading)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, metrics.horizontalPadding)
-                .padding(.top, metrics.scaled(12))
-                .padding(.bottom, metrics.scaled(36))
+        let metrics = WindowMetrics(width: max(320, viewSize.width), height: max(320, viewSize.height))
+        ScrollView {
+            VStack(alignment: .leading, spacing: metrics.scaled(spacing)) {
+                content
             }
-            .environment(\.windowMetrics, metrics)
+            .frame(maxWidth: metrics.contentMaxWidth, alignment: .leading)
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, metrics.horizontalPadding)
+            .padding(.top, metrics.scaled(12))
+            .padding(.bottom, metrics.scaled(60))
+        }
+        .background {
+            GeometryReader { geo in
+                Color.clear
+                    .preference(key: ScreenSizePreferenceKey.self, value: geo.size)
+            }
+        }
+        .onPreferenceChange(ScreenSizePreferenceKey.self) { size in
+            if size.width > 0 && (size.width != viewSize.width || size.height != viewSize.height) {
+                viewSize = size
+            }
         }
         .background { PageBackground().overlay { PointerLight() } }
         .navigationTitle(title)
+        .environment(\.windowMetrics, metrics)
+    }
+}
+
+private struct ScreenSizePreferenceKey: PreferenceKey {
+    static var defaultValue: CGSize = .zero
+    static func reduce(value: inout CGSize, nextValue: () -> CGSize) {
+        let next = nextValue()
+        if next != .zero { value = next }
     }
 }
 

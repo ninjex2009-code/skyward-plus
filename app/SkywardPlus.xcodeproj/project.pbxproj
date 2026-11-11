@@ -53,6 +53,7 @@
 		9EC38A89FC9EF5CFC6616249 /* SkywardClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA45D662A3F95CCE3A83746 /* SkywardClient.swift */; };
 		A5A3C1520295AA9566F1715A /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58DB90F266F03128CB7A947A /* Services.swift */; };
 		A5D5145501E1481EA73C0010 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA50AAD86D1DD6BC29ABB70D /* Models.swift */; };
+		A9060C550792BD09724A4F67 /* EngineTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B995DD4118D55AAED05B97B1 /* EngineTest.swift */; };
 		AA5E16C312D7979B17D06901 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D58BD8809ED66960ABBD784A /* WidgetSnapshot.swift */; };
 		AB992F75649FF5E02A261311 /* DistrictSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F641BCDFB5AF1C2B7153B67F /* DistrictSearch.swift */; };
 		AC633C87E75560EA1804FAC3 /* SettingsCompatibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E260F82AEE42BD8E728CE32C /* SettingsCompatibilityTests.swift */; };
@@ -142,6 +143,7 @@
 		B2800EB42B59032D34A2EC82 /* AppModel+Features.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Features.swift"; sourceTree = "<group>"; };
 		B2C972F9C3371733ED109098 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		B752C3A0F48BEB3A28DB99DF /* QmlativSignInSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativSignInSheet.swift; sourceTree = "<group>"; };
+		B995DD4118D55AAED05B97B1 /* EngineTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineTest.swift; sourceTree = "<group>"; };
 		BCF9BEDC78B4CD9C4B4D97D6 /* QmlativSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativSync.swift; sourceTree = "<group>"; };
 		D58BD8809ED66960ABBD784A /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
 		D6D4DF504678D7EF4573373C /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
@@ -231,6 +233,7 @@
 			children = (
 				DAABF4803F58AFD6A009181A /* AppModel.swift */,
 				B2800EB42B59032D34A2EC82 /* AppModel+Features.swift */,
+				B995DD4118D55AAED05B97B1 /* EngineTest.swift */,
 				AF95613240EC4C5437526932 /* RememberTest.swift */,
 				53B7A3593D65D0F76A561542 /* RootView.swift */,
 				2C8A801E4FE78ED43836DFE0 /* ScreenRenderer.swift */,
@@ -417,6 +420,7 @@
 				1E0B9DAEF001A5A4630341DD /* CommandPalette.swift in Sources */,
 				D9AE8F282A91DC3AC42C1EC7 /* Design.swift in Sources */,
 				16104F32CEB91C481077F6A3 /* DistrictSearch.swift in Sources */,
+				A9060C550792BD09724A4F67 /* EngineTest.swift in Sources */,
 				B91B39C12BB84E0EBAA72F03 /* FakeSkyward.swift in Sources */,
 				97F727B59B98C78A757B3EAC /* GPA.swift in Sources */,
 				4EF8FD011CB27AD3ED57D0F2 /* GPAView.swift in Sources */,

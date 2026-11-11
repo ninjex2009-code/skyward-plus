@@ -6,7 +6,15 @@ enum QmlativScript {
   if (window.__sp) return 'ready';
   const T = e => (e ? (e.innerText || e.textContent || '') : '').replace(/\s+/g, ' ').trim();
   const sleep = ms => new Promise(r => setTimeout(r, ms));
-  const shown = e => !!e && e.offsetParent !== null;
+  // Visible on the page: rendered, not hidden by style. getClientRects() is empty
+  // for anything not rendered (including inside a display:none parent) and,
+  // unlike offsetParent, still works for position:fixed panels and overlays.
+  const shown = e => {
+    if (!e || !e.isConnected) return false;
+    const style = window.getComputedStyle(e);
+    if (style.display === 'none' || style.visibility === 'hidden') return false;
+    return e.getClientRects().length > 0;
+  };
 
   // Count in-flight XHRs so a click can be awaited until the page stops loading.
   const net = { active: 0, last: Date.now() };
@@ -138,7 +146,13 @@ enum QmlativScript {
     let panel = null;
     for (let i = 0; i < 40 && !(panel = sp.panelData()); i++) await sleep(150);
     if (!panel) return JSON.stringify({ error: 'no-panel' });
-    if (wantWeights) panel.weights = await sp.weights();
+    if (wantWeights) {
+      try {
+        panel.weights = await sp.weights();
+      } catch (_) {
+        panel.weights = [];
+      }
+    }
     return JSON.stringify(panel);
   };
 

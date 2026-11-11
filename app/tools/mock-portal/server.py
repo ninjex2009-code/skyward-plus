@@ -4,7 +4,8 @@ testing "Stay signed in" without touching a real district.
 
   python3 server.py [port]
 
-  /__reset?mode=twostep|wrongpass|baduser|single   start a scenario
+  /__reset?mode=twostep|wrongpass|baduser|single   start a sign-in scenario
+  /__reset?mode=gradebook                           start signed in, at the gradebook
   /__log                                            what the app submitted
 
 The only account is teststudent / test-pass-123. Nothing here is real.
@@ -16,9 +17,70 @@ USER, PASS = "teststudent", "test-pass-123"
 BASE, STS = "/MockISDStu/", "/MockISDStuSTS/Session/Signin"
 state = {"mode": "twostep", "signedIn": False, "log": []}
 
-SKYWARD_SIGNED_IN = """<!doctype html><title>Mock Skyward</title>
-<button id="myAccountButton">Test Student</button><a id="signOutButton" href="#">Sign Out</a>
-<h1>Gradebook</h1>"""
+# A signed-in Qmlativ gradebook, built from the selectors the app's page script
+# reads. Like a responsive site, the class panel becomes a full-screen
+# position:fixed overlay when the page is narrow.
+CLASSES = [("1001", "AP CALCULUS BC", "1", ["93", "94", "94", "95"]),
+           ("1002", "AP ENGLISH LITERATURE", "2", ["90", "91", "92", "93"]),
+           ("1003", "SYMPHONIC BAND", "8", ["99", "99", "100", ""])]
+LITS = ["PR1", "Q1", "PR2", "Q2"]
+
+def gradebook():
+    head = "".join('<td class="%s">%s</td>' % ("progressReportDetailsOpenHeader" if lit == "Q2" else "", lit) for lit in LITS)
+    rows = []
+    for section, name, period, grades in CLASSES:
+        cells = "".join(
+            '<td class="linkPanelCell" data-student-grade-bucket-id="b%s%s"><a href="#">%s</a></td>' % (section, lit, g) if g else "<td></td>"
+            for lit, g in zip(LITS, grades))
+        rows.append('<tr><td><a data-studentsectionid="%s" data-studentid="77" data-coursedescription="%s">'
+                    '<span class="visualLabel">%s</span><span class="visualLabel">Period %s</span></a></td><td>Teacher</td>%s</tr>'
+                    % (section, name, name, period, cells))
+    return GRADEBOOK.replace("{HEAD}", head).replace("{ROWS}", "".join(rows))
+
+GRADEBOOK = """<!doctype html><title>Gradebook</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font: 14px -apple-system, sans-serif; margin: 0; }
+  #detailsPanel { display: none; background: #fff; }
+  #detailsPanel.open { display: block; position: absolute; top: 0; right: 0; width: 460px; }
+  @media (max-width: 800px) { #detailsPanel.open { position: fixed; inset: 0; width: auto; } }
+</style>
+<button id="myAccountButton">Test Student</button> <a id="signOutButton" href="#">Sign Out</a>
+<p>Current Missing Assignments: 1</p>
+<div class="browse">
+  <table><tr class="unlockedHeaderTableRow"><td>Class</td><td>Teacher</td>{HEAD}</tr></table>
+  <table class="unlockedBrowseTable">{ROWS}</table>
+</div>
+<div id="detailsPanel"></div>
+<script>
+document.querySelectorAll('td.linkPanelCell a').forEach(a => a.addEventListener('click', e => {
+  e.preventDefault();
+  const cell = a.closest('td');
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', '/MockISDStu/api/bucket?id=' + cell.dataset.studentGradeBucketId);
+  xhr.onload = () => {
+    document.querySelectorAll('.linkPanelCell--active').forEach(c => c.classList.remove('linkPanelCell--active'));
+    cell.classList.add('linkPanelCell--active');
+    const panel = document.getElementById('detailsPanel');
+    panel.innerHTML = xhr.responseText;
+    panel.classList.add('open');
+  };
+  setTimeout(() => xhr.send(), 150);
+}));
+</script>"""
+
+PANEL = """<a href="#"><span class="anchorText">Dana Whitfield</span></a>
+<span class="visualLabel">Period 1</span><span class="visualLabel">{LIT}</span>
+<span class="visualLabel">10/13/2026 - 12/18/2026</span><span class="visualLabel">95.1%</span>
+<span class="gradeMarkLabel">A</span>
+<div id="GradeBucketAssignmentsSegmentedOuterContainer"></div>
+<div class="browse"><table class="unlockedBrowseTable">
+  <tr class="sf_ParentRow"><td class="column0">Major</td><td class="column1"></td><td class="column2">A</td><td class="column3">95</td><td class="column4">190/200</td><td class="column5"></td></tr>
+  <tr><td class="column0">Unit 3 Exam</td><td class="column1">10/23/2026</td><td class="column2">A</td><td class="column3">94</td><td class="column4">94/100</td><td class="column5">1</td></tr>
+  <tr><td class="column0">Related Rates Test</td><td class="column1">11/04/2026</td><td class="column2">A</td><td class="column3">96</td><td class="column4">96/100</td><td class="column5">1</td></tr>
+  <tr class="sf_ParentRow"><td class="column0">Minor</td><td class="column1"></td><td class="column2">A</td><td class="column3">95.3</td><td class="column4">81/85</td><td class="column5"></td></tr>
+  <tr><td class="column0">FRQ Set</td><td class="column1">10/20/2026</td><td class="column2">A</td><td class="column3">95</td><td class="column4">19/20</td><td class="column5">1</td></tr>
+</table></div>"""
 
 SKYWARD_SIGN_IN = """<!doctype html><title>Sign In</title>
 <h1>Mock ISD</h1><p>Sign in to Skyward</p>
@@ -97,12 +159,17 @@ class Handler(BaseHTTPRequestHandler):
         url = urllib.parse.urlparse(self.path)
         query = urllib.parse.parse_qs(url.query)
         if url.path == "/__reset":
-            state.update(mode=query.get("mode", ["twostep"])[0], signedIn=False, log=[])
+            mode = query.get("mode", ["twostep"])[0]
+            # "gradebook" starts signed in, for testing what happens after sign-in.
+            state.update(mode=mode, signedIn=mode == "gradebook", log=[])
             return self.send("ok", kind="text/plain")
         if url.path == "/__log":
             return self.send(json.dumps(state["log"]), kind="application/json")
+        if url.path == BASE + "api/bucket":
+            lit = query.get("id", ["b0000Q2"])[0][5:]
+            return self.send(PANEL.replace("{LIT}", lit))
         if url.path.startswith(BASE):
-            return self.send(SKYWARD_SIGNED_IN) if state["signedIn"] else self.redirect(STS)
+            return self.send(gradebook()) if state["signedIn"] else self.redirect(STS)
         if url.path == STS:
             return self.send(SKYWARD_SIGN_IN)
         if url.path == "/portal/":

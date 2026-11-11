@@ -435,12 +435,14 @@ struct PhoneGrades: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Picker("Show", selection: $mode.animation(.snappy)) {
-                        ForEach(GradesMode.allCases) { Text($0.rawValue).tag($0) }
+                if path.isEmpty {
+                    ToolbarItem(placement: .principal) {
+                        Picker("Show", selection: $mode.animation(.snappy)) {
+                            ForEach(GradesMode.allCases) { Text($0.rawValue).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                        .frame(width: 190)
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 190)
                 }
             }
             .navigationDestination(for: CourseRoute.self) { ClassDetailView(courseID: $0.courseID) }

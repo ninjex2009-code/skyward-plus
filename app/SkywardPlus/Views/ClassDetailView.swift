@@ -11,6 +11,15 @@ struct ClassDetailView: View {
 
     @Environment(AppModel.self) private var model
     @Environment(\.windowMetrics) private var metrics
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    /// iPhone: the navigation bar shows the class name, and the header stacks.
+    private var compact: Bool {
+        #if os(iOS)
+        sizeClass == .compact
+        #else
+        false
+        #endif
+    }
     let courseID: String
 
     @State private var pane: Pane = .assignments
@@ -26,7 +35,7 @@ struct ClassDetailView: View {
 
     var body: some View {
         let course = model.course(courseID)
-        let lit = model.selectedLit ?? model.data.currentLit ?? ""
+        let lit = model.selectedLit ?? model.data.currentLit ?? course?.grades.last(where: { !$0.isEmpty })?.lit ?? ""
         let detail = model.detail(courseID, lit)
         let whatIf = model.whatIf(courseID, lit)
         let result = model.result(courseID, lit, includeWhatIf: true)
@@ -57,7 +66,27 @@ struct ClassDetailView: View {
                     }
                 } else if let err = model.detailError(courseID, lit), detail == nil {
                     Card {
-                        EmptyState(symbol: "exclamationmark.triangle", title: "Could not load assignments", message: err)
+                        VStack(spacing: 14) {
+                            EmptyState(symbol: "exclamationmark.triangle", title: "Could not load assignments", message: err)
+                            HStack(spacing: 12) {
+                                Button {
+                                    Task { await model.ensureDetail(courseID, lit, force: true) }
+                                } label: {
+                                    Label("Try Again", systemImage: "arrow.clockwise")
+                                }
+                                .buttonStyle(.borderedProminent)
+
+                                if let profile = model.active, model.isQmlativ(profile) {
+                                    Button {
+                                        model.requestReauth(profile)
+                                    } label: {
+                                        Label("Sign In…", systemImage: "person.badge.key")
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+                            }
+                            .padding(.bottom, 6)
+                        }
                     }
                 } else if let detail {
                     switch pane {
@@ -81,7 +110,7 @@ struct ClassDetailView: View {
                     Card {
                         EmptyState(
                             symbol: "doc.text.magnifyingglass",
-                            title: "No assignment list for \(lit)",
+                            title: "No assignment list for \(lit.isEmpty ? "this class" : lit)",
                             message: "Skyward does not have an assignment breakdown for this column."
                         )
                     }
@@ -153,40 +182,66 @@ struct ClassDetailView: View {
         let postedCells = course.grades.filter { !$0.isEmpty }
         let tint = displayPercent.map { GradeColor.color(percent: $0) } ?? .secondary
 
-        return VStack(alignment: .leading, spacing: 16) {
-            HStack(alignment: .top, spacing: 20) {
-                VStack(alignment: .leading, spacing: 6) {
-                    // On iPhone the navigation bar already shows the class name in large type.
-                    #if os(macOS)
-                    Text(Str.titleCase(course.name))
-                        .font(.system(.largeTitle, design: .rounded).bold())
-                        .lineLimit(2)
-                    #endif
-                    if !meta.isEmpty {
-                        Text(meta).font(.callout).foregroundStyle(.secondary)
-                    }
-                    if let result {
-                        Text(factsLine(result: result, detail: detail))
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
+        let grade = VStack(alignment: compact ? .leading : .trailing, spacing: 2) {
+            Text(displayText)
+                .font(.system(size: 46, weight: .semibold, design: .rounded).monospacedDigit())
+                .foregroundStyle(tint)
+                .contentTransition(.numericText())
+                .animation(.snappy, value: displayText)
+            HStack(spacing: 6) {
+                if let whatIfDelta {
+                    Text("What-if").font(.subheadline.weight(.medium)).foregroundStyle(Palette.warn)
+                    DeltaLabel(delta: whatIfDelta)
+                } else {
+                    if let delta = model.changeSinceSeen(course, lit) { DeltaLabel(delta: delta) }
+                    Text(displayPercent.map { GradeColor.letter(for: $0) } ?? "").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
                 }
-                Spacer(minLength: 12)
-                VStack(alignment: .trailing, spacing: 2) {
-                    Text(displayText)
-                        .font(.system(size: 46, weight: .semibold, design: .rounded).monospacedDigit())
-                        .foregroundStyle(tint)
-                        .contentTransition(.numericText())
-                        .animation(.snappy, value: displayText)
-                    HStack(spacing: 6) {
+            }
+        }
+        let facts = VStack(alignment: .leading, spacing: 6) {
+            if !meta.isEmpty {
+                Text(meta).font(.callout).foregroundStyle(.secondary)
+            }
+            if let result {
+                Text(factsLine(result: result, detail: detail))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+        }
+
+        return VStack(alignment: .leading, spacing: 16) {
+            if compact {
+                // On a phone the grade leads and the details get the full width under it,
+                // instead of being squeezed into a narrow column beside it.
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline, spacing: 10) {
+                        Text(displayText)
+                            .font(.system(size: 46, weight: .semibold, design: .rounded).monospacedDigit())
+                            .foregroundStyle(tint)
+                            .contentTransition(.numericText())
+                            .animation(.snappy, value: displayText)
                         if let whatIfDelta {
                             Text("What-if").font(.subheadline.weight(.medium)).foregroundStyle(Palette.warn)
                             DeltaLabel(delta: whatIfDelta)
                         } else {
+                            Text(displayPercent.map { GradeColor.letter(for: $0) } ?? "")
+                                .font(.title3.weight(.semibold))
+                                .foregroundStyle(.secondary)
                             if let delta = model.changeSinceSeen(course, lit) { DeltaLabel(delta: delta) }
-                            Text(displayPercent.map { GradeColor.letter(for: $0) } ?? "").font(.subheadline.weight(.medium)).foregroundStyle(.secondary)
                         }
                     }
+                    facts
+                }
+            } else {
+                HStack(alignment: .top, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(Str.titleCase(course.name))
+                            .font(.system(.largeTitle, design: .rounded).bold())
+                            .lineLimit(2)
+                        facts
+                    }
+                    Spacer(minLength: 12)
+                    grade
                 }
             }
 

@@ -260,6 +260,9 @@ struct SkywardPlusApp: App {
             RootView()
                 .environment(model)
                 .task { model.startScheduler() }
+                #if DEBUG
+                .task { await EngineTest.runIfRequested() }
+                #endif
         }
     }
 }
