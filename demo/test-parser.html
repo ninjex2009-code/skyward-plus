@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Skyward+ parser test</title>
+<style>body{font:13px ui-monospace,Menlo,monospace;background:#0a0c10;color:#e8edf5;margin:0;padding:16px}
+pre{white-space:pre-wrap}iframe{display:none}h1{font:600 15px system-ui;margin:0 0 12px}
+.ok{color:#3ecf8e}.bad{color:#ff6b6b}</style></head>
+<body>
+<h1>Skyward+ parser self-test</h1>
+<pre id="out">running…</pre>
+<iframe id="f"></iframe>
+<script>
+// load libs fresh every run so a stale cache never fakes a pass
+const V = '?v=' + Date.now();
+const libs = ['../src/lib/util.js', '../src/lib/model.js', '../src/lib/parse.js'];
+(async () => {
+  for (const src of libs) {
+    await new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src + V; s.onload = res; s.onerror = rej;
+      document.head.appendChild(s);
+    });
+  }
+  const f = document.getElementById('f');
+  f.src = 'fixture-skyward.html' + V;
+  if (f.contentDocument && f.contentDocument.readyState === 'complete' && f.contentDocument.querySelector('table')) runTests();
+  f.addEventListener('load', runTests);
+})();
+</script>
+<script>
+const out = document.getElementById('out');
+const lines = [];
+const log = (ok, msg, extra) => lines.push(`${ok ? '<span class="ok">PASS</span>' : '<span class="bad">FAIL</span>'} ${msg}${extra !== undefined ? '  ' + JSON.stringify(extra) : ''}`);
+function runTests() {
+  const SP = globalThis.SkywardPlus, doc = document.getElementById('f').contentDocument;
+  const { courses, debug } = SP.parse.scrapePage(doc, 'https://skyward.example.org/scripts/wsisa.dll/WService=x/sfgradebook001.w');
+  const algebra = courses.find(c => /algebra/i.test(c.name));
+  log(!!algebra, 'found Algebra II course', algebra && algebra.name);
+  if (algebra) {
+    log(algebra.assignments.length === 8, 'kept all 8 rows incl. the ungraded one', algebra.assignments.length);
+    log(algebra.reportedPercent === 84.2, 'merged the Q4 grade from the summary grid', algebra.reportedPercent);
+    log(algebra.period === '3' && /Reyes/.test(algebra.teacher || ''), 'read period + teacher', [algebra.period, algebra.teacher]);
+    const hw = algebra.assignments.find(a => /4\.3/.test(a.name));
+    log(!!hw && hw.missing === true, 'flagged the missing homework', hw && {name: hw.name, missing: hw.missing});
+    log(!!hw && hw.classAverage === 89.5, 'read its class average', hw && hw.classAverage);
+    const test1 = algebra.assignments.find(a => /Unit 5/.test(a.name));
+    log(!!test1 && test1.earned === 79 && test1.possible === 100, 'split "79.00 / 100.00"', test1 && [test1.earned, test1.possible]);
+    const weights = Object.fromEntries(algebra.categories.map(c => [c.name, c.weight]));
+    log(weights.Tests === 60 && weights.Homework === 20 && weights.Quizzes === 20, 'read category weights', weights);
+    const norm = SP.model.normalizeCourse(algebra);
+    const r = SP.model.computeCourse(norm, {});
+    log(r.mode === 'weighted', 'chose weighted math', r.mode);
+    log(Math.abs(r.percent - 77.37) < 0.05, 'weighted grade = 77.37%', SP.util.round(r.percent, 2));
+    log(r.matchesReported === false, 'flagged that it differs from the posted 84.2%', r.matchesReported);
+    const vs = SP.model.vsClassSummary(norm.assignments);
+    log(vs && vs.count === 7, 'compared 7 scores to the class', vs && vs.count);
+  }
+  const bio = courses.find(c => /^AP Biology$/i.test(c.name) && c.term === 'Q4');
+  log(!!bio && bio.reportedPercent === 91.34, 'read AP Bio Q4 from the summary grid', bio && bio.reportedPercent);
+  log(!!bio && bio.period === '2' && /Okonkwo/.test(bio.teacher || ''), 'read AP Bio period + teacher', bio && [bio.period, bio.teacher]);
+  const text = SP.parse.parseText(`# Chemistry - Ms. Vega - Period 1 - Q4
+[Labs 40%]
+Titration lab | 45/50 | avg 41.2 | due 4/18
+[Tests 60%]
+Stoichiometry exam | 82/100 | avg 76`);
+  log(text.length === 1 && text[0].assignments.length === 2, 'parsed pasted shorthand', text[0] && text[0].assignments.length);
+  log(text[0].assignments[0].classAverage === 82.4, 'converted "avg 41.2" of 50 to 82.4%', text[0].assignments[0].classAverage);
+  const failed = lines.filter(l => l.includes('FAIL')).length;
+  out.innerHTML = lines.join('\n') + `\n\n${lines.length - failed}/${lines.length} passing\n\nscrape debug: ` + JSON.stringify(debug, null, 2);
+}
+</script>
+</body></html>

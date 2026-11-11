@@ -1,0 +1,805 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0AD791A4DD2C87B5F55FC9AD /* QmlativSignInSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B752C3A0F48BEB3A28DB99DF /* QmlativSignInSheet.swift */; };
+		125B7485A77D072D191508DD /* QmlativSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCF9BEDC78B4CD9C4B4D97D6 /* QmlativSync.swift */; };
+		1531E3636492770CF3A30D55 /* GradeReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71CA3620709BC02CC75DD9CE /* GradeReport.swift */; };
+		16104F32CEB91C481077F6A3 /* DistrictSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F641BCDFB5AF1C2B7153B67F /* DistrictSearch.swift */; };
+		17725EEA400240B21081D8E9 /* QmlativEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F38BB8FC866CCF30BE2AB183 /* QmlativEngine.swift */; };
+		1914C71068429101E899BCCD /* GPA.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF57EB24B79476D792924EDC /* GPA.swift */; };
+		19ABB50E8F8FC4D75AD76714 /* BellBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 438C2C429D9F9B7D76A9422C /* BellBanner.swift */; };
+		1DFED5D124D8411E33608E04 /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5280696572B1B7A1D731C7F /* SyncEngine.swift */; };
+		1E0B9DAEF001A5A4630341DD /* CommandPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6E03E9A9F7C7CFDC9BF0DB4 /* CommandPalette.swift */; };
+		1FC49A864B98A811D27B1388 /* SchoolViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C2D6ABB3F6D75F9ED01D95 /* SchoolViews.swift */; };
+		2202954297275529DA1AA20B /* Prefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290DD89A5C0F36A064B9CAF5 /* Prefs.swift */; };
+		2B15CCE3AFB3A8579D01E864 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65D574057ED29E7A68081882 /* SignInView.swift */; };
+		2D5EC177E25B273AB960AF6B /* QmlativModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8EF32BA21333B6040A8C7FD /* QmlativModels.swift */; };
+		2DBA0F9962B32A65486F2A38 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AD644083C9522EC4E13D598 /* SettingsView.swift */; };
+		300169E7384268B3A38A3E5F /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA50AAD86D1DD6BC29ABB70D /* Models.swift */; };
+		3163D0823448EC494A64109A /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAABF4803F58AFD6A009181A /* AppModel.swift */; };
+		3D76EEC3B69461009C1A2DF6 /* CoreAndParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA1A605954E668AA5A75622 /* CoreAndParserTests.swift */; };
+		439F6A07083C49639E62A50E /* SkywardPlusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F8A4F79C534A801812B23D /* SkywardPlusApp.swift */; };
+		45395F9633F30EC4667C771F /* GradeMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55CAC84C164C53F6FD1EAB90 /* GradeMath.swift */; };
+		4ACCC885F5CBBEA7551A23B9 /* HelloOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 465AE02F163DACCF529D48A3 /* HelloOverlay.swift */; };
+		4D6A6B92CAA9CC60A10C1D92 /* ClassDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEF0C82765F0A9A83B551425 /* ClassDetailView.swift */; };
+		4EF8FD011CB27AD3ED57D0F2 /* GPAView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0060ADAC5D0E31F5AF7F9259 /* GPAView.swift */; };
+		5152DA1FE79F5482FD28E697 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D58BD8809ED66960ABBD784A /* WidgetSnapshot.swift */; };
+		526DDAC273E0D16D47A920D8 /* QmlativScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86284DF9E5D4125C6DF07FAA /* QmlativScript.swift */; };
+		57B6CD5E2D53B97ADD6C8B95 /* AppModel+Features.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2800EB42B59032D34A2EC82 /* AppModel+Features.swift */; };
+		585552DE9F6AA760B7410667 /* Hubs.swift in Sources */ = {isa = PBXBuildFile; fileRef = E091B189B46447F692A2A7C9 /* Hubs.swift */; };
+		5ECB3F926BD59DCFC525920F /* GradeMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55CAC84C164C53F6FD1EAB90 /* GradeMath.swift */; };
+		6108EC8D34D5942C147768FA /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 526154364A8088FACCB1ECFC /* HomeView.swift */; };
+		643C7121DB172AE58D9F67ED /* SkywardClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA45D662A3F95CCE3A83746 /* SkywardClient.swift */; };
+		68FF1FB6BEED628870E17FCB /* HTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F22A200A187962B286EAD91 /* HTML.swift */; };
+		6A91FA660187FFE27493A742 /* QmlativModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8EF32BA21333B6040A8C7FD /* QmlativModels.swift */; };
+		6D7C9EA795DE8E5201438A04 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C972F9C3371733ED109098 /* OnboardingView.swift */; };
+		73474A506FD98E739B9DF238 /* SkywardParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294DA5B4D6FB9E894130C171 /* SkywardParser.swift */; };
+		7A40B97F99BCAA9AFA5586FB /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53B7A3593D65D0F76A561542 /* RootView.swift */; };
+		7FBBB13BA2A1CDC8794FB95F /* ScheduleViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93007BE5100E31BD55F0FD7 /* ScheduleViews.swift */; };
+		821E455F2BF1A329C958E8CB /* RememberSignInSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18159BE75E7A652E7CEAFDB4 /* RememberSignInSheet.swift */; };
+		82E2B992B167963EE99C0103 /* SkywardParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294DA5B4D6FB9E894130C171 /* SkywardParser.swift */; };
+		882E864053489E5ADDA53E5F /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6D4DF504678D7EF4573373C /* MenuBarView.swift */; };
+		97F727B59B98C78A757B3EAC /* GPA.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF57EB24B79476D792924EDC /* GPA.swift */; };
+		9A69703E126C5D2DA904E38B /* CalendarExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 592943F4B020AC6B4A3E7F24 /* CalendarExport.swift */; };
+		9BB8A1B340ED96710E67A38D /* WindowEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D78D679D3873C1CB11B6F09 /* WindowEffects.swift */; };
+		9BFB0143C4BC7A3177E17E1D /* PlannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E31909742C82022679140233 /* PlannerView.swift */; };
+		9EC38A89FC9EF5CFC6616249 /* SkywardClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA45D662A3F95CCE3A83746 /* SkywardClient.swift */; };
+		A5A3C1520295AA9566F1715A /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58DB90F266F03128CB7A947A /* Services.swift */; };
+		A5D5145501E1481EA73C0010 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA50AAD86D1DD6BC29ABB70D /* Models.swift */; };
+		AA5E16C312D7979B17D06901 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D58BD8809ED66960ABBD784A /* WidgetSnapshot.swift */; };
+		AB992F75649FF5E02A261311 /* DistrictSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F641BCDFB5AF1C2B7153B67F /* DistrictSearch.swift */; };
+		AC633C87E75560EA1804FAC3 /* SettingsCompatibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E260F82AEE42BD8E728CE32C /* SettingsCompatibilityTests.swift */; };
+		ACA99FCFCC6880F14B317E22 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 779F1E4800A5EB5267BB0140 /* Updater.swift */; };
+		AF0B3E4E0F97964E4CBA6DD8 /* GradesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB787630CC9A188139A3CB8 /* GradesView.swift */; };
+		B373AAF8A90F1AD8A90A5853 /* SkywardPlusWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF0E5F4282C181E730F63A5B /* SkywardPlusWidget.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B82D8C52575A39651B6F7E1F /* ScreenRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8A801E4FE78ED43836DFE0 /* ScreenRenderer.swift */; };
+		B91B39C12BB84E0EBAA72F03 /* FakeSkyward.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A5D20717E4F4320999EF990 /* FakeSkyward.swift */; };
+		BAE4E033DF8B659804B8323C /* JSLiteral.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A52C1E493421AD57F9F31F8 /* JSLiteral.swift */; };
+		BB6F69729A0404AF5E523E0F /* SkywardPlusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08E0F70CE1E404FD5C1C3AB3 /* SkywardPlusWidget.swift */; };
+		BD130E98E11EC81A62842B00 /* LoginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA9B17E8BAEDDEF6DB89570 /* LoginTests.swift */; };
+		C87FB6756FC2C1D523444670 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2CF78A49BB78D9DAC2D04FE8 /* Assets.xcassets */; };
+		CB5300E404A89729C32EB1D6 /* FakeSkyward.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A5D20717E4F4320999EF990 /* FakeSkyward.swift */; };
+		D121280D68BE53A0187771B9 /* WebSignIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29CB6352585661A55E46D29E /* WebSignIn.swift */; };
+		D9AE8F282A91DC3AC42C1EC7 /* Design.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8AC3F0C8DFCB827877A402D /* Design.swift */; };
+		E27651853247E3EA5934CDA5 /* Prefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290DD89A5C0F36A064B9CAF5 /* Prefs.swift */; };
+		E907586CFFA1F2F687E78BAD /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5280696572B1B7A1D731C7F /* SyncEngine.swift */; };
+		EEA8EFFCBECE2D2A462BFC67 /* JSLiteral.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A52C1E493421AD57F9F31F8 /* JSLiteral.swift */; };
+		F0CC1EF2F38037656E52DF04 /* HTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F22A200A187962B286EAD91 /* HTML.swift */; };
+		F211317A363E06609A78724F /* QmlativMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60E605D9276B82CC3940FFB4 /* QmlativMapperTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		4A4460BE4932F5DD92818FA6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 900798D16DA2234D9C27726B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 118558DAEE19A704EAD06FEC;
+			remoteInfo = SkywardPlusWidget;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		43CC4B85953881C25589D4B4 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				B373AAF8A90F1AD8A90A5853 /* SkywardPlusWidget.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		0060ADAC5D0E31F5AF7F9259 /* GPAView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPAView.swift; sourceTree = "<group>"; };
+		08E0F70CE1E404FD5C1C3AB3 /* SkywardPlusWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkywardPlusWidget.swift; sourceTree = "<group>"; };
+		18159BE75E7A652E7CEAFDB4 /* RememberSignInSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RememberSignInSheet.swift; sourceTree = "<group>"; };
+		1A52C1E493421AD57F9F31F8 /* JSLiteral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSLiteral.swift; sourceTree = "<group>"; };
+		1D78D679D3873C1CB11B6F09 /* WindowEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowEffects.swift; sourceTree = "<group>"; };
+		290DD89A5C0F36A064B9CAF5 /* Prefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prefs.swift; sourceTree = "<group>"; };
+		294DA5B4D6FB9E894130C171 /* SkywardParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkywardParser.swift; sourceTree = "<group>"; };
+		29CB6352585661A55E46D29E /* WebSignIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSignIn.swift; sourceTree = "<group>"; };
+		29F8A4F79C534A801812B23D /* SkywardPlusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkywardPlusApp.swift; sourceTree = "<group>"; };
+		2BA9B17E8BAEDDEF6DB89570 /* LoginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginTests.swift; sourceTree = "<group>"; };
+		2C8A801E4FE78ED43836DFE0 /* ScreenRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenRenderer.swift; sourceTree = "<group>"; };
+		2CF78A49BB78D9DAC2D04FE8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3AA1A605954E668AA5A75622 /* CoreAndParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAndParserTests.swift; sourceTree = "<group>"; };
+		3CB787630CC9A188139A3CB8 /* GradesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradesView.swift; sourceTree = "<group>"; };
+		438C2C429D9F9B7D76A9422C /* BellBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BellBanner.swift; sourceTree = "<group>"; };
+		465AE02F163DACCF529D48A3 /* HelloOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloOverlay.swift; sourceTree = "<group>"; };
+		4E02AC6A1A6C250C5C317CD1 /* SkywardPlusTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SkywardPlusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		526154364A8088FACCB1ECFC /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		53B7A3593D65D0F76A561542 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		55CAC84C164C53F6FD1EAB90 /* GradeMath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradeMath.swift; sourceTree = "<group>"; };
+		58DB90F266F03128CB7A947A /* Services.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services.swift; sourceTree = "<group>"; };
+		592943F4B020AC6B4A3E7F24 /* CalendarExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CalendarExport.swift; sourceTree = "<group>"; };
+		60E605D9276B82CC3940FFB4 /* QmlativMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativMapperTests.swift; sourceTree = "<group>"; };
+		65D574057ED29E7A68081882 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		6AD644083C9522EC4E13D598 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		71CA3620709BC02CC75DD9CE /* GradeReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradeReport.swift; sourceTree = "<group>"; };
+		72EFD546372DF138E1EE3836 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		779F1E4800A5EB5267BB0140 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
+		86284DF9E5D4125C6DF07FAA /* QmlativScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativScript.swift; sourceTree = "<group>"; };
+		8A5D20717E4F4320999EF990 /* FakeSkyward.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeSkyward.swift; sourceTree = "<group>"; };
+		8DA45D662A3F95CCE3A83746 /* SkywardClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkywardClient.swift; sourceTree = "<group>"; };
+		8EB620DA6E1023A9382A0776 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		963DE5B4555B2696F55C5687 /* SkywardPlus.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SkywardPlus.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9F22A200A187962B286EAD91 /* HTML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTML.swift; sourceTree = "<group>"; };
+		A6E03E9A9F7C7CFDC9BF0DB4 /* CommandPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPalette.swift; sourceTree = "<group>"; };
+		AF0E5F4282C181E730F63A5B /* SkywardPlusWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SkywardPlusWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		B2800EB42B59032D34A2EC82 /* AppModel+Features.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Features.swift"; sourceTree = "<group>"; };
+		B2C972F9C3371733ED109098 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		B752C3A0F48BEB3A28DB99DF /* QmlativSignInSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativSignInSheet.swift; sourceTree = "<group>"; };
+		BCF9BEDC78B4CD9C4B4D97D6 /* QmlativSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativSync.swift; sourceTree = "<group>"; };
+		D58BD8809ED66960ABBD784A /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
+		D6D4DF504678D7EF4573373C /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		D8AC3F0C8DFCB827877A402D /* Design.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Design.swift; sourceTree = "<group>"; };
+		DA50AAD86D1DD6BC29ABB70D /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		DAABF4803F58AFD6A009181A /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		E091B189B46447F692A2A7C9 /* Hubs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hubs.swift; sourceTree = "<group>"; };
+		E260F82AEE42BD8E728CE32C /* SettingsCompatibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCompatibilityTests.swift; sourceTree = "<group>"; };
+		E31909742C82022679140233 /* PlannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannerView.swift; sourceTree = "<group>"; };
+		E8EF32BA21333B6040A8C7FD /* QmlativModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativModels.swift; sourceTree = "<group>"; };
+		E93007BE5100E31BD55F0FD7 /* ScheduleViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleViews.swift; sourceTree = "<group>"; };
+		EEF0C82765F0A9A83B551425 /* ClassDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassDetailView.swift; sourceTree = "<group>"; };
+		EF57EB24B79476D792924EDC /* GPA.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPA.swift; sourceTree = "<group>"; };
+		F38BB8FC866CCF30BE2AB183 /* QmlativEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativEngine.swift; sourceTree = "<group>"; };
+		F4C2D6ABB3F6D75F9ED01D95 /* SchoolViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchoolViews.swift; sourceTree = "<group>"; };
+		F5280696572B1B7A1D731C7F /* SyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncEngine.swift; sourceTree = "<group>"; };
+		F641BCDFB5AF1C2B7153B67F /* DistrictSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DistrictSearch.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		0A13E479411D80265AB29D88 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				2CF78A49BB78D9DAC2D04FE8 /* Assets.xcassets */,
+				8EB620DA6E1023A9382A0776 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		18EB7C0A620B61DEB4F5F0F9 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				963DE5B4555B2696F55C5687 /* SkywardPlus.app */,
+				4E02AC6A1A6C250C5C317CD1 /* SkywardPlusTests.xctest */,
+				AF0E5F4282C181E730F63A5B /* SkywardPlusWidget.appex */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		29FEF0CE3D82910E3409A37B /* SkywardPlus */ = {
+			isa = PBXGroup;
+			children = (
+				7EB7054A503CC07ED8BCE0C8 /* App */,
+				6E5672EF2F2A72C31C91A64A /* Core */,
+				0A13E479411D80265AB29D88 /* Resources */,
+				7BA00643BD250E0E1733B412 /* Services */,
+				A09CAC243D1DB612D419AE00 /* Views */,
+			);
+			path = SkywardPlus;
+			sourceTree = "<group>";
+		};
+		6E5672EF2F2A72C31C91A64A /* Core */ = {
+			isa = PBXGroup;
+			children = (
+				F641BCDFB5AF1C2B7153B67F /* DistrictSearch.swift */,
+				8A5D20717E4F4320999EF990 /* FakeSkyward.swift */,
+				EF57EB24B79476D792924EDC /* GPA.swift */,
+				55CAC84C164C53F6FD1EAB90 /* GradeMath.swift */,
+				9F22A200A187962B286EAD91 /* HTML.swift */,
+				1A52C1E493421AD57F9F31F8 /* JSLiteral.swift */,
+				DA50AAD86D1DD6BC29ABB70D /* Models.swift */,
+				290DD89A5C0F36A064B9CAF5 /* Prefs.swift */,
+				E8EF32BA21333B6040A8C7FD /* QmlativModels.swift */,
+				8DA45D662A3F95CCE3A83746 /* SkywardClient.swift */,
+				294DA5B4D6FB9E894130C171 /* SkywardParser.swift */,
+				F5280696572B1B7A1D731C7F /* SyncEngine.swift */,
+			);
+			path = Core;
+			sourceTree = "<group>";
+		};
+		7BA00643BD250E0E1733B412 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				592943F4B020AC6B4A3E7F24 /* CalendarExport.swift */,
+				F38BB8FC866CCF30BE2AB183 /* QmlativEngine.swift */,
+				86284DF9E5D4125C6DF07FAA /* QmlativScript.swift */,
+				BCF9BEDC78B4CD9C4B4D97D6 /* QmlativSync.swift */,
+				58DB90F266F03128CB7A947A /* Services.swift */,
+				779F1E4800A5EB5267BB0140 /* Updater.swift */,
+				29CB6352585661A55E46D29E /* WebSignIn.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		7EB7054A503CC07ED8BCE0C8 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				DAABF4803F58AFD6A009181A /* AppModel.swift */,
+				B2800EB42B59032D34A2EC82 /* AppModel+Features.swift */,
+				53B7A3593D65D0F76A561542 /* RootView.swift */,
+				2C8A801E4FE78ED43836DFE0 /* ScreenRenderer.swift */,
+				29F8A4F79C534A801812B23D /* SkywardPlusApp.swift */,
+				1D78D679D3873C1CB11B6F09 /* WindowEffects.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		A09CAC243D1DB612D419AE00 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				438C2C429D9F9B7D76A9422C /* BellBanner.swift */,
+				EEF0C82765F0A9A83B551425 /* ClassDetailView.swift */,
+				A6E03E9A9F7C7CFDC9BF0DB4 /* CommandPalette.swift */,
+				D8AC3F0C8DFCB827877A402D /* Design.swift */,
+				0060ADAC5D0E31F5AF7F9259 /* GPAView.swift */,
+				71CA3620709BC02CC75DD9CE /* GradeReport.swift */,
+				3CB787630CC9A188139A3CB8 /* GradesView.swift */,
+				465AE02F163DACCF529D48A3 /* HelloOverlay.swift */,
+				526154364A8088FACCB1ECFC /* HomeView.swift */,
+				E091B189B46447F692A2A7C9 /* Hubs.swift */,
+				D6D4DF504678D7EF4573373C /* MenuBarView.swift */,
+				B2C972F9C3371733ED109098 /* OnboardingView.swift */,
+				E31909742C82022679140233 /* PlannerView.swift */,
+				B752C3A0F48BEB3A28DB99DF /* QmlativSignInSheet.swift */,
+				18159BE75E7A652E7CEAFDB4 /* RememberSignInSheet.swift */,
+				E93007BE5100E31BD55F0FD7 /* ScheduleViews.swift */,
+				F4C2D6ABB3F6D75F9ED01D95 /* SchoolViews.swift */,
+				6AD644083C9522EC4E13D598 /* SettingsView.swift */,
+				65D574057ED29E7A68081882 /* SignInView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		BD2732AEE38945368D99A14A /* SkywardPlusWidget */ = {
+			isa = PBXGroup;
+			children = (
+				72EFD546372DF138E1EE3836 /* Info.plist */,
+				08E0F70CE1E404FD5C1C3AB3 /* SkywardPlusWidget.swift */,
+				D58BD8809ED66960ABBD784A /* WidgetSnapshot.swift */,
+			);
+			path = SkywardPlusWidget;
+			sourceTree = "<group>";
+		};
+		DE4CDBA9B8D4A55A1B54FE38 = {
+			isa = PBXGroup;
+			children = (
+				29FEF0CE3D82910E3409A37B /* SkywardPlus */,
+				F4BB3CDA0EFF3A6C17ADD661 /* SkywardPlusTests */,
+				BD2732AEE38945368D99A14A /* SkywardPlusWidget */,
+				18EB7C0A620B61DEB4F5F0F9 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		F4BB3CDA0EFF3A6C17ADD661 /* SkywardPlusTests */ = {
+			isa = PBXGroup;
+			children = (
+				3AA1A605954E668AA5A75622 /* CoreAndParserTests.swift */,
+				2BA9B17E8BAEDDEF6DB89570 /* LoginTests.swift */,
+				60E605D9276B82CC3940FFB4 /* QmlativMapperTests.swift */,
+				E260F82AEE42BD8E728CE32C /* SettingsCompatibilityTests.swift */,
+			);
+			path = SkywardPlusTests;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		118558DAEE19A704EAD06FEC /* SkywardPlusWidget */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C311198FA6AF7C27759512EE /* Build configuration list for PBXNativeTarget "SkywardPlusWidget" */;
+			buildPhases = (
+				EB7153F1F196EB3E814F53EB /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SkywardPlusWidget;
+			packageProductDependencies = (
+			);
+			productName = SkywardPlusWidget;
+			productReference = AF0E5F4282C181E730F63A5B /* SkywardPlusWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		9AAB75A35830944BB823C05E /* SkywardPlusTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C81BDA5FAB8B4977FDF8ADBE /* Build configuration list for PBXNativeTarget "SkywardPlusTests" */;
+			buildPhases = (
+				E9988CA52517B2426AF565C2 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SkywardPlusTests;
+			packageProductDependencies = (
+			);
+			productName = SkywardPlusTests;
+			productReference = 4E02AC6A1A6C250C5C317CD1 /* SkywardPlusTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		F6905E02D882E8A686C7165E /* SkywardPlus */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0FB1404C3F125BFC1199FDCA /* Build configuration list for PBXNativeTarget "SkywardPlus" */;
+			buildPhases = (
+				5FD5AE9AB560D0B96DDA3395 /* Sources */,
+				175AC9CB96D959DD8F3C215D /* Resources */,
+				43CC4B85953881C25589D4B4 /* Embed Foundation Extensions */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				EDBB30E40D893CDDFC91EF9A /* PBXTargetDependency */,
+			);
+			name = SkywardPlus;
+			packageProductDependencies = (
+			);
+			productName = SkywardPlus;
+			productReference = 963DE5B4555B2696F55C5687 /* SkywardPlus.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		900798D16DA2234D9C27726B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					118558DAEE19A704EAD06FEC = {
+						ProvisioningStyle = Manual;
+					};
+					F6905E02D882E8A686C7165E = {
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 4DFFA066833C9DDC6DE43A50 /* Build configuration list for PBXProject "SkywardPlus" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = DE4CDBA9B8D4A55A1B54FE38;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 18EB7C0A620B61DEB4F5F0F9 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F6905E02D882E8A686C7165E /* SkywardPlus */,
+				118558DAEE19A704EAD06FEC /* SkywardPlusWidget */,
+				9AAB75A35830944BB823C05E /* SkywardPlusTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		175AC9CB96D959DD8F3C215D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C87FB6756FC2C1D523444670 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5FD5AE9AB560D0B96DDA3395 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				57B6CD5E2D53B97ADD6C8B95 /* AppModel+Features.swift in Sources */,
+				3163D0823448EC494A64109A /* AppModel.swift in Sources */,
+				19ABB50E8F8FC4D75AD76714 /* BellBanner.swift in Sources */,
+				9A69703E126C5D2DA904E38B /* CalendarExport.swift in Sources */,
+				4D6A6B92CAA9CC60A10C1D92 /* ClassDetailView.swift in Sources */,
+				1E0B9DAEF001A5A4630341DD /* CommandPalette.swift in Sources */,
+				D9AE8F282A91DC3AC42C1EC7 /* Design.swift in Sources */,
+				16104F32CEB91C481077F6A3 /* DistrictSearch.swift in Sources */,
+				B91B39C12BB84E0EBAA72F03 /* FakeSkyward.swift in Sources */,
+				97F727B59B98C78A757B3EAC /* GPA.swift in Sources */,
+				4EF8FD011CB27AD3ED57D0F2 /* GPAView.swift in Sources */,
+				5ECB3F926BD59DCFC525920F /* GradeMath.swift in Sources */,
+				1531E3636492770CF3A30D55 /* GradeReport.swift in Sources */,
+				AF0B3E4E0F97964E4CBA6DD8 /* GradesView.swift in Sources */,
+				F0CC1EF2F38037656E52DF04 /* HTML.swift in Sources */,
+				4ACCC885F5CBBEA7551A23B9 /* HelloOverlay.swift in Sources */,
+				6108EC8D34D5942C147768FA /* HomeView.swift in Sources */,
+				585552DE9F6AA760B7410667 /* Hubs.swift in Sources */,
+				EEA8EFFCBECE2D2A462BFC67 /* JSLiteral.swift in Sources */,
+				882E864053489E5ADDA53E5F /* MenuBarView.swift in Sources */,
+				A5D5145501E1481EA73C0010 /* Models.swift in Sources */,
+				6D7C9EA795DE8E5201438A04 /* OnboardingView.swift in Sources */,
+				9BFB0143C4BC7A3177E17E1D /* PlannerView.swift in Sources */,
+				E27651853247E3EA5934CDA5 /* Prefs.swift in Sources */,
+				17725EEA400240B21081D8E9 /* QmlativEngine.swift in Sources */,
+				6A91FA660187FFE27493A742 /* QmlativModels.swift in Sources */,
+				526DDAC273E0D16D47A920D8 /* QmlativScript.swift in Sources */,
+				0AD791A4DD2C87B5F55FC9AD /* QmlativSignInSheet.swift in Sources */,
+				125B7485A77D072D191508DD /* QmlativSync.swift in Sources */,
+				821E455F2BF1A329C958E8CB /* RememberSignInSheet.swift in Sources */,
+				7A40B97F99BCAA9AFA5586FB /* RootView.swift in Sources */,
+				7FBBB13BA2A1CDC8794FB95F /* ScheduleViews.swift in Sources */,
+				1FC49A864B98A811D27B1388 /* SchoolViews.swift in Sources */,
+				B82D8C52575A39651B6F7E1F /* ScreenRenderer.swift in Sources */,
+				A5A3C1520295AA9566F1715A /* Services.swift in Sources */,
+				2DBA0F9962B32A65486F2A38 /* SettingsView.swift in Sources */,
+				2B15CCE3AFB3A8579D01E864 /* SignInView.swift in Sources */,
+				9EC38A89FC9EF5CFC6616249 /* SkywardClient.swift in Sources */,
+				82E2B992B167963EE99C0103 /* SkywardParser.swift in Sources */,
+				439F6A07083C49639E62A50E /* SkywardPlusApp.swift in Sources */,
+				1DFED5D124D8411E33608E04 /* SyncEngine.swift in Sources */,
+				ACA99FCFCC6880F14B317E22 /* Updater.swift in Sources */,
+				D121280D68BE53A0187771B9 /* WebSignIn.swift in Sources */,
+				AA5E16C312D7979B17D06901 /* WidgetSnapshot.swift in Sources */,
+				9BB8A1B340ED96710E67A38D /* WindowEffects.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E9988CA52517B2426AF565C2 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3D76EEC3B69461009C1A2DF6 /* CoreAndParserTests.swift in Sources */,
+				AB992F75649FF5E02A261311 /* DistrictSearch.swift in Sources */,
+				CB5300E404A89729C32EB1D6 /* FakeSkyward.swift in Sources */,
+				1914C71068429101E899BCCD /* GPA.swift in Sources */,
+				45395F9633F30EC4667C771F /* GradeMath.swift in Sources */,
+				68FF1FB6BEED628870E17FCB /* HTML.swift in Sources */,
+				BAE4E033DF8B659804B8323C /* JSLiteral.swift in Sources */,
+				BD130E98E11EC81A62842B00 /* LoginTests.swift in Sources */,
+				300169E7384268B3A38A3E5F /* Models.swift in Sources */,
+				2202954297275529DA1AA20B /* Prefs.swift in Sources */,
+				F211317A363E06609A78724F /* QmlativMapperTests.swift in Sources */,
+				2D5EC177E25B273AB960AF6B /* QmlativModels.swift in Sources */,
+				AC633C87E75560EA1804FAC3 /* SettingsCompatibilityTests.swift in Sources */,
+				643C7121DB172AE58D9F67ED /* SkywardClient.swift in Sources */,
+				73474A506FD98E739B9DF238 /* SkywardParser.swift in Sources */,
+				E907586CFFA1F2F687E78BAD /* SyncEngine.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EB7153F1F196EB3E814F53EB /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB6F69729A0404AF5E523E0F /* SkywardPlusWidget.swift in Sources */,
+				5152DA1FE79F5482FD28E697 /* WidgetSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		EDBB30E40D893CDDFC91EF9A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				macos,
+			);
+			target = 118558DAEE19A704EAD06FEC /* SkywardPlusWidget */;
+			targetProxy = 4A4460BE4932F5DD92818FA6 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		1C7D2613AE12674A54E3729D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.1;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		479E57EBA111E00A01C2DE26 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = "";
+				CODE_SIGN_ENTITLEMENTS = SkywardPlusWidget/SkywardPlusWidget.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = SkywardPlusWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.skywardplus.app.widget;
+				PRODUCT_NAME = SkywardPlusWidget;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Debug;
+		};
+		5DBB62DFBC9BDCFD859E2F02 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.skywardplus.tests;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		66155DB4DFD7EE1CC9A2426C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				GENERATE_INFOPLIST_FILE = YES;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.skywardplus.tests;
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8BEC32D9A2581663FE36F943 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = "";
+				CODE_SIGN_ENTITLEMENTS = SkywardPlusWidget/SkywardPlusWidget.entitlements;
+				CODE_SIGN_IDENTITY = "-";
+				CODE_SIGN_STYLE = Manual;
+				COMBINE_HIDPI_IMAGES = YES;
+				INFOPLIST_FILE = SkywardPlusWidget/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+					"@executable_path/../../../../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.skywardplus.app.widget;
+				PRODUCT_NAME = SkywardPlusWidget;
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+			};
+			name = Release;
+		};
+		AB07C9F05281B9085E461138 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = SkywardPlus/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.skywardplus.app;
+				PRODUCT_MODULE_NAME = SkywardPlus;
+				PRODUCT_NAME = "Skyward Plus";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D314B45622B93E042A7D341C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
+				CODE_SIGN_STYLE = Automatic;
+				ENABLE_PREVIEWS = YES;
+				INFOPLIST_FILE = SkywardPlus/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.skywardplus.app;
+				PRODUCT_MODULE_NAME = SkywardPlus;
+				PRODUCT_NAME = "Skyward Plus";
+				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E31B0A047705524247734108 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				CURRENT_PROJECT_VERSION = 2;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.1;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0FB1404C3F125BFC1199FDCA /* Build configuration list for PBXNativeTarget "SkywardPlus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D314B45622B93E042A7D341C /* Debug */,
+				AB07C9F05281B9085E461138 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		4DFFA066833C9DDC6DE43A50 /* Build configuration list for PBXProject "SkywardPlus" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				1C7D2613AE12674A54E3729D /* Debug */,
+				E31B0A047705524247734108 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C311198FA6AF7C27759512EE /* Build configuration list for PBXNativeTarget "SkywardPlusWidget" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				479E57EBA111E00A01C2DE26 /* Debug */,
+				8BEC32D9A2581663FE36F943 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C81BDA5FAB8B4977FDF8ADBE /* Build configuration list for PBXNativeTarget "SkywardPlusTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				66155DB4DFD7EE1CC9A2426C /* Debug */,
+				5DBB62DFBC9BDCFD859E2F02 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 900798D16DA2234D9C27726B /* Project object */;
+}

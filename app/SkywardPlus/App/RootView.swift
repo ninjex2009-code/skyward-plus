@@ -1,0 +1,650 @@
+import SwiftUI
+
+enum AppSection: String, CaseIterable, Identifiable, Hashable {
+    case home, grades, planner, gpa, schedule, bell, attendance, reports, transcript, teachers, students, settings
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .home: return "Home"
+        case .grades: return "Grades"
+        case .planner: return "Planner"
+        case .gpa: return "GPA"
+        case .schedule: return "Schedule"
+        case .bell: return "Bell Schedule"
+        case .attendance: return "Attendance"
+        case .reports: return "Report Cards"
+        case .transcript: return "Transcript"
+        case .teachers: return "Teachers"
+        case .students: return "Students"
+        case .settings: return "Settings"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .home: return "house.fill"
+        case .grades: return "chart.bar.doc.horizontal.fill"
+        case .planner: return "checklist"
+        case .gpa: return "graduationcap.fill"
+        case .schedule: return "calendar.day.timeline.left"
+        case .bell: return "bell.badge.fill"
+        case .attendance: return "calendar.badge.checkmark"
+        case .reports: return "doc.text.fill"
+        case .transcript: return "scroll.fill"
+        case .teachers: return "envelope.fill"
+        case .students: return "person.2.fill"
+        case .settings: return "gearshape.fill"
+        }
+    }
+
+    /// The four tabs on iPhone; everything else sits under More.
+    static let tabs: [AppSection] = [.home, .grades, .planner, .gpa]
+    /// Bell and Teachers live inside Schedule; Transcript inside Report Cards.
+    static let school: [AppSection] = [.schedule, .attendance, .reports]
+    static let app: [AppSection] = [.settings]
+    /// Everything in the sidebar, in order (also ⌘1…⌘8).
+    static let sidebar: [AppSection] = tabs + school + app
+
+    /// The sidebar row that shows this section.
+    var host: AppSection {
+        switch self {
+        case .bell, .teachers: return .schedule
+        case .transcript: return .reports
+        case .students: return .settings
+        default: return self
+        }
+    }
+}
+
+/// Pushes a class page onto whichever navigation stack is showing.
+struct CourseRoute: Hashable {
+    var courseID: String
+}
+
+/// Asks the main view to present the sign-in sheet, either to add a student or
+/// to sign an existing one in again.
+struct SignInRequest: Identifiable {
+    let id = UUID()
+    var reauth: Profile?
+}
+
+struct RootView: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.scenePhase) private var scenePhase
+
+    private var scheme: ColorScheme? {
+        switch model.settings.appearance {
+        case .system: return nil
+        case .light: return .light
+        case .dark: return .dark
+        }
+    }
+
+    var body: some View {
+        Group {
+            if model.profiles.isEmpty {
+                NavigationStack { SignInView(isFirstRun: true) }
+            } else if model.isLocked {
+                LockView()
+            } else {
+                MainView()
+            }
+        }
+        .windowEffects()
+        .tint(model.theme.color)
+        .environment(\.backgroundTheme, model.settings.backgroundTheme)
+        .environment(\.accentTheme, model.theme)
+        .preferredColorScheme(scheme)
+        .sheet(
+            isPresented: Binding(
+                get: { !model.firstRunActive && (model.qmlativSignIn != nil || model.signInRequest != nil || model.showOnboarding) },
+                set: { presented in
+                    if !presented {
+                        model.qmlativSignIn = nil
+                        model.signInRequest = nil
+                        model.showOnboarding = false
+                    }
+                }
+            )
+        ) {
+            Group {
+                if let session = model.qmlativSignIn {
+                    QmlativSignInSheet(session: session)
+                        #if os(macOS)
+                        .frame(minWidth: 860, minHeight: 640)
+                        #endif
+                } else if let request = model.signInRequest {
+                    NavigationStack {
+                        SignInView(reauth: request.reauth)
+                    }
+                    #if os(macOS)
+                    .frame(minWidth: 520, minHeight: 620)
+                    #endif
+                } else if model.showOnboarding {
+                    OnboardingSheet()
+                        #if os(macOS)
+                        .frame(minWidth: 720, minHeight: 640)
+                        #endif
+                }
+            }
+            .environment(\.backgroundTheme, model.settings.backgroundTheme)
+            .environment(\.accentTheme, model.theme)
+            .environment(\.windowTranslucent, false)
+            .preferredColorScheme(scheme)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            switch phase {
+            case .background:
+                model.markSeen()
+                model.lockIfNeeded()
+            case .active:
+                Task { await refreshIfStale() }
+            default:
+                break
+            }
+        }
+        .onChange(of: model.active?.id) { _, _ in
+            checkOnboarding()
+        }
+        .task {
+            checkOnboarding()
+            await refreshIfStale()
+        }
+    }
+
+    private func checkOnboarding() {
+        guard Notifier.isEnabled,
+              !model.firstRunActive,
+              !model.isLocked,
+              model.qmlativSignIn == nil,
+              model.signInRequest == nil,
+              let active = model.active,
+              !active.isDemo,
+              !active.prefs.onboardingDone else { return }
+        model.showOnboarding = true
+    }
+
+    /// Syncs on launch and on return to the app, at most every ten minutes.
+    private func refreshIfStale() async {
+        guard !model.isLocked, model.active != nil, !model.syncState.isSyncing else { return }
+        if case .needsSignIn = model.syncState { return }
+        let last = model.data.lastSync ?? .distantPast
+        if model.now().timeIntervalSince(last) > 600 { await model.refresh() }
+    }
+}
+
+struct LockView: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        VStack(spacing: 18) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 44))
+                .foregroundStyle(.white)
+                .frame(width: 96, height: 96)
+                .background(model.theme.gradient, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                .shadow(color: model.theme.color.opacity(0.3), radius: 16, y: 8)
+            Text("Skyward Plus is locked").font(.title2.weight(.semibold))
+            Text("Unlock to see grades.").foregroundStyle(.secondary)
+            Button {
+                Task { await model.unlock() }
+            } label: {
+                Label("Unlock with \(Biometrics.name)", systemImage: Biometrics.symbol)
+                    .frame(maxWidth: 260)
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+        }
+        .padding(32)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background { PageBackground() }
+        .task { await model.unlock() }
+    }
+}
+
+struct MainView: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.horizontalSizeClass) private var sizeClass
+
+    var body: some View {
+        Group {
+            #if os(macOS)
+            SidebarLayout()
+                .overlay(alignment: .top) {
+                    if model.showPalette {
+                        ZStack(alignment: .top) {
+                            Color.black.opacity(0.12)
+                                .ignoresSafeArea()
+                                .onTapGesture { model.showPalette = false }
+                            CommandPalette()
+                                .padding(.top, 90)
+                                .transition(.scale(scale: 0.96, anchor: .top).combined(with: .opacity))
+                        }
+                    }
+                }
+                .animation(.spring(response: 0.3, dampingFraction: 0.85), value: model.showPalette)
+            #else
+            if sizeClass == .compact { TabLayout() } else { SidebarLayout() }
+            #endif
+        }
+    }
+}
+
+/// One navigation stack per section, with the routes every screen may push.
+struct SectionHost: View {
+    @Environment(AppModel.self) private var model
+    let section: AppSection
+    @State private var path = NavigationPath()
+
+    var body: some View {
+        NavigationStack(path: $path) {
+            SectionScreen(section: section)
+                .navigationDestination(for: CourseRoute.self) { ClassDetailView(courseID: $0.courseID) }
+                .navigationDestination(for: AppSection.self) { SectionScreen(section: $0) }
+        }
+        .onAppear(perform: openRequestedCourse)
+        .onChange(of: model.openCourse) { _, _ in openRequestedCourse() }
+    }
+
+    /// Search and the menu bar ask for a class; the Grades stack shows it.
+    private func openRequestedCourse() {
+        guard section == .grades, let id = model.openCourse else { return }
+        model.openCourse = nil
+        path = NavigationPath([CourseRoute(courseID: id)])
+    }
+}
+
+struct SectionScreen: View {
+    let section: AppSection
+
+    var body: some View {
+        switch section {
+        case .home: HomeView()
+        case .grades: GradesView()
+        case .planner: PlannerView()
+        case .gpa: GPAView()
+        case .schedule, .bell, .teachers: ScheduleHub()
+        case .attendance: AttendanceView()
+        case .reports, .transcript: ReportsHub()
+        case .students: StudentsView()
+        case .settings: SettingsView()
+        }
+    }
+}
+
+// MARK: - iPhone
+
+struct TabLayout: View {
+    @Environment(AppModel.self) private var model
+    @State private var tab = AppSection.home.rawValue
+    @State private var morePath = NavigationPath()
+
+    var body: some View {
+        TabView(selection: $tab) {
+            ForEach(AppSection.tabs) { section in
+                SectionHost(section: section)
+                    .tabItem { Label(section.title, systemImage: section.symbol) }
+                    .tag(section.rawValue)
+            }
+            NavigationStack(path: $morePath) {
+                MoreView()
+                    .navigationDestination(for: AppSection.self) { SectionScreen(section: $0) }
+                    .navigationDestination(for: CourseRoute.self) { ClassDetailView(courseID: $0.courseID) }
+            }
+            .tabItem { Label("More", systemImage: "ellipsis.circle") }
+            .tag("more")
+        }
+        .onChange(of: model.section) { _, section in
+            if AppSection.tabs.contains(section) {
+                tab = section.rawValue
+            } else {
+                morePath = NavigationPath([section])
+                tab = "more"
+            }
+        }
+        .onChange(of: tab) { _, value in
+            if let section = AppSection(rawValue: value), section != model.section { model.section = section }
+        }
+    }
+}
+
+struct MoreView: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        Screen(title: "More") {
+            if let profile = model.active {
+                NavigationLink(value: AppSection.students) {
+                    Card(tint: model.theme.color) {
+                        HStack(spacing: 12) {
+                            AvatarView(profile: profile, size: 50)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(profile.name).font(.headline).foregroundStyle(.primary)
+                                Text(profile.districtName.isEmpty ? profile.username : profile.districtName)
+                                    .font(.subheadline).foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                        }
+                    }
+                }
+                .buttonStyle(ScaleButtonStyle())
+                .staggered(0)
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                SectionHeader("School")
+                Card(padding: 0) {
+                    VStack(spacing: 0) {
+                        ForEach(Array(AppSection.school.enumerated()), id: \.element.id) { index, section in
+                            NavigationLink(value: section) {
+                                HoverRow {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: section.symbol)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(model.theme.color)
+                                            .frame(width: 30, height: 30)
+                                            .background(model.theme.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                        Text(section.title)
+                                            .font(.body.weight(.medium))
+                                            .foregroundStyle(.primary)
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 11)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .rowDivider(index < AppSection.school.count - 1)
+                        }
+                    }
+                }
+            }
+            .staggered(1)
+
+            VStack(alignment: .leading, spacing: 10) {
+                SectionHeader("App")
+                Card(padding: 0) {
+                    VStack(spacing: 0) {
+                        ForEach(Array(AppSection.app.enumerated()), id: \.element.id) { index, section in
+                            NavigationLink(value: section) {
+                                HoverRow {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: section.symbol)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundStyle(model.theme.color)
+                                            .frame(width: 30, height: 30)
+                                            .background(model.theme.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                        Text(section.title)
+                                            .font(.body.weight(.medium))
+                                            .foregroundStyle(.primary)
+                                        Spacer()
+                                        Image(systemName: "chevron.right")
+                                            .font(.caption.weight(.semibold))
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 11)
+                                }
+                            }
+                            .buttonStyle(.plain)
+                            .rowDivider(index < AppSection.app.count - 1)
+                        }
+                    }
+                }
+            }
+            .staggered(2)
+        }
+    }
+}
+
+// MARK: - iPad and Mac
+
+struct SidebarLayout: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let selection = Binding<AppSection?>(
+            get: { model.section },
+            set: { value in
+                if let value {
+                    withAnimation(Motion.snappy) {
+                        model.section = value
+                    }
+                }
+            }
+        )
+        NavigationSplitView {
+            List(selection: selection) {
+                Section {
+                    ProfileSwitcher()
+                }
+                Section("Overview") {
+                    ForEach(AppSection.tabs) { section in
+                        Label(section.title, systemImage: section.symbol).tag(section)
+                    }
+                }
+                Section("School") {
+                    ForEach(AppSection.school) { section in
+                        Label(section.title, systemImage: section.symbol).tag(section)
+                    }
+                }
+                Section("App") {
+                    ForEach(AppSection.app) { section in
+                        Label(section.title, systemImage: section.symbol).tag(section)
+                    }
+                }
+            }
+            .navigationTitle("Skyward Plus")
+            #if os(macOS)
+            .navigationSplitViewColumnWidth(min: 215, ideal: 240, max: 300)
+            #endif
+            .safeAreaInset(edge: .bottom) { SidebarFooter() }
+        } detail: {
+            SectionHost(section: model.section)
+                .id(model.section)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .offset(y: 10)).animation(Motion.smooth),
+                    removal: .opacity.animation(.easeOut(duration: 0.12))
+                ))
+                .overlay(alignment: .top) { SyncLine() }
+        }
+    }
+}
+
+/// Shows who is active and switches between students.
+struct ProfileSwitcher: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        if let profile = model.active {
+            Menu {
+                ForEach(model.profiles) { other in
+                    Button {
+                        withAnimation(Motion.snappy) {
+                            model.setActive(other.id)
+                        }
+                    } label: {
+                        if other.id == profile.id {
+                            Label(other.name, systemImage: "checkmark")
+                        } else {
+                            Text(other.name)
+                        }
+                    }
+                }
+                Divider()
+                Button {
+                    model.showOnboarding = true
+                } label: {
+                    Label("Customize Profile…", systemImage: "slider.horizontal.3")
+                }
+                Button {
+                    model.signInRequest = SignInRequest()
+                } label: {
+                    Label("Add Student…", systemImage: "person.badge.plus")
+                }
+            } label: {
+                HStack(spacing: 10) {
+                    AvatarView(profile: profile, size: 36, scalesWithWindow: false)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(profile.name).font(.headline).lineLimit(1)
+                        Text(profile.districtName.isEmpty ? profile.username : profile.districtName)
+                            .font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                    Spacer(minLength: 4)
+                    Image(systemName: "chevron.up.chevron.down").font(.caption).foregroundStyle(.secondary)
+                }
+                .contentShape(Rectangle())
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .padding(.vertical, 4)
+        }
+    }
+}
+
+struct SidebarFooter: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        HStack(spacing: 8) {
+            if model.syncState.isSyncing {
+                ProgressView().controlSize(.small)
+                Text("Syncing…").font(.caption.weight(.medium)).foregroundStyle(.secondary)
+            } else {
+                Circle()
+                    .fill(model.data.lastSync != nil ? Palette.good : Color.secondary.opacity(0.4))
+                    .frame(width: 7, height: 7)
+                Text("Updated " + Fmt.ago(model.data.lastSync, now: model.now()))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer()
+            Button {
+                Task { await model.refresh() }
+            } label: {
+                Image(systemName: "arrow.clockwise")
+                    .font(.caption.weight(.semibold))
+                    .rotationEffect(.degrees(model.syncState.isSyncing ? 360 : 0))
+                    .animation(model.syncState.isSyncing ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: model.syncState.isSyncing)
+            }
+            .buttonStyle(.borderless)
+            .disabled(model.syncState.isSyncing)
+            .help("Refresh grades")
+            .accessibilityLabel("Refresh grades")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(.bar)
+    }
+}
+
+// MARK: - Students
+
+/// Everyone signed in on this device: switch, rename, or remove.
+struct StudentsView: View {
+    @Environment(AppModel.self) private var model
+    @State private var removing: Profile?
+
+    var body: some View {
+        Screen(title: "Students") {
+            Card(padding: 0) {
+                VStack(spacing: 0) {
+                    ForEach(Array(model.profiles.enumerated()), id: \.element.id) { index, profile in
+                        HoverRow {
+                            HStack(spacing: 12) {
+                                AvatarView(profile: profile, size: 46)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    HStack(spacing: 6) {
+                                        Text(profile.name).font(.headline)
+                                        if profile.isDemo { Pill(text: "Demo", tint: .secondary) }
+                                    }
+                                    Text(profile.districtName.isEmpty ? profile.username : profile.districtName)
+                                        .font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                                    Text("Updated " + Fmt.ago(model.data(for: profile.id).lastSync, now: model.now()))
+                                        .font(.caption).foregroundStyle(.secondary)
+                                }
+                                Spacer(minLength: 8)
+                                if profile.id == model.active?.id {
+                                    Pill(text: "Active", tint: profile.theme.color, filled: true)
+                                } else {
+                                    Button("Switch") {
+                                        withAnimation(Motion.snappy) {
+                                            model.setActive(profile.id)
+                                        }
+                                    }
+                                    .buttonStyle(.bordered)
+                                }
+                                Menu {
+                                    if profile.id == model.active?.id {
+                                        Button {
+                                            model.showOnboarding = true
+                                        } label: {
+                                            Label("Customize Profile…", systemImage: "wand.and.stars")
+                                        }
+                                    }
+                                    if case .needsSignIn = model.syncStates[profile.id] ?? .idle {
+                                        Button("Sign In Again…") { model.requestReauth(profile) }
+                                    }
+                                    Button("Refresh") { Task { await model.refresh(profile.id) } }
+                                    Button("Remove…", role: .destructive) { removing = profile }
+                                } label: {
+                                    Image(systemName: "ellipsis.circle")
+                                }
+                                .menuStyle(.borderlessButton)
+                                .menuIndicator(.hidden)
+                                .fixedSize()
+                                .accessibilityLabel("More for \(profile.name)")
+                            }
+                            .padding(14)
+                        }
+                        .rowDivider(index < model.profiles.count - 1)
+                    }
+                }
+            }
+            .staggered(0)
+
+            HStack(spacing: 12) {
+                Button {
+                    model.signInRequest = SignInRequest()
+                } label: {
+                    Label("Add Student", systemImage: "plus")
+                }
+                .buttonStyle(.borderedProminent)
+
+                Button {
+                    model.showOnboarding = true
+                } label: {
+                    Label("Run Setup Wizard", systemImage: "wand.and.stars")
+                }
+                .buttonStyle(.bordered)
+            }
+            .staggered(1)
+
+            Text("Parents can add each child, or sign in once with a family account to add them all. Each student keeps their own theme, planner and settings.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .staggered(2)
+        }
+        .confirmationDialog(
+            "Remove \(removing?.name ?? "this student")?",
+            isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Remove", role: .destructive) {
+                if let profile = removing { model.removeProfile(profile.id) }
+                removing = nil
+            }
+            Button("Cancel", role: .cancel) { removing = nil }
+        } message: {
+            Text("Their grades, planner and saved password are deleted from this device. Nothing changes in Skyward.")
+        }
+    }
+}

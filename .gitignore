@@ -1,0 +1,14 @@
+# Build output
+app/.build*/
+app/dist/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+.DS_Store
+
+# Local tooling and working notes (not part of the project)
+.claude/
+.impeccable/
+HANDOFF.md
+ANTIGRAVITY_PROMPT.md
+AGENTS.md

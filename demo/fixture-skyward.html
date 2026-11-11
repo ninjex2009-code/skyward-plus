@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Gradebook - Skyward Family Access</title>
+  <style>
+    body { font: 13px Verdana, sans-serif; margin: 16px; color: #222; }
+    table { border-collapse: collapse; margin-bottom: 24px; width: 100%; max-width: 900px; }
+    th { background: #4a6785; color: #fff; text-align: left; padding: 4px 6px; font-size: 11px; }
+    td { border-bottom: 1px solid #ddd; padding: 3px 6px; }
+    .sf_gbCategory td { background: #eef2f7; font-weight: bold; }
+    h3 { margin: 18px 0 6px; font-size: 14px; }
+    .sf_heading { font-weight: bold; color: #24405f; }
+  </style>
+</head>
+<body>
+<h2>Family Access &mdash; Gradebook</h2>
+
+<h3 class="sf_heading">Grades by class</h3>
+<table id="grid_stuGradesGrid">
+  <tr><th>Class</th><th>Teacher</th><th>Q3</th><th>Q4</th><th>S2</th></tr>
+  <tr><td>Period 2 - AP Biology</td><td>Okonkwo, A</td><td>89.4% B+</td><td>91.34% A-</td><td>90.2% A-</td></tr>
+  <tr><td>Period 3 - Algebra II Honors</td><td>Reyes, M</td><td>81.0% B-</td><td>84.2% B</td><td>82.4% B-</td></tr>
+  <tr><td>Period 6 - Spanish III</td><td>Villalobos, C</td><td>80.1% B-</td><td>78.5% C+</td><td>79.3% C+</td></tr>
+</table>
+
+<h3 class="sf_heading">Period 3 - Algebra II Honors &mdash; Teacher: Reyes, M &mdash; Q4</h3>
+<table id="grid_assignmentsGrid">
+  <thead>
+    <tr><th>Due Date</th><th>Assignment</th><th>Category</th><th>Points</th><th>Percent</th><th>Class Average</th></tr>
+  </thead>
+  <tbody>
+    <tr class="sf_gbCategory"><td colspan="6">Tests 60%</td></tr>
+    <tr><td>04/14/2026</td><td>Unit 5 test</td><td>Tests</td><td>79.00 / 100.00</td><td>79.00%</td><td>74.10%</td></tr>
+    <tr><td>04/26/2026</td><td>Unit 6 test</td><td>Tests</td><td>86.00 / 100.00</td><td>86.00%</td><td>77.30%</td></tr>
+    <tr class="sf_gbCategory"><td colspan="6">Quizzes 20%</td></tr>
+    <tr><td>04/07/2026</td><td>Quadratics quiz</td><td>Quizzes</td><td>22.00 / 25.00</td><td>88.00%</td><td>79.20%</td></tr>
+    <tr><td>04/21/2026</td><td>Logarithms quiz</td><td>Quizzes</td><td>16.00 / 25.00</td><td>64.00%</td><td>80.40%</td></tr>
+    <tr class="sf_gbCategory"><td colspan="6">Homework 20%</td></tr>
+    <tr><td>04/04/2026</td><td>Section 4.2 practice</td><td>Homework</td><td>20.00 / 20.00</td><td>100.00%</td><td>92.00%</td></tr>
+    <tr class="missing"><td>04/11/2026</td><td>Section 4.3 practice *Missing</td><td>Homework</td><td>0.00 / 20.00</td><td>0.00%</td><td>89.50%</td></tr>
+    <tr><td>04/18/2026</td><td>Section 5.1 practice</td><td>Homework</td><td>18.00 / 20.00</td><td>90.00%</td><td>90.50%</td></tr>
+    <tr><td>05/02/2026</td><td>Section 5.2 practice</td><td>Homework</td><td>*</td><td></td><td></td></tr>
+  </tbody>
+</table>
+</body>
+</html>

@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Gradebook - Skyward Family Access</title>
+  <style>
+    body { font: 13px Verdana, sans-serif; margin: 16px; color: #222; background:#fff }
+    table { border-collapse: collapse; margin-bottom: 24px; width: 100%; max-width: 900px; }
+    th { background: #4a6785; color: #fff; text-align: left; padding: 4px 6px; font-size: 11px; }
+    td { border-bottom: 1px solid #ddd; padding: 3px 6px; }
+    .sf_gbCategory td { background: #eef2f7; font-weight: bold; }
+    h3 { margin: 18px 0 6px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <div id="page">loading fixture…</div>
+
+  <script src="../src/lib/util.js"></script>
+  <script src="../src/lib/model.js"></script>
+  <script src="../src/lib/storage.js"></script>
+  <script src="../src/lib/parse.js"></script>
+  <script src="../src/ui/app.js"></script>
+  <script>
+  /* Reproduces what the content script does, minus the chrome.* APIs, so the
+     overlay can be checked against a real Skyward-shaped page. */
+  (async () => {
+    const SP = globalThis.SkywardPlus;
+    const html = await fetch('fixture-skyward.html').then(r => r.text());
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    document.getElementById('page').innerHTML = doc.body.innerHTML;
+
+    const { courses } = SP.parse.scrapePage(document, location.href);
+    await SP.storage.ingest(courses, { source: 'scrape' });
+
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    const shadow = host.attachShadow({ mode: 'open' });
+    const base = document.createElement('style');
+    base.textContent = `
+      .sp-overlay { position: fixed; inset: 0; z-index: 2147483001; background: rgba(6,8,12,.62); backdrop-filter: blur(3px); }
+      .sp-panel { position: absolute; inset: 22px; border-radius: 16px; overflow: hidden; display:flex; flex-direction:column;
+        box-shadow: 0 30px 90px rgba(0,0,0,.5); border: 1px solid #242a35; background: #0a0c10; }
+      @media (max-width: 720px) { .sp-panel { inset: 0; border-radius: 0; border: 0; } }`;
+    shadow.appendChild(base);
+    const css = document.createElement('style');
+    css.textContent = await fetch('../src/ui/app.css').then(r => r.text());
+    shadow.appendChild(css);
+    const overlay = document.createElement('div');
+    overlay.className = 'sp-overlay';
+    const panel = document.createElement('div');
+    panel.className = 'sp-panel';
+    overlay.appendChild(panel);
+    shadow.appendChild(overlay);
+    await SP.ui.mount(panel, { embedded: true, onClose: () => overlay.remove() });
+  })();
+  </script>
+</body>
+</html>

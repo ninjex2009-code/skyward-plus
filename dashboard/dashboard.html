@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Skyward+</title>
+  <link rel="stylesheet" href="../src/ui/app.css">
+  <style>
+    html, body { height: 100%; margin: 0; background: #0a0c10; }
+    body.light { background: #f6f7f9; }
+    #root { height: 100%; display: flex; flex-direction: column; }
+    #root > .sp-app { flex: 1 1 auto; min-height: 0; position: relative; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script src="../src/lib/util.js"></script>
+  <script src="../src/lib/model.js"></script>
+  <script src="../src/lib/storage.js"></script>
+  <script src="../src/lib/parse.js"></script>
+  <script src="../src/ui/app.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,30 @@
+How to open Skyward Plus
+========================
+
+Skyward Plus is not signed with a paid Apple developer account, so the
+first time you open it your Mac says Apple can't check it for malware.
+That is expected. You only have to allow it once.
+
+1. Drag "Skyward Plus" onto the Applications folder in this window.
+
+2. Open Terminal (press Command-Space, type Terminal, press Return),
+   paste this line and press Return:
+
+       xattr -dr com.apple.quarantine "/Applications/Skyward Plus.app"
+
+   Then open Skyward Plus from Applications as usual.
+
+   Instead of Terminal you can double-click "Allow Skyward Plus.command"
+   in this window. If your Mac blocks that too, use the Terminal line.
+
+Other way, without Terminal
+---------------------------
+1. Open Skyward Plus from Applications. Click "Done" on the warning.
+2. Open System Settings > Privacy & Security, scroll down, and click
+   "Open Anyway" next to Skyward Plus. Enter your Mac password.
+3. Open Skyward Plus again and click "Open Anyway".
+
+Needs macOS 14 Sonoma or newer. Works on Apple silicon and Intel Macs.
+
+Your Skyward password stays on your Mac, in its Keychain, and is only
+sent to your school district's own sign-in page.
