@@ -15,7 +15,7 @@ struct SettingsCompatibilityTests {
     func oldSettingsKeepValues() throws {
         let settings = try JSONDecoder().decode(AppSettings.self, from: Data(Self.version10Settings.utf8))
         #expect(settings.appearance == .dark)
-        #expect(settings.backgroundTheme == .evergreen)
+        #expect(settings.backgroundTheme == .forest, "1.0's Evergreen became Forest in 1.2")
         #expect(settings.appIcon == "AppIconSunset")
         #expect(settings.activeProfileID == UUID(uuidString: "363F7361-2DFE-4950-A1AE-8C0286648176"))
     }
@@ -31,6 +31,17 @@ struct SettingsCompatibilityTests {
         #expect(settings.syncMinutes == 30)
         #expect(settings.exportTarget == .off)
         #expect(settings.helloShown, "people updating from 1.0 have already met the app")
+    }
+
+    @Test("Every theme from before 1.2 maps to a new one", arguments: [
+        ("standard", BackgroundTheme.graphite), ("tinted", .midnight), ("evergreen", .forest),
+        ("espresso", .ember), ("dusk", .sunset), ("oled", .obsidian), ("midnight", .midnight),
+        ("aurora", .aurora), ("not-a-theme", .midnight),
+    ])
+    func legacyThemes(raw: String, expected: BackgroundTheme) throws {
+        let json = #"{"backgroundThemeRaw":"\#(raw)"}"#
+        let settings = try JSONDecoder().decode(AppSettings.self, from: Data(json.utf8))
+        #expect(settings.backgroundTheme == expected)
     }
 
     @Test("A brand-new install shows the greeting")

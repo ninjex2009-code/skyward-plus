@@ -41,7 +41,7 @@ struct ClassDetailView: View {
         let result = model.result(courseID, lit, includeWhatIf: true)
         let baseResult = model.result(courseID, lit, includeWhatIf: false)
 
-        Screen(title: course.map { Str.titleCase($0.name) } ?? "Class") {
+        Screen(title: course.map { Str.titleCase($0.name) } ?? "Class", maxWidth: 1000) {
             if let course {
                 headerCard(course: course, lit: lit, detail: detail, result: result, baseResult: baseResult, whatIf: whatIf)
                     .staggered(1)
@@ -126,12 +126,29 @@ struct ClassDetailView: View {
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button {
-                    Task { await model.ensureDetail(courseID, lit, force: true) }
+                // Everything secondary for this class in one menu.
+                Menu {
+                    Button {
+                        Task { await model.ensureDetail(courseID, lit, force: true) }
+                    } label: {
+                        Label("Refresh Assignments", systemImage: "arrow.clockwise")
+                    }
+                    .disabled(model.isLoadingDetail(courseID, lit))
+                    Menu {
+                        ForEach([80.0, 85, 89.5, 90, 93, 95, 97], id: \.self) { value in
+                            Button(Fmt.percent(value)) { withAnimation(.snappy) { model.setGoal(value, for: courseID) } }
+                        }
+                        if model.goal(for: courseID) != nil {
+                            Divider()
+                            Button("Remove Goal", role: .destructive) { withAnimation(.snappy) { model.setGoal(nil, for: courseID) } }
+                        }
+                    } label: {
+                        Label(model.goal(for: courseID) == nil ? "Set a Goal" : "Change Goal", systemImage: "target")
+                    }
                 } label: {
-                    Label("Refresh", systemImage: "arrow.clockwise")
+                    Label("More", systemImage: "ellipsis.circle")
                 }
-                .disabled(model.isLoadingDetail(courseID, lit))
+                .menuIndicator(.hidden)
             }
         }
         .sheet(item: $selectedAssignment) { assignment in
@@ -287,39 +304,25 @@ struct ClassDetailView: View {
 
     @ViewBuilder
     private func goalCard(course: Course, lit: String, detail: GradeDetail?, current: Double?, whatIf: WhatIf) -> some View {
-        let goal = model.goal(for: courseID)
+        // No goal yet: nothing here. Setting one is in the "…" menu.
+        if let goal = model.goal(for: courseID) {
+            goalCardBody(goal: goal, detail: detail, current: current, whatIf: whatIf)
+        }
+    }
+
+    private func goalCardBody(goal: Double, detail: GradeDetail?, current: Double?, whatIf: WhatIf) -> some View {
         Card(padding: 14) {
             HStack(alignment: .center, spacing: 12) {
                 VStack(alignment: .leading, spacing: 3) {
-                    if let goal {
-                        Text("Goal \(Fmt.percent(goal))").font(.headline)
-                        Text(goalMessage(goal: goal, current: current, detail: detail, whatIf: whatIf))
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                    } else {
-                        Text("Set a goal").font(.headline)
-                        Text("See what you need on upcoming work and get a notice if this class drops below it.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
+                    Text("Goal \(Fmt.percent(goal))").font(.headline)
+                    Text(goalMessage(goal: goal, current: current, detail: detail, whatIf: whatIf))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 8)
-                Menu {
-                    ForEach([80.0, 85, 89.5, 90, 93, 95, 97], id: \.self) { value in
-                        Button(Fmt.percent(value)) { model.setGoal(value, for: courseID) }
-                    }
-                    if goal != nil {
-                        Divider()
-                        Button("Remove Goal", role: .destructive) { model.setGoal(nil, for: courseID) }
-                    }
-                } label: {
-                    Text(goal == nil ? "Choose" : "Change")
-                }
-                .menuStyle(.borderlessButton)
-                .fixedSize()
             }
-            if let goal, let current {
+            if let current {
                 GoalBar(current: current, goal: goal)
             }
         }

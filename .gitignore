@@ -12,3 +12,6 @@ xcuserdata/
 HANDOFF.md
 ANTIGRAVITY_PROMPT.md
 AGENTS.md
+
+# Firebase settings: built into the app, kept out of the public repo
+app/SkywardPlus/Resources/GoogleService-Info.plist

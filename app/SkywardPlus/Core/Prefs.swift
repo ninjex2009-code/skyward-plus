@@ -72,99 +72,86 @@ enum Appearance: String, Codable, CaseIterable, Identifiable {
 }
 
 /// Atmospheric page & card background themes that adapt to both Light and Dark mode.
+/// The look of the app: a slowly drifting field of colour behind frosted cards.
+/// Each theme sets its own light or dark look and its own accent colour.
 enum BackgroundTheme: String, Codable, CaseIterable, Identifiable {
-    case standard, tinted, midnight, aurora, evergreen, espresso, dusk, oled
+    case midnight, obsidian, aurora, sunset, ember, forest, ocean, paper, graphite
 
     var id: String { rawValue }
 
+    /// Themes from before 1.2 map onto the nearest new one.
+    init(from decoder: Decoder) throws {
+        let raw = try decoder.singleValueContainer().decode(String.self)
+        self = BackgroundTheme(rawValue: raw) ?? BackgroundTheme.legacy[raw] ?? .midnight
+    }
+
+    static let legacy: [String: BackgroundTheme] = [
+        "standard": .graphite, "tinted": .midnight, "evergreen": .forest,
+        "espresso": .ember, "dusk": .sunset, "oled": .obsidian,
+    ]
+
     var title: String {
         switch self {
-        case .standard: return "Neutral"
-        case .tinted: return "Accent Wash"
         case .midnight: return "Midnight"
+        case .obsidian: return "Obsidian"
         case .aurora: return "Aurora"
-        case .evergreen: return "Evergreen"
-        case .espresso: return "Espresso"
-        case .dusk: return "Twilight"
-        case .oled: return "Pure Pitch"
+        case .sunset: return "Sunset"
+        case .ember: return "Ember"
+        case .forest: return "Forest"
+        case .ocean: return "Ocean"
+        case .paper: return "Paper"
+        case .graphite: return "Graphite"
         }
     }
 
-    var subtitle: String {
+    var isDark: Bool {
         switch self {
-        case .standard: return "System surface"
-        case .tinted: return "Matches accent"
-        case .midnight: return "Deep navy slate"
-        case .aurora: return "Teal & indigo"
-        case .evergreen: return "Botanical pine"
-        case .espresso: return "Warm stone"
-        case .dusk: return "Plum twilight"
-        case .oled: return "High contrast"
+        case .ocean, .paper, .graphite: return false
+        default: return true
         }
     }
 
-    var darkPageHex: UInt32 {
+    var accent: ThemeColor {
         switch self {
-        case .standard: return 0x121316
-        case .tinted: return 0x10141D
-        case .midnight: return 0x0A101F
-        case .aurora: return 0x08181E
-        case .evergreen: return 0x0B1713
-        case .espresso: return 0x161210
-        case .dusk: return 0x130F21
-        case .oled: return 0x000000
+        case .midnight: return .sky
+        case .obsidian: return .sky
+        case .aurora: return .forest
+        case .sunset: return .sunset
+        case .ember: return .crimson
+        case .forest: return .teal
+        case .ocean: return .sky
+        case .paper: return .indigo
+        case .graphite: return .graphite
         }
     }
 
-    var darkCardHex: UInt32 {
+    /// The colour under everything, 0xRRGGBB.
+    var base: UInt32 {
         switch self {
-        case .standard: return 0x1C1E24
-        case .tinted: return 0x181F2C
-        case .midnight: return 0x131D33
-        case .aurora: return 0x10262E
-        case .evergreen: return 0x13261F
-        case .espresso: return 0x221C18
-        case .dusk: return 0x1D1732
-        case .oled: return 0x0D0F14
+        case .midnight: return 0x050A1C
+        case .obsidian: return 0x040405
+        case .aurora: return 0x041311
+        case .sunset: return 0x170A1C
+        case .ember: return 0x120C0B
+        case .forest: return 0x06120D
+        case .ocean: return 0xE6F2FB
+        case .paper: return 0xF6F1E7
+        case .graphite: return 0xECEEF2
         }
     }
 
-    var lightPageHex: UInt32 {
+    /// Three glows that drift over the base, 0xRRGGBB.
+    var glows: [UInt32] {
         switch self {
-        case .standard: return 0xF4F5F7
-        case .tinted: return 0xF2F6FC
-        case .midnight: return 0xEDF2FA
-        case .aurora: return 0xECFAF8
-        case .evergreen: return 0xEFF7F3
-        case .espresso: return 0xF8F3EC
-        case .dusk: return 0xF4F1FA
-        case .oled: return 0xFFFFFF
-        }
-    }
-
-    var lightCardHex: UInt32 {
-        switch self {
-        case .standard: return 0xFFFFFF
-        case .tinted: return 0xFFFFFF
-        case .midnight: return 0xF9FBFF
-        case .aurora: return 0xF7FFFE
-        case .evergreen: return 0xF9FDFB
-        case .espresso: return 0xFFFDF9
-        case .dusk: return 0xFCFAFF
-        case .oled: return 0xF6F8FA
-        }
-    }
-
-    var glowHex: UInt32 {
-        switch self {
-        case .standard: return 0x64748B
-        case .tinted: return 0x2F80ED
-        case .midnight: return 0x3B82F6
-        case .aurora: return 0x14B8A6
-        case .evergreen: return 0x10B981
-        case .espresso: return 0xD97706
-        case .dusk: return 0x8B5CF6
-        case .oled: return 0x38BDF8
+        case .midnight: return [0x1D4ED8, 0x172B6E, 0x0B6E99]
+        case .obsidian: return [0x1B1E25, 0x121418, 0x1E2128]
+        case .aurora: return [0x0F766E, 0x15803D, 0x6D28D9]
+        case .sunset: return [0x7E22CE, 0xEA580C, 0xBE185D]
+        case .ember: return [0xB91C1C, 0xC2620A, 0x5A1F14]
+        case .forest: return [0x166534, 0x4D6B12, 0x0F6E6A]
+        case .ocean: return [0x7CCBF5, 0x6EE7D6, 0xAFB9FA]
+        case .paper: return [0xE6D2AE, 0xF0DFC6, 0xCFDDEB]
+        case .graphite: return [0xC5CEDB, 0xDDE3EC, 0xCDD1D8]
         }
     }
 }
@@ -223,7 +210,7 @@ struct AppSettings: Codable, Hashable {
     var windowGlow = true
 
     var backgroundTheme: BackgroundTheme {
-        get { backgroundThemeRaw ?? .tinted }
+        get { backgroundThemeRaw ?? .midnight }
         set { backgroundThemeRaw = newValue }
     }
 

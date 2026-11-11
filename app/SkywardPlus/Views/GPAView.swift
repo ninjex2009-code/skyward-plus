@@ -31,7 +31,7 @@ struct GPAView: View {
         let result = GPA.compute(allEntries)
         let currentOnly = GPA.compute(currentEntries)
 
-        Screen(title: "GPA") {
+        Screen(title: "GPA", maxWidth: 1000) {
             MarkingPeriodBar()
                 .staggered(0)
 
@@ -145,20 +145,15 @@ struct GPAView: View {
 
     private func currentCoursesSection(entries: [GPAEntry], lit: String) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader("\(lit.isEmpty ? "Current" : lit) Classes", subtitle: sizeClass == .compact ? "Tap a grade to try a different one." : "Click a grade to try a different one. Level and credits change the weighting.")
+            SectionHeader("\(lit.isEmpty ? "Current" : lit) Classes", subtitle: sizeClass == .compact ? "Tap a grade to try a different one." : "Click a grade to try a different one.")
             if entries.isEmpty {
                 Card {
                     EmptyState(symbol: "graduationcap", title: "No graded classes in \(lit)", message: "Choose a marking period with grades to calculate GPA.")
                 }
             } else {
-                Card(padding: 0) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(entries.enumerated()), id: \.element.id) { index, entry in
-                            HoverRow {
-                                entryRow(entry: entry, isCurrent: true)
-                            }
-                            .rowDivider(index < entries.count - 1)
-                        }
+                RowGroup(items: entries) { entry in
+                    HoverRow {
+                        entryRow(entry: entry, isCurrent: true)
                     }
                 }
             }
@@ -175,14 +170,9 @@ struct GPAView: View {
                     let yearGPA = GPA.compute(list)
                     VStack(alignment: .leading, spacing: 10) {
                         SectionHeader(year, subtitle: "Weighted \(Fmt.gpa(yearGPA.weighted)) · Unweighted \(Fmt.gpa(yearGPA.unweighted)) · \(Fmt.points(yearGPA.credits)) cr")
-                        Card(padding: 0) {
-                            VStack(spacing: 0) {
-                                ForEach(Array(list.enumerated()), id: \.element.id) { index, entry in
-                                    HoverRow {
-                                        entryRow(entry: entry, isCurrent: false)
-                                    }
-                                    .rowDivider(index < list.count - 1)
-                                }
+                        RowGroup(items: list) { entry in
+                            HoverRow {
+                                entryRow(entry: entry, isCurrent: false)
                             }
                         }
                     }
@@ -241,9 +231,11 @@ struct GPAView: View {
                             }
                         }
                     } label: {
-                        Text(entry.level.shortTitle).font(.subheadline)
+                        MenuChip(text: entry.level.shortTitle)
                     }
-                    .menuStyle(.borderlessButton)
+                    .menuStyle(.button)
+                    .buttonStyle(.plain)
+                    .menuIndicator(.hidden)
                     .fixedSize()
 
                     Menu {
@@ -253,10 +245,11 @@ struct GPAView: View {
                             }
                         }
                     } label: {
-                        Text("\(Fmt.points(entry.credits)) \(entry.credits == 1 ? "credit" : "credits")")
-                            .font(.subheadline)
+                        MenuChip(text: "\(Fmt.points(entry.credits)) \(entry.credits == 1 ? "credit" : "credits")")
                     }
-                    .menuStyle(.borderlessButton)
+                    .menuStyle(.button)
+                    .buttonStyle(.plain)
+                    .menuIndicator(.hidden)
                     .fixedSize()
 
                     if let w = entry.weighted, let uw = entry.unweighted {
@@ -411,5 +404,25 @@ struct GPAScaleSheet: View {
         .toolbar {
             ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
         }
+    }
+}
+
+
+/// A small pill that opens a menu: big enough to hit, quiet enough to ignore.
+private struct MenuChip: View {
+    @Environment(AppModel.self) private var model
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Text(text)
+            Image(systemName: "chevron.up.chevron.down").font(.caption2.weight(.semibold))
+        }
+        .font(.subheadline.weight(.medium))
+        .foregroundStyle(.primary)
+        .padding(.horizontal, 10)
+        .frame(minHeight: 28)
+        .background(model.theme.color.opacity(0.28), in: Capsule())
+        .contentShape(Capsule())
     }
 }

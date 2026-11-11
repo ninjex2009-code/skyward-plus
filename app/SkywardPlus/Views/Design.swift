@@ -32,34 +32,125 @@ extension ThemeColor {
 }
 
 extension BackgroundTheme {
-    func pageColor(for scheme: ColorScheme) -> Color {
-        if self == .standard {
-            #if os(macOS)
-            return Color(nsColor: .windowBackgroundColor)
-            #else
-            return Color(uiColor: .systemGroupedBackground)
-            #endif
-        }
-        return Color(hex: scheme == .dark ? darkPageHex : lightPageHex)
-    }
+    var baseColor: Color { Color(hex: base) }
+    var glowColors: [Color] { glows.map { Color(hex: $0) } }
 
-    func cardColor(for scheme: ColorScheme) -> Color {
-        if self == .standard {
-            #if os(macOS)
-            return Color(nsColor: .controlBackgroundColor)
-            #else
-            return Color(uiColor: .secondarySystemGroupedBackground)
-            #endif
-        }
-        return Color(hex: scheme == .dark ? darkCardHex : lightCardHex)
-    }
+    /// Kept for older call sites: the page is the theme's base colour.
+    func pageColor(for scheme: ColorScheme) -> Color { baseColor }
 
-    func glowColor(accent: ThemeColor) -> Color {
+    /// What a card lays over the glass. Dark themes get a deep panel in the theme's
+    /// own darkest colour, so cards sit clearly in front of the bright glows; light
+    /// themes get a near-opaque milk.
+    var cardTint: Color {
         switch self {
-        case .standard: return accent.color.opacity(0.35)
-        case .tinted: return accent.color
-        default: return Color(hex: glowHex)
+        case .midnight: return Color(hex: 0x081230).opacity(0.62)
+        case .obsidian: return Color(hex: 0x111215).opacity(0.86)
+        case .aurora: return Color(hex: 0x03140F).opacity(0.62)
+        case .sunset: return Color(hex: 0x1C0A20).opacity(0.60)
+        case .ember: return Color(hex: 0x170C0A).opacity(0.64)
+        case .forest: return Color(hex: 0x05120B).opacity(0.62)
+        case .ocean: return Color.white.opacity(0.80)
+        case .paper: return Color(hex: 0xFFFCF6).opacity(0.86)
+        case .graphite: return Color.white.opacity(0.86)
         }
+    }
+    var cardStroke: Color { isDark ? Color.white.opacity(0.12) : Color.black.opacity(0.08) }
+    /// The edge of a card under the pointer.
+    var hoverStroke: Color { isDark ? Color.white.opacity(0.32) : accent.color.opacity(0.55) }
+    var cardShadow: Color { Color.black.opacity(isDark ? 0.42 : 0.12) }
+
+    /// Kept for older call sites.
+    func cardColor(for scheme: ColorScheme) -> Color { cardTint }
+    func glowColor(accent: ThemeColor) -> Color { glowColors.first ?? accent.color }
+}
+
+// MARK: - Surfaces
+
+/// A frosted card over the theme: Liquid Glass on macOS and iOS 26, a thin
+/// material before that, with the theme's panel colour over it, a hairline edge
+/// and a soft drop shadow so it separates clearly from the colour field behind.
+///
+/// Hoverable surfaces (anything you can click) answer the pointer: the edge
+/// brightens, the shadow deepens, the card rises a point and a soft light follows
+/// the pointer, all clipped to the card's own rounded shape.
+private struct SurfaceModifier: ViewModifier {
+    @Environment(\.backgroundTheme) private var theme
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isEnabled) private var isEnabled
+    var cornerRadius: CGFloat
+    var elevated: Bool
+    var hoverable: Bool
+    @State private var point: CGPoint?
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        let hovering = hoverable && isEnabled && point != nil
+        content
+            .environment(\.inHoverSurface, hoverable)
+            .background {
+                ZStack {
+                    glass(shape)
+                    shape.fill(theme.cardTint)
+                    if hovering, let point, !reduceMotion {
+                        GeometryReader { geo in
+                            RadialGradient(
+                                colors: [Color.white.opacity(theme.isDark ? 0.10 : 0.55), .clear],
+                                center: UnitPoint(x: point.x / max(geo.size.width, 1), y: point.y / max(geo.size.height, 1)),
+                                startRadius: 0,
+                                endRadius: max(120, geo.size.width * 0.55)
+                            )
+                        }
+                        .clipShape(shape)
+                        .transition(.opacity)
+                    }
+                }
+            }
+            .overlay {
+                shape.strokeBorder(hovering ? theme.hoverStroke : theme.cardStroke, lineWidth: hovering ? 1 : 0.75)
+                    .allowsHitTesting(false)
+            }
+            .compositingGroup()
+            .shadow(color: hovering ? Color.black.opacity(theme.isDark ? 0.55 : 0.18) : theme.cardShadow,
+                    radius: hovering ? 18 : (elevated ? 18 : 10), y: hovering ? 8 : (elevated ? 9 : 4))
+            .onContinuousHover(coordinateSpace: .local) { phase in
+                guard hoverable else { return }
+                switch phase {
+                case .active(let location): point = location
+                case .ended: point = nil
+                }
+            }
+            .offset(y: hovering && !reduceMotion ? -1.5 : 0)
+            .animation(.easeOut(duration: 0.18), value: hovering)
+    }
+
+    @ViewBuilder
+    private func glass(_ shape: RoundedRectangle) -> some View {
+        if #available(macOS 26, iOS 26, *) {
+            Color.clear.glassEffect(.regular, in: shape)
+        } else {
+            shape.fill(.ultraThinMaterial)
+        }
+    }
+}
+
+private struct InHoverSurfaceKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// True inside a surface that already answers the pointer, so rows inside it
+    /// don't add a second hover look of their own.
+    var inHoverSurface: Bool {
+        get { self[InHoverSurfaceKey.self] }
+        set { self[InHoverSurfaceKey.self] = newValue }
+    }
+}
+
+extension View {
+    /// The standard card surface. `elevated` for things that float (menus, palettes);
+    /// `hoverable` for anything clickable.
+    func surface(cornerRadius: CGFloat = 16, elevated: Bool = false, hoverable: Bool = false) -> some View {
+        modifier(SurfaceModifier(cornerRadius: cornerRadius, elevated: elevated, hoverable: hoverable))
     }
 }
 
@@ -98,7 +189,10 @@ struct WindowMetrics: Equatable {
     }
 
     /// Keeps lines and tables at a readable length on large displays.
-    var contentMaxWidth: CGFloat { 1040 }
+    var contentMaxWidth: CGFloat { 1320 }
+
+    /// Room for side-by-side columns (in layout points, after scaling).
+    var columns: Int { width >= 1080 ? 3 : (width >= 760 ? 2 : 1) }
 
     func statColumns(count: Int = 4) -> [GridItem] {
         let cols: Int
@@ -128,7 +222,7 @@ private struct WindowMetricsKey: EnvironmentKey {
 }
 
 private struct BackgroundThemeKey: EnvironmentKey {
-    static let defaultValue: BackgroundTheme = .tinted
+    static let defaultValue: BackgroundTheme = .midnight
 }
 
 private struct AccentThemeKey: EnvironmentKey {
@@ -166,111 +260,108 @@ struct StatGrid<Content: View>: View {
     }
 }
 
-/// The page surface: the background theme's colour, nothing else.
+/// Behind every screen: the theme's base colour with three soft glows drifting
+/// very slowly over it. Still under Reduce Motion and when the window is not in use.
 struct PageBackground: View {
-    @Environment(\.backgroundTheme) private var bgTheme
-    @Environment(\.colorScheme) private var scheme
-
+    @Environment(\.backgroundTheme) private var theme
     @Environment(\.windowTranslucent) private var translucent
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.scenePhase) private var phase
 
     var body: some View {
-        // Translucent: the theme colour is laid over the blurred desktop, thick
-        // enough that text keeps its contrast and thin enough to feel like glass.
-        bgTheme.pageColor(for: scheme)
-            .opacity(translucent ? (scheme == .dark ? 0.80 : 0.86) : 1)
-            .ignoresSafeArea()
-            .animation(.easeInOut(duration: 0.25), value: bgTheme)
+        TimelineView(.animation(minimumInterval: 1.0 / 24, paused: reduceMotion || phase != .active)) { context in
+            let t = reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate
+            ThemeField(theme: theme, time: t)
+        }
+        .opacity(translucent ? 0.9 : 1)
+        .ignoresSafeArea()
+        .animation(.easeInOut(duration: 0.6), value: theme)
+        .accessibilityHidden(true)
     }
 }
 
-/// Interactive visual picker for BackgroundTheme used in Settings and First-Time Setup.
+/// One frame of a theme's colour field. Also used, still, for the theme swatches.
+struct ThemeField: View {
+    let theme: BackgroundTheme
+    var time: TimeInterval = 0
+
+    var body: some View {
+        GeometryReader { geo in
+            let w = geo.size.width, h = geo.size.height
+            let d = max(w, h)
+            // Each glow wanders on its own slow loop (periods of 70 to 110 seconds).
+            let paths: [(x: Double, y: Double, ax: Double, ay: Double, period: Double, size: Double, alpha: Double)] = [
+                (0.18, 0.12, 0.10, 0.08, 97, 1.05, theme.isDark ? 0.85 : 0.75),
+                (0.86, 0.30, 0.08, 0.12, 113, 0.95, theme.isDark ? 0.70 : 0.70),
+                (0.42, 0.95, 0.14, 0.06, 71, 1.15, theme.isDark ? 0.55 : 0.60),
+            ]
+            ZStack {
+                theme.baseColor
+                ForEach(0..<3, id: \.self) { i in
+                    let p = paths[i]
+                    let phase = time / p.period * 2 * .pi
+                    let size = d * p.size
+                    Circle()
+                        .fill(RadialGradient(
+                            colors: [theme.glowColors[i].opacity(p.alpha), theme.glowColors[i].opacity(0)],
+                            center: .center, startRadius: 0, endRadius: size / 2
+                        ))
+                        .frame(width: size, height: size)
+                        .position(
+                            x: w * (p.x + p.ax * sin(phase + Double(i))),
+                            y: h * (p.y + p.ay * cos(phase * 0.8 + Double(i) * 2))
+                        )
+                }
+            }
+            .frame(width: w, height: h)
+            .clipped()
+        }
+    }
+}
+
+/// The theme gallery: each swatch is a little window of the theme with a card on it.
 struct BackgroundThemePicker: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.colorScheme) private var scheme
     @Environment(\.windowMetrics) private var metrics
+    var columns = 3
 
     var body: some View {
         let current = model.settings.backgroundTheme
-        let accent = model.theme
-        let cols = [GridItem(.adaptive(minimum: metrics.scaled(124), maximum: 190), spacing: 10)]
-
-        LazyVGrid(columns: cols, spacing: 10) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: columns), spacing: 12) {
             ForEach(BackgroundTheme.allCases) { item in
-                let isSelected = item == current
-                let pageCol = item.pageColor(for: scheme)
-                let cardCol = item.cardColor(for: scheme)
-                let glowCol = item.glowColor(accent: accent)
-
+                let selected = item == current
                 Button {
-                    withAnimation(Motion.snappy) {
+                    withAnimation(.easeInOut(duration: 0.4)) {
                         model.updateSettings { $0.backgroundTheme = item }
                     }
                 } label: {
-                    VStack(alignment: .leading, spacing: 8) {
-                        ZStack(alignment: .bottomLeading) {
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .fill(pageCol)
-                                .overlay(
-                                    RadialGradient(
-                                        colors: [glowCol.opacity(item == .standard ? 0.0 : 0.28), .clear],
-                                        center: .topLeading,
-                                        startRadius: 4,
-                                        endRadius: 70
-                                    )
-                                    .clipShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
-                                )
-                                .frame(height: metrics.scaled(42))
-
-                            HStack(spacing: 6) {
-                                RoundedRectangle(cornerRadius: 5, style: .continuous)
-                                    .fill(cardCol)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 5, style: .continuous)
-                                            .strokeBorder(glowCol.opacity(0.35), lineWidth: 0.8)
-                                    )
-                                    .frame(width: 48, height: 22)
-                                Spacer()
-                                Circle()
-                                    .fill(glowCol)
-                                    .frame(width: 12, height: 12)
-                            }
-                            .padding(8)
+                    VStack(spacing: 8) {
+                        ZStack {
+                            ThemeField(theme: item)
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .fill(item.cardTint)
+                                .overlay { RoundedRectangle(cornerRadius: 7, style: .continuous).strokeBorder(item.cardStroke, lineWidth: 0.75) }
+                                .overlay(alignment: .trailing) {
+                                    Capsule().fill(item.accent.color).frame(width: 18, height: 8).padding(.trailing, 8)
+                                }
+                                .padding(.horizontal, 12)
+                                .frame(height: 24)
                         }
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 9, style: .continuous)
-                                .strokeBorder(Palette.hairline, lineWidth: 1)
-                        )
-
-                        HStack(spacing: 4) {
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(item.title)
-                                    .font(.caption.weight(.bold))
-                                    .foregroundStyle(isSelected ? accent.color : .primary)
-                                    .lineLimit(1)
-                                Text(item.subtitle)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                            }
-                            Spacer(minLength: 2)
-                            if isSelected {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.caption.weight(.bold))
-                                    .foregroundStyle(accent.color)
-                            }
+                        .frame(height: 70)
+                        .clipShape(.rect(cornerRadius: 12, style: .continuous))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .strokeBorder(selected ? item.accent.color : Color.primary.opacity(0.1), lineWidth: selected ? 2.5 : 1)
                         }
+                        Text(item.title)
+                            .font(.subheadline.weight(selected ? .semibold : .regular))
+                            .foregroundStyle(selected ? .primary : .secondary)
                     }
-                    .padding(9)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .fill(isSelected ? accent.color.opacity(0.10) : Palette.inset)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                            .strokeBorder(isSelected ? accent.color : Palette.hairline, lineWidth: isSelected ? 1.5 : 1)
-                    )
+                    .contentShape(Rectangle())
                 }
-                .buttonStyle(ScaleButtonStyle())
+                .buttonStyle(BubbleButtonStyle())
+                .accessibilityLabel(item.title + (item.isDark ? ", dark" : ", light"))
+                .accessibilityAddTraits(selected ? .isSelected : [])
             }
         }
     }
@@ -596,21 +687,18 @@ struct Card<Content: View>: View {
     @ViewBuilder var content: Content
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 12)
         VStack(alignment: .leading, spacing: 12) { content }
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(bgTheme.cardColor(for: scheme), in: shape)
             .overlay(alignment: .leading) {
                 if let tint {
-                    UnevenRoundedRectangle(topLeadingRadius: 12, bottomLeadingRadius: 12)
+                    UnevenRoundedRectangle(topLeadingRadius: 16, bottomLeadingRadius: 16, style: .continuous)
                         .fill(tint)
-                        .frame(width: 3)
+                        .frame(width: 4)
                 }
             }
-            .clipShape(shape)
-            .overlay { shape.strokeBorder(Palette.hairline, lineWidth: 0.5) }
-            .shadow(color: .black.opacity(scheme == .dark ? 0 : 0.035), radius: 1.5, y: 1)
+            .clipShape(.rect(cornerRadius: 16, style: .continuous))
+            .surface(cornerRadius: 16)
     }
 }
 
@@ -619,8 +707,14 @@ struct HoverRow<Content: View>: View {
     var tint: Color? = nil
     @ViewBuilder var content: Content
 
+    @Environment(\.inHoverSurface) private var inHoverSurface
+
     var body: some View {
-        content.hoverSheen()
+        if inHoverSurface {
+            content
+        } else {
+            content.hoverSheen(cornerRadius: 10, inset: 4)
+        }
     }
 }
 
@@ -628,20 +722,26 @@ struct HoverRow<Content: View>: View {
 struct Screen<Content: View>: View {
     var title: String
     var spacing: CGFloat = 16
+    /// The widest this page's column gets (in layout points); wider windows centre it.
+    var maxWidth: CGFloat? = nil
     @ViewBuilder var content: Content
     @State private var viewSize: CGSize = CGSize(width: 390, height: 844)
 
     var body: some View {
-        let metrics = WindowMetrics(width: max(320, viewSize.width), height: max(320, viewSize.height))
+        let scale = Screen.scale(forWidth: viewSize.width)
+        let metrics = WindowMetrics(width: max(320, viewSize.width / scale), height: max(320, viewSize.height / scale))
         ScrollView {
-            VStack(alignment: .leading, spacing: metrics.scaled(spacing)) {
-                content
+            ScaledLayout(scale: scale) {
+                VStack(alignment: .leading, spacing: metrics.scaled(spacing)) {
+                    content
+                }
+                .frame(maxWidth: min(metrics.contentMaxWidth, maxWidth ?? .infinity), alignment: .leading)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, metrics.horizontalPadding)
+                .padding(.top, metrics.scaled(12))
+                .padding(.bottom, metrics.scaled(60))
+                .scaleEffect(scale, anchor: .topLeading)
             }
-            .frame(maxWidth: metrics.contentMaxWidth, alignment: .leading)
-            .frame(maxWidth: .infinity)
-            .padding(.horizontal, metrics.horizontalPadding)
-            .padding(.top, metrics.scaled(12))
-            .padding(.bottom, metrics.scaled(60))
         }
         .background {
             GeometryReader { geo in
@@ -657,6 +757,35 @@ struct Screen<Content: View>: View {
         .background { PageBackground().overlay { PointerLight() } }
         .navigationTitle(title)
         .environment(\.windowMetrics, metrics)
+    }
+}
+
+extension Screen {
+    /// On the Mac a wider window draws everything larger, up to 1.35x, instead of
+    /// stretching rows across empty space. Phones and tablets keep system sizes.
+    static func scale(forWidth width: CGFloat) -> CGFloat {
+        #if os(macOS)
+        return min(1.35, max(1, (width / 1100 * 20).rounded() / 20))
+        #else
+        return 1
+        #endif
+    }
+}
+
+/// Lays its one child out at width / scale; the child draws itself scaled back up
+/// (scaleEffect from the top leading corner), so the result fills the full width.
+private struct ScaledLayout: Layout {
+    var scale: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        guard let child = subviews.first else { return .zero }
+        let inner = child.sizeThatFits(ProposedViewSize(width: proposal.width.map { $0 / scale }, height: proposal.height.map { $0 / scale }))
+        return CGSize(width: inner.width * scale, height: inner.height * scale)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        subviews.first?.place(at: bounds.origin, anchor: .topLeading,
+                              proposal: ProposedViewSize(width: bounds.width / scale, height: bounds.height / scale))
     }
 }
 
@@ -820,9 +949,7 @@ struct StatTile: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(14)
-        .background(bgTheme.cardColor(for: scheme), in: shape)
-        .overlay { shape.strokeBorder(Palette.hairline, lineWidth: 0.5) }
-        .shadow(color: .black.opacity(scheme == .dark ? 0 : 0.035), radius: 1.5, y: 1)
+        .surface(cornerRadius: 16)
         .accessibilityElement(children: .combine)
     }
 }
@@ -1232,6 +1359,7 @@ struct GoalBar: View {
 /// that follows the pointer, like light catching glass. Static under Reduce Motion.
 private struct HoverSheen: ViewModifier {
     var cornerRadius: CGFloat
+    var inset: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.colorScheme) private var scheme
     @State private var point: CGPoint?
@@ -1253,7 +1381,8 @@ private struct HoverSheen: ViewModifier {
                             }
                         }
                     }
-                    .clipShape(.rect(cornerRadius: cornerRadius))
+                    .clipShape(.rect(cornerRadius: cornerRadius, style: .continuous))
+                    .padding(inset)
                     .transition(.opacity)
                 }
             }
@@ -1285,8 +1414,8 @@ private struct HoverLift: ViewModifier {
 }
 
 extension View {
-    func hoverSheen(cornerRadius: CGFloat = 0) -> some View {
-        modifier(HoverSheen(cornerRadius: cornerRadius))
+    func hoverSheen(cornerRadius: CGFloat = 12, inset: CGFloat = 0) -> some View {
+        modifier(HoverSheen(cornerRadius: cornerRadius, inset: inset))
     }
 
     func hoverLift() -> some View {
@@ -1385,28 +1514,29 @@ struct SyncLine: View {
 
 // MARK: - Row groups
 
-/// A list of tappable rows. On the Mac and iPad they share one card with hairlines
-/// between them; on a phone each row is its own lifted bubble, which gives every
-/// option a bigger, clearly separate target for a thumb.
+/// A list of tappable rows, each its own lifted bubble with a little space between,
+/// so every option is a clearly separate target.
 struct RowGroup<Data: RandomAccessCollection, Row: View>: View where Data.Element: Identifiable {
     let items: Data
+    /// A full-width list: on a wide window it becomes two columns instead of
+    /// stretching every row across the screen.
+    var wide = false
     @ViewBuilder var row: (Data.Element) -> Row
     @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.windowMetrics) private var metrics
 
     var body: some View {
-        if isPhone {
-            VStack(spacing: 10) {
+        // Every option is its own lifted bubble: separate, clear targets everywhere.
+        if wide, metrics.width >= 980 {
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 10), GridItem(.flexible(), spacing: 10)], spacing: 10) {
                 ForEach(items) { item in
                     row(item).bubble()
                 }
             }
         } else {
-            let list = Array(items)
-            Card(padding: 0) {
-                VStack(spacing: 0) {
-                    ForEach(Array(list.enumerated()), id: \.element.id) { index, item in
-                        row(item).rowDivider(index < list.count - 1)
-                    }
+            VStack(spacing: isPhone ? 10 : 8) {
+                ForEach(items) { item in
+                    row(item).bubble()
                 }
             }
         }
@@ -1428,13 +1558,10 @@ private struct Bubble: ViewModifier {
     var cornerRadius: CGFloat = 16
 
     func body(content: Content) -> some View {
-        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
         content
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(bgTheme.cardColor(for: scheme), in: shape)
-            .overlay { shape.strokeBorder(Palette.hairline, lineWidth: 0.5) }
-            .shadow(color: .black.opacity(scheme == .dark ? 0.28 : 0.07), radius: 9, y: 4)
-            .contentShape(shape)
+            .surface(cornerRadius: cornerRadius, hoverable: true)
+            .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
     }
 }
 
@@ -1447,9 +1574,41 @@ extension View {
 /// Press feedback for a bubble: it settles into the page while your finger is on it.
 struct BubbleButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
+        BubbleButtonBody(configuration: configuration)
+    }
+}
+
+private struct BubbleButtonBody: View {
+    let configuration: ButtonStyleConfiguration
+    @Environment(\.isEnabled) private var isEnabled
+    @State private var hovering = false
+
+    var body: some View {
         configuration.label
+            .brightness(hovering && isEnabled && !configuration.isPressed ? 0.04 : 0)
             .scaleEffect(configuration.isPressed ? 0.975 : 1)
-            .opacity(configuration.isPressed ? 0.9 : 1)
+            .opacity(configuration.isPressed ? 0.9 : (isEnabled ? 1 : 0.5))
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+            .animation(.easeOut(duration: 0.15), value: hovering)
+            .onHover { hovering = $0 }
+    }
+}
+
+
+/// Two blocks side by side when the page is wide enough, one above the other
+/// otherwise. It reads the page's measured width, so it must sit inside a Screen.
+struct AdaptiveColumns<First: View, Second: View>: View {
+    @Environment(\.windowMetrics) private var metrics
+    @ViewBuilder var first: First
+    @ViewBuilder var second: Second
+
+    var body: some View {
+        let layout = metrics.width >= 980
+            ? AnyLayout(HStackLayout(alignment: .top, spacing: 20))
+            : AnyLayout(VStackLayout(alignment: .leading, spacing: 18))
+        layout {
+            first.frame(maxWidth: .infinity, alignment: .topLeading)
+            second.frame(maxWidth: .infinity, alignment: .topLeading)
+        }
     }
 }

@@ -122,6 +122,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 guard AppDelegate.isMainWindow(window) else { return }
                 if NSApp.activationPolicy() != .regular { NSApp.setActivationPolicy(.regular) }
                 AppDelegate.shared?.aura.attach(to: window)
+            #if DEBUG
+            if let raw = ProcessInfo.processInfo.environment["SKYWARDPLUS_WINDOW_SIZE"] {
+                let parts = raw.split(separator: "x").compactMap { Double($0) }
+                if parts.count == 2 {
+                    DispatchQueue.main.async {
+                        window.setFrame(NSRect(x: 40, y: 40, width: parts[0], height: parts[1]), display: true)
+                    }
+                }
+            }
+            #endif
             }
         })
         observers.append(NSWorkspace.shared.notificationCenter.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
@@ -139,6 +149,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         Task { await model.checkForUpdates(manual: false) }
+        Task { await AccountSync.shared.sync(model: model) }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -259,7 +270,10 @@ struct SkywardPlusApp: App {
         WindowGroup {
             RootView()
                 .environment(model)
-                .task { model.startScheduler() }
+                .task {
+                    model.startScheduler()
+                    await AccountSync.shared.sync(model: model)
+                }
                 #if DEBUG
                 .task { await EngineTest.runIfRequested() }
                 #endif

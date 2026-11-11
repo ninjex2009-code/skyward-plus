@@ -19,7 +19,7 @@ struct AttendanceView: View {
             return events.filter { SkyDate.calendar.isDate($0.date, inSameDayAs: selectedDate) }
         }()
 
-        Screen(title: "Attendance") {
+        Screen(title: "Attendance", maxWidth: 1200) {
             StatGrid(count: 4) {
                 StatTile(title: "Days with records", value: "\(events.count)")
                 StatTile(title: "Excused", value: "\(excused)")
@@ -28,20 +28,12 @@ struct AttendanceView: View {
             }
             .staggered(0)
 
-            if metrics.twoColumnSplit {
-                HStack(alignment: .top, spacing: metrics.scaled(16)) {
-                    calendarCard(events: events)
-                        .frame(maxWidth: 420)
-                    eventsListSection(filtered: filtered)
-                        .frame(maxWidth: .infinity)
-                }
-                .staggered(1)
-            } else {
+            AdaptiveColumns {
                 calendarCard(events: events)
-                    .staggered(1)
+            } second: {
                 eventsListSection(filtered: filtered)
-                    .staggered(2)
             }
+            .staggered(1)
         }
         .onAppear {
             displayedMonth = events.first?.date ?? model.now()
@@ -131,9 +123,13 @@ struct AttendanceView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.left")
+                        .font(.body.weight(.semibold))
+                        .frame(width: 36, height: 36)
+                        .background(Palette.inset, in: Circle())
+                        .contentShape(Circle())
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                .buttonStyle(BubbleButtonStyle())
+                .accessibilityLabel("Previous month")
 
                 Button {
                     withAnimation(Motion.snappy) {
@@ -141,9 +137,13 @@ struct AttendanceView: View {
                     }
                 } label: {
                     Image(systemName: "chevron.right")
+                        .font(.body.weight(.semibold))
+                        .frame(width: 36, height: 36)
+                        .background(Palette.inset, in: Circle())
+                        .contentShape(Circle())
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
+                .buttonStyle(BubbleButtonStyle())
+                .accessibilityLabel("Next month")
             }
 
             LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 7), spacing: 6) {
@@ -211,15 +211,7 @@ struct AttendanceView: View {
 // MARK: - Report Cards & Progress Reports
 
 struct ReportCardsView: View {
-    private enum Mode: String, CaseIterable, Identifiable {
-        case reportCards = "Report Cards"
-        case progressReports = "Progress Reports"
-        case allGrid = "Full Matrix"
-        var id: String { rawValue }
-    }
-
     @Environment(AppModel.self) private var model
-    @State private var mode: Mode = .reportCards
     @State private var pickedLit: String = ""
 
     var body: some View {
@@ -229,53 +221,28 @@ struct ReportCardsView: View {
             return buckets.last(where: { b in model.courses.contains { !($0.grade(b.lit)?.isEmpty ?? true) } })?.lit
                 ?? buckets.first?.lit ?? ""
         }()
+        let progress = model.reportsTab == .progress
 
-        Screen(title: "Report Cards") {
-            let kindPicker = Picker("Kind", selection: $mode.animation(.snappy)) {
-                ForEach(Mode.allCases) { m in Text(m.rawValue).tag(m) }
-            }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            let periodPicker = Group {
-                if mode != .allGrid, !buckets.isEmpty {
-                    Picker("Marking period", selection: Binding(get: { activeLit }, set: { pickedLit = $0 })) {
-                        ForEach(buckets) { b in Text(b.displayName).tag(b.lit) }
-                    }
-                    .labelsHidden()
-                    .fixedSize()
-                }
-            }
-            // One row when it fits; on a phone the period menu drops below.
-            ViewThatFits(in: .horizontal) {
-                HStack {
-                    kindPicker.fixedSize()
-                    Spacer()
-                    periodPicker
-                }
-                VStack(alignment: .leading, spacing: 8) {
-                    kindPicker
-                    periodPicker
-                }
-            }
-            .staggered(0)
+        Screen(title: progress ? "Progress Reports" : "Report Cards") {
+            ReportsModePicker()
+                .staggered(0)
 
-            if mode == .allGrid {
-                matrixCard
-                    .staggered(1)
-            } else if buckets.isEmpty {
+            if buckets.isEmpty {
                 Card {
                     EmptyState(
                         symbol: "doc.text",
-                        title: "No \(mode.rawValue.lowercased()) columns",
-                        message: "Switch to Full Matrix to see every grading column from Skyward."
+                        title: progress ? "No progress reports" : "No report cards yet",
+                        message: "Skyward hasn't posted any."
                     )
                 }
                 .staggered(1)
             } else {
+                PeriodChips(buckets: buckets, selected: activeLit) { lit in
+                    withAnimation(.snappy) { pickedLit = lit }
+                }
+                .staggered(1)
                 if !activeLit.isEmpty {
-                    GradesSummary(lit: activeLit)
-                        .staggered(2)
-                    RowGroup(items: model.courses) { course in
+                    RowGroup(items: model.courses, wide: true) { course in
                         NavigationLink(value: CourseRoute(courseID: course.id)) {
                             HoverRow {
                                 ClassRow(course: course, lit: activeLit)
@@ -283,83 +250,18 @@ struct ReportCardsView: View {
                         }
                         .buttonStyle(BubbleButtonStyle())
                     }
-                    .staggered(3)
+                    .staggered(2)
                 }
             }
         }
     }
 
     private var filteredBuckets: [TermBucket] {
-        switch mode {
-        case .reportCards:
-            return model.data.buckets.filter { $0.kind == .term || $0.kind == .semester || $0.kind == .final || $0.kind == .exam }
-        case .progressReports:
+        switch model.reportsTab {
+        case .progress:
             return model.data.buckets.filter { $0.kind == .progress }
-        case .allGrid:
-            return model.data.buckets
-        }
-    }
-
-    private var matrixCard: some View {
-        let buckets = model.data.buckets
-        let courses = model.courses
-        return Card(padding: 0) {
-            ScrollView(.horizontal, showsIndicators: true) {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: 8) {
-                        Text("Class")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                            .frame(width: 230, alignment: .leading)
-                        ForEach(buckets) { b in
-                            Text(b.lit)
-                                .font(.caption.weight(.bold))
-                                .foregroundStyle(b.lit == model.data.currentLit ? model.theme.color : .secondary)
-                                .frame(width: 48, alignment: .center)
-                        }
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .rowDivider(true)
-
-                    ForEach(Array(courses.enumerated()), id: \.element.id) { index, course in
-                        let style = SubjectStyle.forCourse(course.name)
-                        HoverRow {
-                            HStack(spacing: 8) {
-                                HStack(spacing: 8) {
-                                    Image(systemName: style.symbol)
-                                        .font(.system(size: 12, weight: .semibold))
-                                        .foregroundStyle(style.color)
-                                        .frame(width: 24, height: 24)
-                                        .background(style.color.opacity(0.14), in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(Str.titleCase(course.name))
-                                            .font(.subheadline.weight(.medium))
-                                            .lineLimit(1)
-                                        Text(Str.titleCase(course.teacher))
-                                            .font(.caption2)
-                                            .foregroundStyle(.secondary)
-                                            .lineLimit(1)
-                                    }
-                                }
-                                .frame(width: 230, alignment: .leading)
-
-                                ForEach(buckets) { b in
-                                    GradeBubble(
-                                        text: model.gradeText(course, b.lit),
-                                        percent: model.percent(course, b.lit),
-                                        size: .small
-                                    )
-                                    .frame(width: 48)
-                                }
-                            }
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                        }
-                        .rowDivider(index < courses.count - 1)
-                    }
-                }
-            }
+        default:
+            return model.data.buckets.filter { $0.kind == .term || $0.kind == .semester || $0.kind == .final || $0.kind == .exam }
         }
     }
 }
@@ -375,6 +277,7 @@ struct TranscriptView: View {
         let summary = GPA.compute(entries)
 
         Screen(title: "Transcript") {
+            ReportsModePicker()
             if years.isEmpty {
                 Card {
                     EmptyState(
@@ -479,7 +382,7 @@ struct TeachersView: View {
     var body: some View {
         let teachers = model.teachers
 
-        Screen(title: "Teachers") {
+        Screen(title: "Teachers", maxWidth: 1000) {
             Card {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {

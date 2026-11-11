@@ -14,7 +14,7 @@ struct GradesView: View {
                     EmptyState(
                         symbol: "tray",
                         title: model.syncState.isSyncing ? "Getting your grades" : "No classes yet",
-                        message: model.syncState.isSyncing ? "This takes a few seconds the first time." : "Pull to refresh, or check that your district publishes grades in Family Access."
+                        message: model.syncState.isSyncing ? "This takes a few seconds the first time." : "Refresh to load your classes."
                     )
                 }
             } else {
@@ -38,9 +38,30 @@ struct GradesView: View {
         .refreshable { await model.refresh() }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
-                Button("Edit") { editing = true }
-                    .disabled(model.data.courses.isEmpty)
-                    .help("Reorder or hide classes")
+                Menu {
+                    Button {
+                        Task { await model.refresh() }
+                    } label: {
+                        Label("Refresh Grades", systemImage: "arrow.clockwise")
+                    }
+                    .disabled(model.syncState.isSyncing)
+                    Button {
+                        editing = true
+                    } label: {
+                        Label("Reorder or Hide Classes", systemImage: "list.bullet")
+                    }
+                    #if os(macOS)
+                    Button {
+                        model.exportReport()
+                    } label: {
+                        Label("Export Grade Report", systemImage: "doc.richtext")
+                    }
+                    #endif
+                } label: {
+                    Label("More", systemImage: "ellipsis.circle")
+                }
+                .menuIndicator(.hidden)
+                .disabled(model.data.courses.isEmpty)
             }
         }
         .sheet(isPresented: $editing) {
@@ -59,11 +80,11 @@ struct GradesView: View {
                 EmptyState(
                     symbol: "calendar.badge.exclamationmark",
                     title: "Nothing in \(lit)",
-                    message: "No class has grades posted in this marking period yet. Pick another column above."
+                    message: "No grades posted yet."
                 )
             }
         } else {
-            RowGroup(items: courses) { course in
+            RowGroup(items: courses, wide: true) { course in
                 NavigationLink(value: CourseRoute(courseID: course.id)) {
                     HoverRow {
                         ClassRow(course: course, lit: lit)
@@ -83,123 +104,86 @@ struct GradesView: View {
 /// Chips for each gradebook column. The current one is marked with a dot and animated capsule.
 /// Every Skyward grading column in one track, like a segmented control.
 /// A dot marks the current marking period; columns without grades are dimmed.
+/// The quarters, as chips. Report cards, progress reports and exams live under
+/// Grades > Report Card instead, so this row stays short.
 struct MarkingPeriodBar: View {
     @Environment(AppModel.self) private var model
-    @Environment(\.colorScheme) private var scheme
-    @Environment(\.horizontalSizeClass) private var sizeClass
-    @Namespace private var bucketNamespace
 
     var body: some View {
-        #if os(iOS)
-        if sizeClass == .compact {
-            chips
-        } else {
-            track
+        let quarters = model.data.buckets.filter { $0.kind == .term }
+        let shown = quarters.isEmpty ? model.data.buckets : quarters
+        PeriodChips(
+            buckets: shown,
+            selected: model.selectedLit,
+            current: model.data.currentLit,
+            dim: { lit in !model.courses.contains { !($0.grade(lit)?.isEmpty ?? true) } }
+        ) { lit in
+            let choice: String? = lit == model.data.currentLit ? nil : lit
+            withAnimation(.snappy(duration: 0.25)) {
+                model.updatePrefs { $0.selectedLit = choice }
+            }
         }
-        #else
-        track
-        #endif
+        .onAppear {
+            // A report-card or progress column picked before 1.2 isn't on this row.
+            if let picked = model.prefs.selectedLit, !shown.contains(where: { $0.lit == picked }) {
+                model.updatePrefs { $0.selectedLit = nil }
+            }
+        }
     }
+}
 
-    /// Phone: each marking period is its own bubble, big enough for a thumb.
-    private var chips: some View {
-        let selected = model.selectedLit
-        let current = model.data.skywardCurrentLit ?? model.data.currentLit
-        return ScrollViewReader { proxy in
+/// A row of period chips, each a comfortable target. The current period has a dot.
+struct PeriodChips: View {
+    @Environment(AppModel.self) private var model
+    let buckets: [TermBucket]
+    let selected: String?
+    var current: String?
+    var dim: (String) -> Bool = { _ in false }
+    let choose: (String) -> Void
+
+    var body: some View {
+        ScrollViewReader { proxy in
             ScrollView(.horizontal) {
                 HStack(spacing: 8) {
-                    ForEach(model.data.buckets) { bucket in
+                    ForEach(buckets) { bucket in
                         let isOn = bucket.lit == selected
-                        let hasGrades = model.courses.contains { !($0.grade(bucket.lit)?.isEmpty ?? true) }
                         Button {
-                            let choice: String? = bucket.lit == model.data.currentLit ? nil : bucket.lit
-                            withAnimation(.snappy(duration: 0.25)) {
-                                model.updatePrefs { $0.selectedLit = choice }
-                            }
+                            choose(bucket.lit)
                         } label: {
                             HStack(spacing: 5) {
                                 if bucket.lit == current {
                                     Circle().fill(isOn ? Color.white : model.theme.color).frame(width: 5, height: 5)
                                 }
-                                Text(bucket.lit)
+                                Text(buckets.count <= 6 ? bucket.displayName : bucket.lit)
                                     .font(.subheadline.weight(isOn ? .semibold : .medium))
+                                    .lineLimit(1)
                             }
-                            .foregroundStyle(isOn ? Color.white : (hasGrades ? Color.primary : Color.secondary.opacity(0.6)))
+                            .foregroundStyle(isOn ? Color.white : (dim(bucket.lit) ? Color.secondary : Color.primary))
                             .padding(.horizontal, 16)
-                            .frame(minHeight: 40)
+                            .frame(minHeight: 38)
                             .background {
                                 if isOn {
                                     Capsule().fill(model.theme.color)
                                         .shadow(color: model.theme.color.opacity(0.35), radius: 6, y: 3)
                                 } else {
-                                    Capsule().fill(Palette.inset)
+                                    Capsule().fill(.clear).surface(cornerRadius: 19, hoverable: true)
                                 }
                             }
                             .contentShape(Capsule())
                         }
                         .buttonStyle(BubbleButtonStyle())
                         .id(bucket.lit)
+                        .help(bucket.displayName)
                         .accessibilityLabel(bucket.displayName + (bucket.lit == current ? ", current" : ""))
                         .accessibilityAddTraits(isOn ? .isSelected : [])
                     }
                 }
                 .padding(.vertical, 6)
-                .padding(.horizontal, 1)
+                .padding(.horizontal, 2)
             }
             .scrollIndicators(.hidden)
             .scrollClipDisabled()
             .sensoryFeedback(.selection, trigger: selected)
-            .onAppear { if let selected { proxy.scrollTo(selected, anchor: .center) } }
-        }
-    }
-
-    @ViewBuilder private var track: some View {
-        let selected = model.selectedLit
-        let current = model.data.skywardCurrentLit ?? model.data.currentLit
-        ScrollViewReader { proxy in
-            ScrollView(.horizontal) {
-                HStack(spacing: 2) {
-                    ForEach(model.data.buckets) { bucket in
-                        let isOn = bucket.lit == selected
-                        let hasGrades = model.courses.contains { !($0.grade(bucket.lit)?.isEmpty ?? true) }
-                        Button {
-                            let choice: String? = bucket.lit == model.data.currentLit ? nil : bucket.lit
-                            withAnimation(.snappy(duration: 0.25)) {
-                                model.updatePrefs { $0.selectedLit = choice }
-                            }
-                        } label: {
-                            Text(bucket.lit)
-                                .font(.subheadline.weight(isOn ? .semibold : .regular))
-                                .foregroundStyle(isOn ? Color.primary : (hasGrades ? Color.primary.opacity(0.75) : Color.secondary.opacity(0.55)))
-                                .frame(minWidth: 34)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 5)
-                                .overlay(alignment: .bottom) {
-                                    if bucket.lit == current {
-                                        Circle().fill(model.theme.color).frame(width: 4, height: 4).offset(y: 3)
-                                    }
-                                }
-                                .background {
-                                    if isOn {
-                                        RoundedRectangle(cornerRadius: 7)
-                                            .fill(scheme == .dark ? Color.white.opacity(0.16) : Color.white)
-                                            .shadow(color: .black.opacity(0.12), radius: 1.5, y: 0.5)
-                                            .matchedGeometryEffect(id: "activeBucket", in: bucketNamespace)
-                                    }
-                                }
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .id(bucket.lit)
-                        .help(bucket.displayName + (bucket.lit == current ? " (current)" : ""))
-                        .accessibilityLabel(bucket.displayName + (bucket.lit == current ? ", current" : ""))
-                        .accessibilityAddTraits(isOn ? .isSelected : [])
-                    }
-                }
-                .padding(3)
-                .background(Palette.inset, in: .rect(cornerRadius: 9))
-            }
-            .scrollIndicators(.hidden)
             .onAppear { if let selected { proxy.scrollTo(selected, anchor: .center) } }
         }
     }
@@ -336,7 +320,6 @@ struct ClassRow: View {
         .padding(.horizontal, 14)
         .padding(.vertical, model.settings.compactRows ? 7 : 11)
         .contentShape(Rectangle())
-        .hoverSheen()
         .onHover { hovering = $0 }
         .animation(.spring(response: 0.28, dampingFraction: 0.7), value: hovering)
     }

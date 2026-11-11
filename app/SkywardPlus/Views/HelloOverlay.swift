@@ -132,7 +132,7 @@ final class HelloWindow: NSWindow {
 // MARK: - Flow
 
 private enum SetupStep: Int, CaseIterable {
-    case hello, district, signIn, personalize, done
+    case hello, district, signIn, personalize, account, done
 }
 
 /// The setup flow itself. The Mac shows it in a full-screen overlay window; the
@@ -198,8 +198,10 @@ struct FirstRunView: View {
                                 go(.signIn)
                             }
                         },
-                        onContinue: { go(.done) }
+                        onContinue: { go(AccountSync.shared.isConfigured && !AccountSync.shared.isSignedIn ? .account : .done) }
                     )
+                case .account:
+                    AccountStep { go(.done) }
                 case .done:
                     DoneStep(onFinish: onFinish)
                 }
@@ -237,6 +239,33 @@ struct FirstRunView: View {
 
     private func go(_ next: SetupStep) {
         withAnimation(.spring(response: 0.55, dampingFraction: 0.88)) { step = next }
+    }
+}
+
+/// Optional: sign in so the planner and theme follow you to your other devices.
+private struct AccountStep: View {
+    let onContinue: () -> Void
+
+    var body: some View {
+        VStack(spacing: 28) {
+            StepTitle(title: "Keep it in sync", subtitle: "Sign in to keep your planner, goals and theme the same on your Mac and iPhone.")
+            GlassPanel(width: 420) {
+                GoogleButton(onSignedIn: onContinue)
+                    .environment(\.colorScheme, .dark)
+                if let error = AccountSync.shared.lastError {
+                    Text(error).font(.callout).foregroundStyle(Color(red: 1, green: 0.55, blue: 0.5))
+                }
+                Text("Grades stay on this device.")
+                    .font(.footnote)
+                    .foregroundStyle(.white.opacity(0.6))
+            }
+            Button("Skip") { onContinue() }
+                .buttonStyle(.plain)
+                .font(.body.weight(.medium))
+                .foregroundStyle(.white.opacity(0.75))
+                .frame(minWidth: 120, minHeight: 44)
+                .contentShape(Rectangle())
+        }
     }
 }
 
@@ -700,38 +729,10 @@ private struct PersonalizeStep: View {
     var body: some View {
         VStack(spacing: 28) {
             StepTitle(title: "Make it yours", subtitle: "You can change all of this later in Settings.")
-            GlassPanel(width: 480) {
-                row("Colour") {
-                    HStack(spacing: 5) {
-                        ForEach(ThemeColor.allCases) { theme in
-                            let selected = model.theme == theme
-                            Button {
-                                withAnimation(.snappy) { model.updateActive { $0.theme = theme } }
-                            } label: {
-                                Circle().fill(theme.color)
-                                    .frame(width: 20, height: 20)
-                                    .padding(3)
-                                    .overlay { Circle().strokeBorder(.white.opacity(selected ? 0.9 : 0), lineWidth: 2) }
-                            }
-                            .buttonStyle(.plain)
-                            .help(theme.title)
-                        }
-                    }
-                }
-                Divider().overlay(.white.opacity(0.1))
-                row("Appearance") {
-                    Picker("Appearance", selection: Binding(
-                        get: { model.settings.appearance },
-                        set: { value in model.updateSettings { $0.appearance = value } }
-                    )) {
-                        Text("Auto").tag(Appearance.system)
-                        Text("Light").tag(Appearance.light)
-                        Text("Dark").tag(Appearance.dark)
-                    }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
-                }
+            GlassPanel(width: 560) {
+                Text("Theme").font(.headline)
+                BackgroundThemePicker(columns: 3)
+                    .environment(\.colorScheme, .dark)
                 Divider().overlay(.white.opacity(0.1))
                 toggle("Tell me about new grades", \.notifyNewGrades, asksPermission: true)
                 toggle("Remind me the night before work is due", \.notifyDueTomorrow, asksPermission: true)

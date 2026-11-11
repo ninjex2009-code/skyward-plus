@@ -39,10 +39,10 @@ enum AppSection: String, CaseIterable, Identifiable, Hashable {
         }
     }
 
-    /// The four tabs on iPhone; everything else sits under More.
-    static let tabs: [AppSection] = [.home, .grades, .planner, .gpa]
-    /// Bell and Teachers live inside Schedule; Transcript inside Report Cards.
-    static let school: [AppSection] = [.schedule, .attendance, .reports]
+    /// The everyday sections (also the first iPhone tabs).
+    static let tabs: [AppSection] = [.home, .grades, .planner]
+    /// Bell and Teachers live inside Schedule.
+    static let school: [AppSection] = [.schedule, .attendance]
     static let app: [AppSection] = [.settings]
     /// Everything in the sidebar, in order (also ⌘1…⌘8).
     static let sidebar: [AppSection] = tabs + school + app
@@ -51,7 +51,7 @@ enum AppSection: String, CaseIterable, Identifiable, Hashable {
     var host: AppSection {
         switch self {
         case .bell, .teachers: return .schedule
-        case .transcript: return .reports
+        case .gpa, .reports, .transcript: return .grades
         case .students: return .settings
         default: return self
         }
@@ -74,12 +74,9 @@ struct RootView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.scenePhase) private var scenePhase
 
+    /// Each theme sets its own light or dark look.
     private var scheme: ColorScheme? {
-        switch model.settings.appearance {
-        case .system: return nil
-        case .light: return .light
-        case .dark: return .dark
-        }
+        model.settings.backgroundTheme.isDark ? .dark : .light
     }
 
     var body: some View {
@@ -268,12 +265,10 @@ struct SectionScreen: View {
     var body: some View {
         switch section {
         case .home: HomeView()
-        case .grades: GradesView()
+        case .grades, .gpa, .reports, .transcript: GradesHub()
         case .planner: PlannerView()
-        case .gpa: GPAView()
         case .schedule, .bell, .teachers: ScheduleHub()
         case .attendance: AttendanceView()
-        case .reports, .transcript: ReportsHub()
         case .students: StudentsView()
         case .settings: SettingsView()
         }
@@ -318,8 +313,9 @@ struct SidebarLayout: View {
                 }
             }
             .navigationTitle("Skyward Plus")
+            .environment(\.sidebarRowSize, .large)
             #if os(macOS)
-            .navigationSplitViewColumnWidth(min: 215, ideal: 240, max: 300)
+            .navigationSplitViewColumnWidth(min: 220, ideal: 250, max: 320)
             #endif
             .safeAreaInset(edge: .bottom) { SidebarFooter() }
         } detail: {
@@ -408,9 +404,11 @@ struct SidebarFooter: View {
                 Task { await model.refresh() }
             } label: {
                 Image(systemName: "arrow.clockwise")
-                    .font(.caption.weight(.semibold))
+                    .font(.callout.weight(.semibold))
                     .rotationEffect(.degrees(model.syncState.isSyncing ? 360 : 0))
                     .animation(model.syncState.isSyncing ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: model.syncState.isSyncing)
+                    .frame(width: 32, height: 32)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
             .disabled(model.syncState.isSyncing)
@@ -431,7 +429,7 @@ struct StudentsView: View {
     @State private var removing: Profile?
 
     var body: some View {
-        Screen(title: "Students") {
+        Screen(title: "Students", maxWidth: 720) {
             Card(padding: 0) {
                 VStack(spacing: 0) {
                     ForEach(Array(model.profiles.enumerated()), id: \.element.id) { index, profile in

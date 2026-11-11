@@ -41,6 +41,7 @@ struct PlannerView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("New Task", systemImage: "plus") { creatingTask = true }
+                    .labelStyle(.titleAndIcon)
                     .help("New task (⌘N)")
                     .keyboardShortcut("n", modifiers: .command)
             }
@@ -75,34 +76,25 @@ struct PlannerView: View {
         let openTasks = model.prefs.tasks.filter { !$0.done }.sorted { $0.due < $1.due }
         let skywardWork = model.upcomingAssignments.filter { !model.prefs.doneAssignments.contains($0.id) }
 
-        return VStack(alignment: .leading, spacing: 16) {
+        // Side by side on a wide window, stacked otherwise.
+        return AdaptiveColumns {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader("Your Tasks", subtitle: "\(openTasks.count) open")
                 if openTasks.isEmpty {
-                    if sizeClass == .compact {
-                        // On a phone an empty list is one tappable line, not a tall placeholder.
-                        Button {
-                            creatingTask = true
-                        } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: "plus.circle.fill").font(.title3).foregroundStyle(model.theme.color)
-                                Text("Add a task").foregroundStyle(.primary)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 14)
-                            .frame(minHeight: 52)
-                            .bubble()
+                    // An empty list is one tappable line, not a tall placeholder.
+                    Button {
+                        creatingTask = true
+                    } label: {
+                        HStack(spacing: 12) {
+                            Image(systemName: "plus.circle.fill").font(.title3).foregroundStyle(model.theme.color)
+                            Text("Add a task").foregroundStyle(.primary)
+                            Spacer()
                         }
-                        .buttonStyle(BubbleButtonStyle())
-                    } else {
-                        Card {
-                            EmptyState(
-                                symbol: "checklist",
-                                title: "No open tasks",
-                                message: "Add homework, study goals or test reminders and link them to your classes."
-                            )
-                        }
+                        .padding(.horizontal, 14)
+                        .frame(minHeight: 54)
+                        .bubble()
                     }
+                    .buttonStyle(BubbleButtonStyle())
                 } else {
                     RowGroup(items: openTasks) { task in
                         HoverRow {
@@ -112,6 +104,8 @@ struct PlannerView: View {
                 }
             }
 
+            .frame(maxWidth: .infinity, alignment: .topLeading)
+        } second: {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader("From Skyward", subtitle: "\(skywardWork.count) upcoming")
                 if skywardWork.isEmpty {
@@ -130,6 +124,7 @@ struct PlannerView: View {
                     }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .topLeading)
         }
     }
 
@@ -222,6 +217,8 @@ struct PlannerView: View {
                     .font(.title3)
                     .foregroundStyle(task.done ? tint : Color.secondary.opacity(0.6))
                     .contentTransition(.symbolEffect(.replace))
+                    .frame(width: 36, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(task.done ? "Mark not done" : "Mark done")
@@ -297,6 +294,8 @@ struct PlannerView: View {
                     .font(.title3)
                     .foregroundStyle(isDone ? model.theme.color : Color.secondary.opacity(0.6))
                     .contentTransition(.symbolEffect(.replace))
+                    .frame(width: 36, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .accessibilityLabel(isDone ? "Mark not done" : "Mark done")

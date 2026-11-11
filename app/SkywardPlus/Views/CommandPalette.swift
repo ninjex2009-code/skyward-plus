@@ -143,7 +143,7 @@ struct CommandPalette: View {
                 model.section = section
             })
         }
-        for tab in [AppSection.bell, .teachers, .transcript] where !q.isEmpty && matches(tab.title) {
+        for tab in [AppSection.gpa, .reports, .bell, .teachers, .transcript] where !q.isEmpty && matches(tab.title) {
             out.append(Item(id: "s-" + tab.rawValue, kind: .section, title: tab.title, subtitle: "", symbol: tab.symbol) { model in
                 model.section = tab
             })

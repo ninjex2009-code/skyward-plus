@@ -1,37 +1,126 @@
 import SwiftUI
 
+/// Settings as a short list of pages, each with a handful of choices.
+enum SettingsPage: String, CaseIterable, Identifiable, Hashable {
+    case student, account, appearance, notifications, syncing, mac, about
+
+    var id: String { rawValue }
+
+    static var shown: [SettingsPage] {
+        #if os(macOS)
+        return [.account, .appearance, .notifications, .syncing, .mac, .about]
+        #else
+        return [.account, .appearance, .notifications, .syncing, .about]
+        #endif
+    }
+
+    var title: String {
+        switch self {
+        case .student: return "Student"
+        case .account: return "Account"
+        case .appearance: return "Appearance"
+        case .notifications: return "Notifications"
+        case .syncing: return "Syncing"
+        case .mac: return "Mac"
+        case .about: return "About"
+        }
+    }
+
+    var symbol: String {
+        switch self {
+        case .student: return "person.crop.circle"
+        case .account: return "person.icloud"
+        case .appearance: return "paintpalette"
+        case .notifications: return "bell.badge"
+        case .syncing: return "arrow.triangle.2.circlepath"
+        case .mac: return "macbook"
+        case .about: return "info.circle"
+        }
+    }
+}
+
 struct SettingsView: View {
     @Environment(AppModel.self) private var model
-    @State private var editingClasses = false
+
+    var body: some View {
+        Screen(title: "Settings", spacing: 20, maxWidth: 680) {
+            if let profile = model.active {
+                NavigationLink(value: SettingsPage.student) {
+                    HStack(spacing: 14) {
+                        AvatarView(profile: profile, size: 56, scalesWithWindow: false)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(profile.name).font(.title3.weight(.semibold)).foregroundStyle(.primary)
+                            Text(profile.districtName.isEmpty ? profile.username : profile.districtName)
+                                .font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        Spacer(minLength: 8)
+                        Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                    }
+                    .padding(16)
+                    .bubble(cornerRadius: 20)
+                }
+                .buttonStyle(BubbleButtonStyle())
+            }
+
+            RowGroup(items: SettingsPage.shown) { page in
+                NavigationLink(value: page) {
+                    HStack(spacing: 14) {
+                        Image(systemName: page.symbol)
+                            .font(.body.weight(.semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 32, height: 32)
+                            .background(model.theme.color, in: .rect(cornerRadius: 8, style: .continuous))
+                        Text(page.title).foregroundStyle(.primary)
+                        Spacer(minLength: 8)
+                        Text(summary(page)).foregroundStyle(.secondary).lineLimit(1)
+                        Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
+                    }
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 56)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(BubbleButtonStyle())
+            }
+        }
+        .navigationDestination(for: SettingsPage.self) { SettingsPageView(page: $0) }
+    }
+
+    private func summary(_ page: SettingsPage) -> String {
+        switch page {
+        case .account: return AccountSync.shared.email ?? "Not signed in"
+        case .appearance: return model.settings.backgroundTheme.title
+        case .notifications:
+            let on = [model.settings.notifyNewGrades, model.settings.notifyDueTomorrow, model.settings.notifyBelowGoal].filter { $0 }.count
+            return on == 0 ? "Off" : "\(on) on"
+        case .syncing: return model.settings.backgroundSync ? "Every \(model.settings.syncMinutes) min" : "Manual"
+        case .about: return "Version " + AppModel.currentVersion
+        default: return ""
+        }
+    }
+}
+
+/// One settings page, built from the same bubbles as the rest of the app so it
+/// scales with the window and every control is a comfortable target.
+struct SettingsPageView: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.horizontalSizeClass) private var sizeClass
+    let page: SettingsPage
     @State private var removing: Profile?
     @State private var rememberSheet = false
 
     var body: some View {
-        Form {
-            if let profile = model.active {
-                studentSection(profile)
+        Screen(title: page.title, spacing: 26, maxWidth: page == .appearance ? 780 : 680) {
+            switch page {
+            case .student: studentPage
+            case .account: AccountSettingsSection()
+            case .appearance: appearancePage
+            case .notifications: notificationsPage
+            case .syncing: syncingPage
+            case .mac: macPage
+            case .about: aboutPage
             }
-            lookSection
-            syncSection
-            notificationSection
-            #if os(macOS)
-            macSection
-            #endif
-            aboutSection
         }
-        .formStyle(.grouped)
-        .scrollContentBackground(.hidden)
-        .background { PageBackground() }
-        .navigationTitle("Settings")
-        .sheet(isPresented: $editingClasses) {
-            NavigationStack { ClassOrderEditor() }
-            #if os(macOS)
-            .frame(minWidth: 440, minHeight: 520)
-            #endif
-        }
-        .sheet(isPresented: $rememberSheet) {
-            RememberSignInSheet()
-        }
+        .sheet(isPresented: $rememberSheet) { RememberSignInSheet() }
         .confirmationDialog(
             "Remove \(removing?.name ?? "this student")?",
             isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } }),
@@ -42,135 +131,83 @@ struct SettingsView: View {
                 removing = nil
             }
         } message: {
-            Text("Their grades, planner and saved sign-in are deleted from this Mac. Nothing changes in Skyward.")
+            Text("Their grades, planner and saved sign-in are deleted from this device.")
         }
     }
 
     // MARK: Student
 
-    private func studentSection(_ profile: Profile) -> some View {
-        Section {
-            AvatarPickerRow(profile: profile)
-            TextField("Display name", text: Binding(
-                get: { profile.displayName },
-                set: { text in model.updateActive { $0.displayName = text } }
-            ), prompt: Text(profile.skywardName.isEmpty ? profile.username : Str.titleCase(profile.skywardName)))
-            LabeledContent("District", value: profile.districtName.isEmpty ? (URLComponents(string: profile.address)?.host ?? "") : profile.districtName)
-            if !model.data.profile.school.isEmpty {
-                LabeledContent("School", value: Str.titleCase(model.data.profile.school))
-            }
-            LabeledContent("Classes") {
-                HStack {
-                    if !model.prefs.hiddenCourses.isEmpty {
-                        Text("\(model.prefs.hiddenCourses.count) hidden").foregroundStyle(.secondary)
-                    }
-                    Button("Reorder or Hide…") { editingClasses = true }
+    @ViewBuilder private var studentPage: some View {
+        if let profile = model.active {
+            SettingsGroup {
+                AvatarPickerRow(profile: profile)
+                    .padding(16)
+                    .bubble()
+                SettingRow(title: "Name") {
+                    TextField("Name", text: Binding(
+                        get: { profile.displayName },
+                        set: { text in model.updateActive { $0.displayName = text } }
+                    ), prompt: Text(profile.skywardName.isEmpty ? profile.username : Str.titleCase(profile.skywardName)))
+                    .textFieldStyle(.plain)
+                    .multilineTextAlignment(.trailing)
+                    .labelsHidden()
                 }
-            }
-            HStack {
-                Button("Sign In Again…") { model.requestReauth(profile) }
-                    .disabled(profile.isDemo)
-                Spacer()
-                Button("Remove Student…", role: .destructive) { removing = profile }
-            }
-        } header: {
-            Text("Student")
-        }
-    }
-
-    // MARK: Look
-
-    private var lookSection: some View {
-        Section("Appearance") {
-            Picker("Appearance", selection: setting(\.appearance)) {
-                ForEach(Appearance.allCases) { Text($0.title).tag($0) }
-            }
-            .pickerStyle(.segmented)
-
-            LabeledContent("Accent colour") {
-                AccentPicker()
-            }
-
-            Picker("Background", selection: setting(\.backgroundTheme)) {
-                ForEach(BackgroundTheme.allCases) { theme in
-                    Text(theme.title).tag(theme)
+                SettingRow(title: "District") {
+                    Text(profile.districtName.isEmpty ? (URLComponents(string: profile.address)?.host ?? "") : profile.districtName)
+                        .foregroundStyle(.secondary)
                 }
-            }
-
-            Picker("Grades", selection: setting(\.gradeStyle)) {
-                ForEach(GradeStyle.allCases) { Text($0.title).tag($0) }
-            }
-            Toggle("Colour grades by letter", isOn: setting(\.colorBubbles))
-            Toggle("Compact rows", isOn: setting(\.compactRows))
-
-            #if os(macOS)
-            Toggle("Translucent window", isOn: setting(\.translucentWindow))
-            Toggle("Glow around the window", isOn: setting(\.windowGlow))
-            LabeledContent("App icon") {
-                AppIconPicker()
-            }
-            #endif
-        }
-    }
-
-    // MARK: Sync
-
-    private var syncSection: some View {
-        Section {
-            Toggle("Check Skyward in the background", isOn: setting(\.backgroundSync))
-            Picker("Check every", selection: setting(\.syncMinutes)) {
-                Text("15 minutes").tag(15)
-                Text("30 minutes").tag(30)
-                Text("1 hour").tag(60)
-                Text("2 hours").tag(120)
-            }
-            .disabled(!model.settings.backgroundSync)
-
-            if let profile = model.active, model.isQmlativ(profile) {
-                LabeledContent("District sign-in") {
-                    HStack {
-                        if model.rememberedSignInFailed(profile) {
-                            Text("Didn't work").foregroundStyle(Palette.bad)
-                        } else {
-                            Text(model.hasRememberedSignIn(profile) ? "Remembered" : "Not saved")
-                                .foregroundStyle(.secondary)
-                        }
-                        Button(model.hasRememberedSignIn(profile) ? "Change…" : "Remember…") { rememberSheet = true }
+                if !model.data.profile.school.isEmpty {
+                    SettingRow(title: "School") {
+                        Text(Str.titleCase(model.data.profile.school)).foregroundStyle(.secondary)
                     }
                 }
             }
-
-            Picker("Copy due dates to", selection: Binding(
-                get: { model.settings.exportTarget },
-                set: { value in
-                    model.updateSettings { $0.exportTarget = value }
-                    model.exportDueDates()
+            SettingsGroup {
+                NavigationLink(value: AppSection.students) {
+                    SettingRow(title: "All Students") { Chevron() }
                 }
-            )) {
-                ForEach(ExportTarget.allCases) { Text($0.title).tag($0) }
+                .buttonStyle(BubbleButtonStyle())
+                if !profile.isDemo {
+                    ActionRow(title: "Sign In Again") { model.requestReauth(profile) }
+                }
+                ActionRow(title: "Remove Student", role: .destructive) { removing = profile }
             }
-        } header: {
-            Text("Syncing")
-        } footer: {
-            Text(syncFooter)
         }
     }
 
-    private var syncFooter: String {
-        var parts: [String] = []
-        if model.settings.backgroundSync {
-            parts.append("Each check signs in to Skyward, which signs you out of Skyward in your browser.")
+    // MARK: Appearance
+
+    @ViewBuilder private var appearancePage: some View {
+        SettingsGroup(title: "Theme") {
+            BackgroundThemePicker(columns: 3)
+                .padding(16)
+                .bubble(cornerRadius: 20)
         }
-        if model.settings.exportTarget != .off {
-            parts.append("Due dates go to a list called “Skyward Plus” and stay in sync.")
+        SettingsGroup(title: "Grades") {
+            SettingRow(title: "Show grades as") {
+                Picker("Show grades as", selection: setting(\.gradeStyle)) {
+                    ForEach(GradeStyle.allCases) { Text($0.title).tag($0) }
+                }
+                .labelsHidden()
+                .fixedSize()
+            }
+            ToggleRow(title: "Colour by letter grade", isOn: setting(\.colorBubbles))
         }
-        return parts.joined(separator: " ")
+        #if os(macOS)
+        SettingsGroup(title: "Window") {
+            ToggleRow(title: "Translucent window", isOn: setting(\.translucentWindow))
+            ToggleRow(title: "Glow around the window", isOn: setting(\.windowGlow))
+            SettingRow(title: "App icon") { AppIconPicker() }
+        }
+        #endif
     }
 
-    private var notificationSection: some View {
-        Section("Notifications") {
-            Toggle("New grades", isOn: notifySetting(\.notifyNewGrades))
-            Toggle("Due tomorrow and missing work", isOn: Binding(
+    // MARK: Notifications
+
+    @ViewBuilder private var notificationsPage: some View {
+        SettingsGroup {
+            ToggleRow(title: "New grades", isOn: notifySetting(\.notifyNewGrades))
+            ToggleRow(title: "Work due tomorrow and missing work", isOn: Binding(
                 get: { model.settings.notifyDueTomorrow },
                 set: { on in
                     if on { Task { await Notifier.requestPermission() } }
@@ -178,47 +215,89 @@ struct SettingsView: View {
                     model.rescheduleDueReminders()
                 }
             ))
-            Toggle("A class drops below its goal", isOn: notifySetting(\.notifyBelowGoal))
+            ToggleRow(title: "A class drops under its goal", isOn: notifySetting(\.notifyBelowGoal))
+        }
+    }
+
+    // MARK: Syncing
+
+    @ViewBuilder private var syncingPage: some View {
+        SettingsGroup(footer: model.settings.backgroundSync ? "Each check signs you out of Skyward in your browser." : nil) {
+            ToggleRow(title: "Check Skyward automatically", isOn: setting(\.backgroundSync))
+            if model.settings.backgroundSync {
+                SettingRow(title: "Every") {
+                    Picker("Every", selection: setting(\.syncMinutes)) {
+                        Text("15 minutes").tag(15)
+                        Text("30 minutes").tag(30)
+                        Text("1 hour").tag(60)
+                        Text("2 hours").tag(120)
+                    }
+                    .labelsHidden()
+                    .fixedSize()
+                }
+            }
+        }
+        if let profile = model.active, model.isQmlativ(profile) {
+            SettingsGroup(title: "District sign-in") {
+                SettingRow(title: "Saved sign-in") {
+                    if model.rememberedSignInFailed(profile) {
+                        Text("Didn't work").foregroundStyle(Palette.bad)
+                    } else {
+                        Text(model.hasRememberedSignIn(profile) ? "Saved" : "Not saved").foregroundStyle(.secondary)
+                    }
+                }
+                ActionRow(title: model.hasRememberedSignIn(profile) ? "Change Saved Sign-In" : "Save Sign-In") { rememberSheet = true }
+            }
+        }
+        SettingsGroup(title: "Due dates") {
+            SettingRow(title: "Copy due dates to") {
+                Picker("Copy due dates to", selection: Binding(
+                    get: { model.settings.exportTarget },
+                    set: { value in
+                        model.updateSettings { $0.exportTarget = value }
+                        model.exportDueDates()
+                    }
+                )) {
+                    ForEach(ExportTarget.allCases) { Text($0.title).tag($0) }
+                }
+                .labelsHidden()
+                .fixedSize()
+            }
         }
     }
 
     // MARK: Mac
 
-    #if os(macOS)
-    private var macSection: some View {
-        Section {
-            Toggle("Show in the menu bar", isOn: setting(\.showMenuBarIcon))
-            Toggle("Keep running when the window is closed", isOn: setting(\.keepInMenuBar))
+    @ViewBuilder private var macPage: some View {
+        #if os(macOS)
+        SettingsGroup(footer: model.settings.launchAtLogin && LoginItem.needsApproval ? "Allow Skyward Plus in System Settings › General › Login Items." : nil) {
+            ToggleRow(title: "Show in the menu bar", isOn: setting(\.showMenuBarIcon))
+            ToggleRow(title: "Keep running when closed", isOn: setting(\.keepInMenuBar))
                 .disabled(!model.settings.showMenuBarIcon)
-            Toggle("Open at login", isOn: Binding(
+                .opacity(model.settings.showMenuBarIcon ? 1 : 0.5)
+            ToggleRow(title: "Open at login", isOn: Binding(
                 get: { model.settings.launchAtLogin },
                 set: { model.setLaunchAtLogin($0) }
             ))
             if Biometrics.isAvailable {
-                Toggle("Require \(Biometrics.name) to open", isOn: setting(\.biometricLock))
-            }
-        } header: {
-            Text("Mac")
-        } footer: {
-            if model.settings.launchAtLogin && LoginItem.needsApproval {
-                Text("Allow Skyward Plus in System Settings › General › Login Items.")
+                ToggleRow(title: "Require \(Biometrics.name) to open", isOn: setting(\.biometricLock))
             }
         }
+        #endif
     }
-    #endif
 
     // MARK: About
 
-    private var aboutSection: some View {
-        Section("About") {
-            LabeledContent("Version", value: AppModel.currentVersion)
+    @ViewBuilder private var aboutPage: some View {
+        SettingsGroup {
+            SettingRow(title: "Version") { Text(AppModel.currentVersion).foregroundStyle(.secondary) }
             #if os(macOS)
-            Button {
-                AppDelegate.shared?.replayHello()
-            } label: {
-                Label("Play Welcome Intro (“hello”)", systemImage: "hand.wave")
-            }
             UpdateRow()
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .frame(minHeight: 54)
+                .bubble()
+            ActionRow(title: "Play the Welcome Again") { AppDelegate.shared?.replayHello() }
             #endif
         }
     }
@@ -243,30 +322,93 @@ struct SettingsView: View {
     }
 }
 
-/// Ten colour dots; the selected one gets a ring.
-private struct AccentPicker: View {
+// MARK: - Setting building blocks
+
+/// A titled group of setting rows.
+struct SettingsGroup<Content: View>: View {
+    var title: String? = nil
+    var footer: String? = nil
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let title {
+                Text(title).font(.headline).padding(.leading, 4)
+            }
+            VStack(spacing: 8) { content }
+            if let footer {
+                Text(footer).font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
+            }
+        }
+    }
+}
+
+/// A label on the left and whatever control or value on the right, in one bubble.
+struct SettingRow<Trailing: View>: View {
+    let title: String
+    var subtitle: String? = nil
+    @ViewBuilder var trailing: Trailing
+
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title).foregroundStyle(.primary)
+                if let subtitle {
+                    Text(subtitle).font(.footnote).foregroundStyle(.secondary)
+                }
+            }
+            Spacer(minLength: 12)
+            trailing
+        }
+        .padding(.horizontal, 16)
+        .frame(minHeight: 54)
+        .bubble()
+        .contentShape(Rectangle())
+    }
+}
+
+/// A switch row; the whole row is the switch's label, so it is easy to hit.
+struct ToggleRow: View {
+    let title: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Toggle(isOn: $isOn) {
+            Text(title).frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .toggleStyle(.switch)
+        .padding(.horizontal, 16)
+        .frame(minHeight: 54)
+        .bubble()
+    }
+}
+
+/// A row that does something when pressed.
+struct ActionRow: View {
+    let title: String
+    var role: ButtonRole? = nil
+    let action: () -> Void
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        HStack(spacing: 8) {
-            ForEach(ThemeColor.allCases) { theme in
-                let selected = model.theme == theme
-                Button {
-                    withAnimation(.snappy) { model.updateActive { $0.theme = theme } }
-                } label: {
-                    Circle()
-                        .fill(theme.color)
-                        .frame(width: 18, height: 18)
-                        .padding(3)
-                        .overlay { Circle().strokeBorder(selected ? theme.color : .clear, lineWidth: 2) }
-                        .contentShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .help(theme.title)
-                .accessibilityLabel(theme.title)
-                .accessibilityAddTraits(selected ? .isSelected : [])
+        Button(role: role, action: action) {
+            HStack {
+                Text(title)
+                    .foregroundStyle(role == .destructive ? Palette.bad : model.theme.color)
+                Spacer()
             }
+            .padding(.horizontal, 16)
+            .frame(minHeight: 54)
+            .bubble()
+            .contentShape(Rectangle())
         }
+        .buttonStyle(BubbleButtonStyle())
+    }
+}
+
+private struct Chevron: View {
+    var body: some View {
+        Image(systemName: "chevron.right").font(.caption.weight(.semibold)).foregroundStyle(.tertiary)
     }
 }
 

@@ -77,7 +77,9 @@ final class AppModel {
             switch section {
             case .bell: scheduleTab = .bell
             case .teachers: scheduleTab = .teachers
-            case .transcript: reportsTab = .transcript
+            case .gpa: gradesTab = .gpa
+            case .reports: gradesTab = .reportCard; if reportsTab == .transcript { reportsTab = .cards }
+            case .transcript: gradesTab = .reportCard; reportsTab = .transcript
             default: break
             }
             if section.host != section { section = section.host }
@@ -100,6 +102,7 @@ final class AppModel {
     /// Sub-tab inside merged sections (Schedule: classes/bell/teachers, Reports: cards/transcript).
     var scheduleTab: ScheduleTab = .classes
     var reportsTab: ReportsTab = .cards
+    var gradesTab: GradesTab = .classes
     /// A newer release on GitHub, when one was found.
     var availableUpdate: UpdateInfo?
     /// One-line result of a manual update check.
@@ -141,7 +144,8 @@ final class AppModel {
     var active: Profile? { profiles.first { $0.id == settings.activeProfileID } ?? profiles.first }
     var data: StudentData { active.flatMap { studentData[$0.id] } ?? StudentData() }
     var prefs: ProfilePrefs { active?.prefs ?? ProfilePrefs() }
-    var theme: ThemeColor { active?.theme ?? .sky }
+    /// The accent colour comes from the theme.
+    var theme: ThemeColor { settings.backgroundTheme.accent }
     var syncState: SyncState { active.flatMap { syncStates[$0.id] } ?? .idle }
 
     func data(for id: UUID) -> StudentData { studentData[id] ?? StudentData() }
@@ -285,6 +289,7 @@ final class AppModel {
 
     func save() {
         store.saveState(Store.State(profiles: profiles, settings: settings))
+        AccountSync.shared.modelChanged(self)
     }
 
     // These work on a copy and write it back. Changing the stored value in place

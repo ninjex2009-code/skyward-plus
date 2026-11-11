@@ -23,7 +23,7 @@ struct ScheduleView: View {
             return true
         }
 
-        Screen(title: "Schedule") {
+        Screen(title: "Schedule", maxWidth: 960) {
             let semesterPicker = Picker("Semester", selection: $selectedSemester.animation(.snappy)) {
                 Text("Full Year").tag(0)
                 Text("Semester 1").tag(1)
@@ -157,7 +157,7 @@ struct BellScheduleView: View {
         let bell = model.prefs.bell
         let activeSchedule = bell.schedules.first
 
-        Screen(title: "Bell Schedule") {
+        Screen(title: "Bell Schedule", maxWidth: 960) {
             BellBannerCard()
                 .staggered(0)
 

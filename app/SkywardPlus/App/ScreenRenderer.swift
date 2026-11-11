@@ -11,7 +11,7 @@ enum ScreenRenderer {
         guard let idx = args.firstIndex(of: "--render-screens"), idx + 1 < args.count else { return }
         let outDir = URL(fileURLWithPath: args[idx + 1], isDirectory: true)
         try? FileManager.default.createDirectory(at: outDir, withIntermediateDirectories: true)
-        let dark = args.contains("--dark")
+        var dark: Bool { model.settings.backgroundTheme.isDark }
 
         Notifier.isEnabled = false
         await model.addDemo()
@@ -23,7 +23,13 @@ enum ScreenRenderer {
         }
         model.saveTask(PlannerTask(title: "Finish the free-response set", courseID: model.courses.first?.id, due: model.now().addingTimeInterval(86400), kind: .homework))
 
-        func snap<V: View>(_ name: String, _ view: V, size: CGSize = CGSize(width: 1180, height: 820)) async {
+        // SKYWARDPLUS_RENDER_SIZE=1900x1150 renders at another window size.
+        let defaultSize: CGSize = {
+            let parts = (ProcessInfo.processInfo.environment["SKYWARDPLUS_RENDER_SIZE"] ?? "").split(separator: "x").compactMap { Double($0) }
+            return parts.count == 2 ? CGSize(width: parts[0], height: parts[1]) : CGSize(width: 1180, height: 820)
+        }()
+        func snap<V: View>(_ name: String, _ view: V, size: CGSize? = nil) async {
+            let size = size ?? defaultSize
             let wrapped = view
                 .environment(model)
                 .environment(\.backgroundTheme, model.settings.backgroundTheme)
@@ -68,6 +74,15 @@ enum ScreenRenderer {
             model.reportsTab = .transcript
             await snap("reports-transcript", MainView())
             model.reportsTab = .cards
+        }
+        for tab in GradesTab.allCases where want("grades-" + tab.rawValue) {
+            model.section = .grades
+            model.gradesTab = tab
+            await snap("grades-\(tab.rawValue)", MainView())
+        }
+        model.gradesTab = .classes
+        for page in SettingsPage.allCases where want("settings-" + page.rawValue) {
+            await snap("settings-\(page.rawValue)", NavigationStack { SettingsPageView(page: page) })
         }
         if want("class"), let firstCourse = model.courses.first {
             await snap("class-detail", NavigationStack { ClassDetailView(courseID: firstCourse.id) })

@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshots/home.png" width="860" alt="The Home screen: average, GPA, missing work, classes and what is due soon">
+  <img src="docs/screenshots/home.png" width="860" alt="Home: what needs you, your classes and your average and GPA, on the Midnight theme">
 </p>
 
 Skyward Plus signs in to your school district's own Skyward page and puts
@@ -21,27 +21,33 @@ affiliated with or endorsed by Skyward.
 
 ## What it does
 
-**Grades.** Every class and marking period, category weights, and each
-assignment's score with how much it moved your average.
+**Home shows what needs you.** Missing work, what's due today or tomorrow, and
+classes under their goal come first, then your classes at a glance.
 
-**What-if and goals.** Change a score or add a future one and watch the
-average move. Set a goal for a class and see what you need on the next test.
+**Grades, report cards and GPA in one place.** Each quarter's classes, every
+assignment and category weight, what-if scores, goals, report cards, progress
+reports, your transcript, and weighted and unweighted GPA.
 
-**GPA.** Weighted and unweighted, with the level and credits of each class
-adjustable, plus report cards and your transcript.
+**Planner.** Skyward due dates and your own tasks together. Swipe to finish on
+iPhone; due dates can copy to Reminders or Calendar.
 
-**Planner.** Skyward due dates and your own tasks in one list. Due dates can
-copy to Reminders or Calendar.
+**Sync with Google.** Optional: sign in with Google and your planner, done
+marks, goals and theme stay the same on your Mac and iPhone. Grades never leave
+your devices.
 
-**In the background.** A menu bar view, a sync every 30 minutes, and
-notifications for new grades, work due tomorrow, and a class that drops below
-its goal.
+**Nine themes.** Midnight, Obsidian, Aurora, Sunset, Ember, Forest, Ocean, Paper and
+Graphite: slowly drifting colour behind frosted glass, each with its own look
+and accent.
 
-**Fast.** Command-K searches every class, assignment and screen.
+**Built for every size.** On a big Mac window everything scales up and lists
+spread into columns; on iPhone it is four simple tabs.
 
 <p align="center">
-  <img src="docs/screenshots/class.png" width="49%" alt="A class: categories, goal and assignments">
-  <img src="docs/screenshots/gpa.png" width="49%" alt="GPA with adjustable class levels">
+  <img src="docs/screenshots/grades.png" width="49%" alt="Grades in two columns with quarter chips">
+  <img src="docs/screenshots/themes.png" width="49%" alt="The theme gallery in Settings">
+</p>
+<p align="center">
+  <img src="docs/screenshots/iphone.png" width="860" alt="The iPhone app: Home, Grades, Planner and Settings">
 </p>
 
 The screenshots show the built-in sample student. You can try it the same way:
@@ -66,12 +72,20 @@ choose **Try it with a sample student** during setup.
 After that the app updates itself: it checks this page for a newer release and
 offers to install it.
 
+### iPhone (sideload)
+
+Each release also has an unsigned `Skyward-Plus-x.y.ipa`. Install it with
+[Sideloadly](https://sideloadly.io) or AltStore using your own Apple ID, then
+trust it in Settings › General › VPN & Device Management and turn on Developer
+Mode. With a free Apple ID it has to be re-installed every 7 days.
+
 ## Privacy
 
-Everything stays on your Mac. You type your password into your district's own
-sign-in page. If you turn on **Stay signed in**, it is kept in the macOS
-Keychain. The app talks to your district's Skyward and, for updates, to
-GitHub. Nothing else.
+Grades stay on your devices. You type your password into your district's own
+sign-in page; if you turn on **Stay signed in**, it is kept in the Keychain.
+If you sign in with Google, only your planner, done marks, goals and theme are
+synced, to a database only your account can read. The app talks to your
+district's Skyward, to Google for that optional sync, and to GitHub for updates.
 
 ## Which districts work
 
@@ -92,7 +106,10 @@ open SkywardPlus.xcodeproj
 ```
 
 `app/tools/make-dmg.sh` builds the universal release and the disk image into
-`app/dist/`. Tests run from the `CoreTests` scheme.
+`app/dist/`. Tests run from the `CoreTests` scheme. Google sync needs a
+`GoogleService-Info.plist` from your own Firebase project in
+`app/SkywardPlus/Resources/` (see [docs/FIREBASE_SETUP.md](docs/FIREBASE_SETUP.md));
+without it the app works and simply hides sync.
 
 ## Chrome extension
 
