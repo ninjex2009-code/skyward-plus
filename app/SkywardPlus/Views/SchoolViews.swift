@@ -41,63 +41,52 @@ struct AttendanceView: View {
     }
 
     private func eventsListSection(filtered: [AttendanceEvent]) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(
-                selectedDate.map { Fmt.day($0) } ?? "This Year",
-                subtitle: "\(filtered.count) \(filtered.count == 1 ? "entry" : "entries")"
-            ) {
-                if selectedDate != nil {
-                    Button("Show All") {
-                        withAnimation(Motion.snappy) { selectedDate = nil }
-                    }
-                    .buttonStyle(.borderless)
-                }
-            }
-
+        let title = selectedDate.map { Fmt.day($0) } ?? "This Year"
+        return VStack(alignment: .leading, spacing: 10) {
             if filtered.isEmpty {
+                SectionHeader(title)
                 Card {
                     EmptyState(
                         symbol: "calendar.badge.checkmark",
-                        title: selectedDate == nil ? "Perfect attendance" : "No events on this date",
-                        message: selectedDate == nil ? "Skyward has no absences or tardies on record." : "Select another highlighted day or tap Show All."
+                        title: selectedDate == nil ? "Perfect attendance" : "Nothing on this day",
+                        message: selectedDate == nil ? "No absences or tardies on record." : "Pick a highlighted day."
                     )
                 }
             } else {
-                Card(padding: 0) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(filtered.enumerated()), id: \.element.id) { index, event in
-                            HoverRow {
-                                HStack(spacing: 12) {
-                                    Circle()
-                                        .fill(GradeColor.attendance(event.kind))
-                                        .frame(width: 8, height: 8)
-                                        .accessibilityHidden(true)
-                                    VStack(alignment: .leading, spacing: 3) {
-                                        HStack(spacing: 6) {
-                                            Text(event.reason).font(.body.weight(.medium))
-                                        }
-                                        HStack(spacing: 6) {
-                                            Text(kindLabel(event.kind)).foregroundStyle(GradeColor.attendance(event.kind))
-                                            Text("· Periods \(event.periods)")
-                                            if !event.classes.isEmpty {
-                                                Text("· " + event.classes.map { Str.titleCase($0) }.joined(separator: ", "))
-                                                    .lineLimit(1)
-                                            }
-                                        }
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                    }
-                                    Spacer(minLength: 8)
-                                    Text(Fmt.day(event.date))
-                                        .font(.subheadline.monospacedDigit())
-                                        .foregroundStyle(.secondary)
-                                }
-                                .padding(.horizontal, 14)
-                                .padding(.vertical, 11)
-                            }
-                            .rowDivider(index < filtered.count - 1)
+                CollapsibleList(title, items: filtered, preview: 5, key: "attendance.events") {
+                    if selectedDate != nil {
+                        Button("Show All") {
+                            withAnimation(Motion.snappy) { selectedDate = nil }
                         }
+                        .buttonStyle(.borderless)
                     }
+                } row: { event in
+                    HStack(spacing: 12) {
+                        Circle()
+                            .fill(GradeColor.attendance(event.kind))
+                            .frame(width: 8, height: 8)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(event.reason).font(.body.weight(.medium))
+                            HStack(spacing: 6) {
+                                Text(kindLabel(event.kind)).foregroundStyle(GradeColor.attendance(event.kind))
+                                Text("· Periods \(event.periods)")
+                                if !event.classes.isEmpty {
+                                    Text("· " + event.classes.map { Str.titleCase($0) }.joined(separator: ", "))
+                                        .lineLimit(1)
+                                }
+                            }
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 8)
+                        Text(Fmt.day(event.date))
+                            .font(.subheadline.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 11)
+                    .surface(cornerRadius: 16)
                 }
             }
         }
@@ -296,9 +285,9 @@ struct TranscriptView: View {
                     StatTile(title: "Credits", value: Fmt.points(summary.credits), caption: "Completed", symbol: "checkmark.seal.fill")
                 }
 
-                ForEach(years) { year in
-                    VStack(alignment: .leading, spacing: 10) {
-                        SectionHeader(year.title, subtitle: "\(year.courses.count) courses")
+                ForEach(Array(years.enumerated()), id: \.element.id) { index, year in
+                    // The latest year is open; older years start folded.
+                    CollapsibleSection(year.title, count: year.courses.count, key: "transcript." + year.title, startsCollapsed: index > 0) {
                         Card(padding: 0) {
                             ScrollView(.horizontal) {
                                 VStack(alignment: .leading, spacing: 0) {

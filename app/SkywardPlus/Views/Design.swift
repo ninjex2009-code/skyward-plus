@@ -1612,3 +1612,140 @@ struct AdaptiveColumns<First: View, Second: View>: View {
         }
     }
 }
+
+// MARK: - Long lists
+
+/// A section whose list can get long. Its header collapses the whole section
+/// (remembered per section), and only the first few items show until
+/// "Show all" is pressed.
+struct CollapsibleList<Item: Identifiable, Row: View, Accessory: View>: View {
+    let title: String
+    let items: [Item]
+    var preview: Int
+    var spacing: CGFloat
+    let accessory: Accessory
+    let row: (Item) -> Row
+    @AppStorage private var collapsed: Bool
+    @State private var showAll = false
+
+    init(_ title: String, items: [Item], preview: Int = 3, key: String, startsCollapsed: Bool = false,
+         spacing: CGFloat = 10, @ViewBuilder accessory: () -> Accessory, @ViewBuilder row: @escaping (Item) -> Row) {
+        self.title = title
+        self.items = items
+        self.preview = preview
+        self.spacing = spacing
+        self.accessory = accessory()
+        self.row = row
+        _collapsed = AppStorage(wrappedValue: startsCollapsed, "collapsed." + key)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            CollapsibleHeader(title: title, count: items.count, collapsed: $collapsed) { accessory }
+            if !collapsed {
+                VStack(spacing: spacing) {
+                    ForEach(showAll ? items : Array(items.prefix(preview))) { item in
+                        row(item)
+                            .transition(.opacity.combined(with: .offset(y: -6)))
+                    }
+                }
+                if items.count > preview {
+                    ShowAllButton(showAll: $showAll, total: items.count)
+                }
+            }
+        }
+    }
+}
+
+extension CollapsibleList where Accessory == EmptyView {
+    init(_ title: String, items: [Item], preview: Int = 3, key: String, startsCollapsed: Bool = false,
+         spacing: CGFloat = 10, @ViewBuilder row: @escaping (Item) -> Row) {
+        self.init(title, items: items, preview: preview, key: key, startsCollapsed: startsCollapsed,
+                  spacing: spacing, accessory: { EmptyView() }, row: row)
+    }
+}
+
+/// A section title that collapses its section, with the number of items beside it.
+struct CollapsibleHeader<Accessory: View>: View {
+    let title: String
+    let count: Int
+    @Binding var collapsed: Bool
+    @ViewBuilder var accessory: Accessory
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Button {
+                withAnimation(.snappy) { collapsed.toggle() }
+            } label: {
+                HStack(spacing: 8) {
+                    Text(title).font(.title3.weight(.semibold)).foregroundStyle(.primary)
+                    Text("\(count)")
+                        .font(.caption.weight(.semibold).monospacedDigit())
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 2)
+                        .background(Palette.inset, in: Capsule())
+                    Image(systemName: "chevron.down")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+                        .rotationEffect(.degrees(collapsed ? -90 : 0))
+                }
+                .frame(minHeight: 32)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("\(title), \(count)")
+            .accessibilityHint(collapsed ? "Shows this section" : "Hides this section")
+            Spacer(minLength: 8)
+            accessory
+        }
+    }
+}
+
+/// "Show all 12" under a preview; "Show fewer" once expanded.
+struct ShowAllButton: View {
+    @Binding var showAll: Bool
+    let total: Int
+
+    var body: some View {
+        Button {
+            withAnimation(.snappy) { showAll.toggle() }
+        } label: {
+            HStack(spacing: 6) {
+                Text(showAll ? "Show fewer" : "Show all \(total)")
+                Image(systemName: showAll ? "chevron.up" : "chevron.down").font(.caption.weight(.bold))
+            }
+            .font(.subheadline.weight(.medium))
+            .foregroundStyle(.tint)
+            .frame(maxWidth: .infinity, minHeight: 40)
+            .surface(cornerRadius: 14, hoverable: true)
+            .contentShape(.rect(cornerRadius: 14))
+        }
+        .buttonStyle(BubbleButtonStyle())
+    }
+}
+
+
+/// A titled block that folds away under its header (remembered per section).
+struct CollapsibleSection<Content: View>: View {
+    let title: String
+    let count: Int
+    let content: Content
+    @AppStorage private var collapsed: Bool
+
+    init(_ title: String, count: Int, key: String, startsCollapsed: Bool = false, @ViewBuilder content: () -> Content) {
+        self.title = title
+        self.count = count
+        self.content = content()
+        _collapsed = AppStorage(wrappedValue: startsCollapsed, "collapsed." + key)
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            CollapsibleHeader(title: title, count: count, collapsed: $collapsed) { EmptyView() }
+            if !collapsed {
+                content.transition(.opacity.combined(with: .offset(y: -6)))
+            }
+        }
+    }
+}

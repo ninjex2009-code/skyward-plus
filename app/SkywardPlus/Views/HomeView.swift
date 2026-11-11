@@ -160,90 +160,108 @@ private struct FigureButton: View {
 
 // MARK: - Needs you
 
+/// Something on the Needs You list.
+private enum NeedItem: Identifiable {
+    case missing(AppModel.DatedAssignment)
+    case due(AppModel.DueItem)
+    case below(course: Course, percent: Double, goal: Double)
+
+    var id: String {
+        switch self {
+        case .missing(let item): return "m|" + item.id
+        case .due(let item): return "d|" + item.id
+        case .below(let course, _, _): return "b|" + course.id
+        }
+    }
+}
+
 /// Missing work, what is due today or tomorrow, and classes under their goal.
-/// When there is none of that it says so in one line.
+/// The first three show; the rest are one tap away. With nothing to show it says so.
 private struct NeedsYouSection: View {
     @Environment(AppModel.self) private var model
     @State private var completed = 0
 
     var body: some View {
-        let allMissing = model.missingAssignments
-        let missing = Array(allMissing.prefix(5))
-        let missingTitles = Set(allMissing.map { $0.assignment.name })
+        let items = needs
         let cutoff = Calendar.current.date(byAdding: .day, value: 2, to: Calendar.current.startOfDay(for: model.now())) ?? model.now()
-        let due = Array(model.dueItems.filter { !$0.done && $0.due < cutoff && !missingTitles.contains($0.title) }.prefix(5))
-        let below = belowGoal
-        let total = allMissing.count + due.count + below.count
 
-        VStack(alignment: .leading, spacing: 10) {
-            SectionHeader("Needs You")
-            if total == 0 {
-                HStack(spacing: 12) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.title)
-                        .foregroundStyle(Palette.good)
-                        .symbolEffect(.bounce, value: completed)
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("All caught up").font(.headline)
-                        Text("Nothing missing or due by \(Fmt.relativeDay(cutoff, now: model.now()).lowercased()).")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+        Group {
+            if items.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    SectionHeader("Needs You")
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title)
+                            .foregroundStyle(Palette.good)
+                            .symbolEffect(.bounce, value: completed)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("All caught up").font(.headline)
+                            Text("Nothing missing or due by \(Fmt.relativeDay(cutoff, now: model.now()).lowercased()).")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
                     }
+                    .padding(16)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .surface(cornerRadius: 18)
                 }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .surface(cornerRadius: 18)
             } else {
-                VStack(spacing: 10) {
-                    ForEach(missing) { item in
-                        NavigationLink(value: CourseRoute(courseID: item.course.id)) {
-                            NeedRow(
-                                symbol: "exclamationmark.circle.fill", tint: Palette.bad,
-                                title: item.assignment.name,
-                                subtitle: Str.titleCase(item.course.name),
-                                trailing: "Missing", trailingTint: Palette.bad
-                            )
-                            .bubble()
-                        }
-                        .buttonStyle(BubbleButtonStyle())
-                    }
-                    ForEach(due) { item in
-                        DueNeedRow(item: item) {
-                            withAnimation(.snappy) { model.toggleDue(item.id) }
-                            completed += 1
-                        }
-                        .transition(.asymmetric(insertion: .opacity, removal: .opacity.combined(with: .scale(scale: 0.96))))
-                    }
-                    ForEach(below, id: \.course.id) { entry in
-                        NavigationLink(value: CourseRoute(courseID: entry.course.id)) {
-                            NeedRow(
-                                symbol: "arrow.down.right.circle.fill", tint: Palette.warn,
-                                title: Str.titleCase(entry.course.name),
-                                subtitle: "Under your goal of \(Fmt.percent(entry.goal))",
-                                trailing: Fmt.percent(entry.percent), trailingTint: Palette.warn
-                            )
-                            .bubble()
-                        }
-                        .buttonStyle(BubbleButtonStyle())
-                    }
-                }
-                if allMissing.count > missing.count {
-                    Button("\(allMissing.count - missing.count) more missing") { model.section = .planner }
-                        .buttonStyle(.borderless)
-                        .font(.subheadline)
-                        .padding(.leading, 4)
+                CollapsibleList("Needs You", items: items, preview: 3, key: "home.needs") { item in
+                    row(item)
                 }
             }
         }
         .sensoryFeedback(.success, trigger: completed)
     }
 
-    private var belowGoal: [(course: Course, percent: Double, goal: Double)] {
-        guard let lit = model.data.currentLit else { return [] }
-        return model.courses(in: lit).compactMap { course in
-            guard let goal = model.goal(for: course.id), let percent = model.percent(course, lit), percent < goal else { return nil }
-            return (course, percent, goal)
+    @ViewBuilder
+    private func row(_ item: NeedItem) -> some View {
+        switch item {
+        case .missing(let entry):
+            NavigationLink(value: CourseRoute(courseID: entry.course.id)) {
+                NeedRow(
+                    symbol: "exclamationmark.circle.fill", tint: Palette.bad,
+                    title: entry.assignment.name,
+                    subtitle: Str.titleCase(entry.course.name),
+                    trailing: "Missing", trailingTint: Palette.bad
+                )
+                .bubble()
+            }
+            .buttonStyle(BubbleButtonStyle())
+        case .due(let due):
+            DueNeedRow(item: due) {
+                withAnimation(.snappy) { model.toggleDue(due.id) }
+                completed += 1
+            }
+        case .below(let course, let percent, let goal):
+            NavigationLink(value: CourseRoute(courseID: course.id)) {
+                NeedRow(
+                    symbol: "arrow.down.right.circle.fill", tint: Palette.warn,
+                    title: Str.titleCase(course.name),
+                    subtitle: "Under your goal of \(Fmt.percent(goal))",
+                    trailing: Fmt.percent(percent), trailingTint: Palette.warn
+                )
+                .bubble()
+            }
+            .buttonStyle(BubbleButtonStyle())
         }
+    }
+
+    /// Missing first, then today and tomorrow, then classes under their goal.
+    private var needs: [NeedItem] {
+        let missing = model.missingAssignments
+        let missingTitles = Set(missing.map { $0.assignment.name })
+        let cutoff = Calendar.current.date(byAdding: .day, value: 2, to: Calendar.current.startOfDay(for: model.now())) ?? model.now()
+        let due = model.dueItems.filter { !$0.done && $0.due < cutoff && !missingTitles.contains($0.title) }
+        var out: [NeedItem] = missing.map { .missing($0) } + due.map { .due($0) }
+        if let lit = model.data.currentLit {
+            for course in model.courses(in: lit) {
+                if let goal = model.goal(for: course.id), let percent = model.percent(course, lit), percent < goal {
+                    out.append(.below(course: course, percent: percent, goal: goal))
+                }
+            }
+        }
+        return out
     }
 }
 
@@ -314,27 +332,35 @@ private struct DueNeedRow: View {
 
 // MARK: - Classes
 
-/// Every class as a chip: name and grade, nothing else. Tap for the class.
+/// Every class as a chip: name and grade, nothing else. Six show; the rest are
+/// one tap away. Tap a chip for the class.
 private struct ClassGrid: View {
     @Environment(AppModel.self) private var model
+    @AppStorage("collapsed.home.classes") private var collapsed = false
+    @State private var showAll = false
 
     var body: some View {
         if let lit = model.selectedLit {
             let courses = model.courses(in: lit).filter { !model.gradeText($0, lit).isEmpty || $0.grade(lit)?.hasDetail == true }
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "Classes") {
+                CollapsibleHeader(title: "Classes", count: courses.count, collapsed: $collapsed) {
                     Button("All Grades") {
                         model.gradesTab = .classes
                         model.section = .grades
                     }
-                        .buttonStyle(.borderless)
+                    .buttonStyle(.borderless)
                 }
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 10)], spacing: 10) {
-                    ForEach(courses) { course in
-                        NavigationLink(value: CourseRoute(courseID: course.id)) {
-                            ClassChip(course: course, lit: lit)
+                if !collapsed {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 10)], spacing: 10) {
+                        ForEach(showAll ? courses : Array(courses.prefix(6))) { course in
+                            NavigationLink(value: CourseRoute(courseID: course.id)) {
+                                ClassChip(course: course, lit: lit)
+                            }
+                            .buttonStyle(BubbleButtonStyle())
                         }
-                        .buttonStyle(BubbleButtonStyle())
+                    }
+                    if courses.count > 6 {
+                        ShowAllButton(showAll: $showAll, total: courses.count)
                     }
                 }
             }
@@ -371,34 +397,32 @@ private struct ClassChip: View {
 
 // MARK: - Recent
 
-/// Grades that came in recently.
+/// Grades that came in recently: three show, the rest are one tap away.
 private struct RecentSection: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        let changes = Array(model.recentChanges.filter { $0.kind == .newGrade || $0.kind == .updatedGrade }.prefix(6))
+        let changes = Array(model.recentChanges.filter { $0.kind == .newGrade || $0.kind == .updatedGrade }.prefix(25))
         if !changes.isEmpty {
-            VStack(alignment: .leading, spacing: 10) {
-                SectionHeader("Recent Grades")
-                RowGroup(items: changes) { change in
-                    NavigationLink(value: CourseRoute(courseID: change.courseID)) {
-                        HStack(spacing: 12) {
-                            VStack(alignment: .leading, spacing: 1) {
-                                Text(change.title).lineLimit(1)
-                                Text(change.courseName + " · " + Fmt.dueDay(change.date, now: model.now()))
-                                    .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
-                            }
-                            Spacer(minLength: 8)
-                            Text(change.detail)
-                                .font(.subheadline.weight(.semibold).monospacedDigit())
-                                .foregroundStyle(GradeColor.color(percent: change.newValue))
+            CollapsibleList("Recent Grades", items: changes, preview: 3, key: "home.recent") { change in
+                NavigationLink(value: CourseRoute(courseID: change.courseID)) {
+                    HStack(spacing: 12) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(change.title).lineLimit(1)
+                            Text(change.courseName + " · " + Fmt.dueDay(change.date, now: model.now()))
+                                .font(.footnote).foregroundStyle(.secondary).lineLimit(1)
                         }
-                        .padding(.horizontal, 14)
-                        .frame(minHeight: 56)
-                        .contentShape(Rectangle())
+                        Spacer(minLength: 8)
+                        Text(change.detail)
+                            .font(.subheadline.weight(.semibold).monospacedDigit())
+                            .foregroundStyle(GradeColor.color(percent: change.newValue))
                     }
-                    .buttonStyle(BubbleButtonStyle())
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 56)
+                    .contentShape(Rectangle())
+                    .bubble()
                 }
+                .buttonStyle(BubbleButtonStyle())
             }
         }
     }

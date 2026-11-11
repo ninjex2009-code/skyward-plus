@@ -79,8 +79,8 @@ struct PlannerView: View {
         // Side by side on a wide window, stacked otherwise.
         return AdaptiveColumns {
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader("Your Tasks", subtitle: "\(openTasks.count) open")
                 if openTasks.isEmpty {
+                    SectionHeader("Your Tasks")
                     // An empty list is one tappable line, not a tall placeholder.
                     Button {
                         creatingTask = true
@@ -96,10 +96,8 @@ struct PlannerView: View {
                     }
                     .buttonStyle(BubbleButtonStyle())
                 } else {
-                    RowGroup(items: openTasks) { task in
-                        HoverRow {
-                            taskRow(task)
-                        }
+                    CollapsibleList("Your Tasks", items: openTasks, preview: 6, key: "planner.tasks") { task in
+                        taskRow(task).bubble()
                     }
                 }
             }
@@ -107,20 +105,18 @@ struct PlannerView: View {
             .frame(maxWidth: .infinity, alignment: .topLeading)
         } second: {
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader("From Skyward", subtitle: "\(skywardWork.count) upcoming")
                 if skywardWork.isEmpty {
+                    SectionHeader("From Skyward")
                     Card {
                         EmptyState(
                             symbol: "tray",
-                            title: "No upcoming Skyward work",
-                            message: "Ungraded assignments with future due dates appear here automatically."
+                            title: "Nothing coming up",
+                            message: "Skyward work with a due date shows here."
                         )
                     }
                 } else {
-                    RowGroup(items: skywardWork) { item in
-                        HoverRow {
-                            skywardAssignmentRow(item)
-                        }
+                    CollapsibleList("From Skyward", items: skywardWork, preview: 6, key: "planner.skyward") { item in
+                        skywardAssignmentRow(item).bubble()
                     }
                 }
             }
@@ -182,19 +178,16 @@ struct PlannerView: View {
                     )
                 }
             } else {
-                Card(padding: 0) {
-                    VStack(spacing: 0) {
-                        ForEach(Array(doneTasks.enumerated()), id: \.element.id) { index, task in
-                            HoverRow {
-                                taskRow(task)
-                            }
-                            .rowDivider(index < doneTasks.count - 1 || !doneSkyward.isEmpty)
+                AdaptiveColumns {
+                    if !doneTasks.isEmpty {
+                        CollapsibleList("Your Tasks", items: doneTasks, preview: 5, key: "planner.doneTasks") { task in
+                            taskRow(task).bubble()
                         }
-                        ForEach(Array(doneSkyward.enumerated()), id: \.element.id) { index, item in
-                            HoverRow {
-                                skywardAssignmentRow(item)
-                            }
-                            .rowDivider(index < doneSkyward.count - 1)
+                    }
+                } second: {
+                    if !doneSkyward.isEmpty {
+                        CollapsibleList("From Skyward", items: doneSkyward, preview: 5, key: "planner.doneSkyward") { item in
+                            skywardAssignmentRow(item).bubble()
                         }
                     }
                 }

@@ -24,6 +24,7 @@ struct ClassDetailView: View {
 
     @State private var pane: Pane = .assignments
     @State private var categoryFilter: String = "All"
+    @State private var showAllAssignments = false
     @State private var selectedAssignment: Assignment?
     @State private var addingMock = false
 
@@ -435,9 +436,11 @@ struct ClassDetailView: View {
                     EmptyState(symbol: "tray", title: "No assignments", message: "No assignments in this category.")
                 }
             } else {
+                // Long classes show the latest ten; the rest are one tap away.
+                let shown = showAllAssignments ? filtered : Array(filtered.prefix(10))
                 Card(padding: 0) {
                     VStack(spacing: 0) {
-                        ForEach(Array(filtered.enumerated()), id: \.element.id) { index, assignment in
+                        ForEach(Array(shown.enumerated()), id: \.element.id) { index, assignment in
                             HoverRow {
                                 assignmentRow(
                                     assignment: assignment,
@@ -447,9 +450,12 @@ struct ClassDetailView: View {
                                     allowInlineEdit: allowInlineEdit
                                 )
                             }
-                            .rowDivider(index < filtered.count - 1)
+                            .rowDivider(index < shown.count - 1)
                         }
                     }
+                }
+                if filtered.count > 10 {
+                    ShowAllButton(showAll: $showAllAssignments, total: filtered.count)
                 }
             }
         }

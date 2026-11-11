@@ -403,10 +403,8 @@ struct SidebarFooter: View {
             Button {
                 Task { await model.refresh() }
             } label: {
-                Image(systemName: "arrow.clockwise")
+                SpinningRefreshIcon(spinning: model.syncState.isSyncing)
                     .font(.callout.weight(.semibold))
-                    .rotationEffect(.degrees(model.syncState.isSyncing ? 360 : 0))
-                    .animation(model.syncState.isSyncing ? .linear(duration: 1).repeatForever(autoreverses: false) : .default, value: model.syncState.isSyncing)
                     .frame(width: 32, height: 32)
                     .contentShape(Rectangle())
             }
@@ -520,6 +518,23 @@ struct StudentsView: View {
             Button("Cancel", role: .cancel) { removing = nil }
         } message: {
             Text("Their grades, planner and saved password are deleted from this device. Nothing changes in Skyward.")
+        }
+    }
+}
+
+
+/// The refresh arrow, turning while a sync runs. It is driven by the clock rather
+/// than a repeating animation, which would also animate the arrow's position
+/// whenever the footer's layout changed and send it drifting.
+struct SpinningRefreshIcon: View {
+    let spinning: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    var body: some View {
+        TimelineView(.animation(paused: !spinning || reduceMotion)) { context in
+            let turn = context.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 1)
+            Image(systemName: "arrow.clockwise")
+                .rotationEffect(.degrees(spinning && !reduceMotion ? turn * 360 : 0))
         }
     }
 }
