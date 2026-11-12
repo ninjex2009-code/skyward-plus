@@ -20,36 +20,64 @@ extension AppModel {
     func startScheduler() {
         schedulerTimer?.invalidate()
         let timer = Timer(timeInterval: 60, repeats: true) { [weak self] _ in
-            MainActor.assumeIsolated { self?.syncIfDue() }
+            MainActor.assumeIsolated {
+                self?.syncIfDue()
+                self?.relayScheduledAlerts()
+            }
         }
         timer.tolerance = 10
         RunLoop.main.add(timer, forMode: .common)
         schedulerTimer = timer
+        NotificationRouter.shared.attach(self)
+        updateAwakeActivity()
         Task { @MainActor in
             try? await Task.sleep(nanoseconds: 3_000_000_000)
+            await self.askForNotificationsIfNeeded()
             self.syncIfDue()
             self.rescheduleDueReminders()
         }
     }
 
+    /// The shortest gap between automatic checks.
+    var syncInterval: TimeInterval { TimeInterval(max(5, settings.syncMinutes) * 60) }
+
     /// Syncs every student whose data is older than the chosen interval.
     func syncIfDue() {
         guard settings.backgroundSync, !isLocked, qmlativSignIn == nil else { return }
-        let interval = TimeInterval(max(15, settings.syncMinutes) * 60)
         for profile in profiles where !profile.isDemo {
             if syncStates[profile.id]?.isSyncing == true { continue }
             if case .needsSignIn = syncStates[profile.id] ?? .idle { continue }
             if blockedAccounts.contains(profile.accountKey) { continue }
+            if let wait = retryAfter[profile.accountKey], now() < wait { continue }
             let last = data(for: profile.id).lastSync ?? .distantPast
-            if now().timeIntervalSince(last) >= interval - 30 {
-                Task { await self.refresh(profile.id) }
+            if now().timeIntervalSince(last) >= syncInterval - 30 {
+                Task { await self.refresh(profile.id, background: true) }
             }
         }
     }
 
     var nextSyncDate: Date? {
         guard settings.backgroundSync, let last = data.lastSync else { return nil }
-        return last.addingTimeInterval(TimeInterval(max(15, settings.syncMinutes) * 60))
+        let due = last.addingTimeInterval(syncInterval)
+        if let profile = active, let wait = retryAfter[profile.accountKey], wait > due { return wait }
+        return due
+    }
+
+    /// While automatic checks are on, tell macOS the app is doing work the user asked
+    /// for, so App Nap doesn't stretch the timer out to many minutes. The Mac can
+    /// still sleep; checks pick up again on wake.
+    func updateAwakeActivity() {
+        #if os(macOS)
+        if settings.backgroundSync, awakeActivity == nil {
+            awakeActivity = ProcessInfo.processInfo.beginActivity(
+                options: [.userInitiatedAllowingIdleSystemSleep],
+                reason: "Checking Skyward for new grades"
+            )
+        } else if !settings.backgroundSync, let activity = awakeActivity {
+            ProcessInfo.processInfo.endActivity(activity)
+            awakeActivity = nil
+        }
+        #endif
     }
 
     // MARK: After every sync
@@ -62,20 +90,21 @@ extension AppModel {
 
         // Newly missing work, announced once per assignment.
         if let lit = updated.currentLit {
-            var missing: [(course: String, title: String, key: String)] = []
+            var missing: [(courseID: String, course: String, title: String, key: String)] = []
             for course in updated.courses {
                 guard let detail = updated.detail(course.id, lit) else { continue }
                 for a in detail.assignments where a.missing {
                     let key = course.id + "|" + a.id
                     if !prefs.missingNotified.contains(key) {
-                        missing.append((Str.titleCase(course.name), a.name, key))
+                        missing.append((course.id, Str.titleCase(course.name), a.name, key))
                     }
                 }
             }
             if !missing.isEmpty {
                 // The first sync only records what is already missing; it does not alert.
-                if !first, settings.notifyDueTomorrow {
-                    Notifier.announceMissing(missing.map { ($0.course, $0.title) }, studentName: profile.firstName)
+                if !first, settings.notifyMissing,
+                   let alert = AlertText.missing(missing.map { ($0.courseID, $0.course, $0.title) }) {
+                    Notifier.post(alert)
                 }
                 prefs.missingNotified.formUnion(missing.map { $0.key })
             }
@@ -89,7 +118,7 @@ extension AppModel {
             if percent + 1e-9 < goal {
                 if !prefs.belowGoalNotified.contains(course.id) {
                     if settings.notifyBelowGoal, !first {
-                        Notifier.announceBelowGoal(course: Str.titleCase(course.name), percent: percent, goal: goal, studentName: profile.firstName)
+                        Notifier.post(AlertText.belowGoal(courseID: course.id, course: Str.titleCase(course.name), percent: percent, goal: goal))
                     }
                     prefs.belowGoalNotified.insert(course.id)
                 }
@@ -149,11 +178,14 @@ extension AppModel {
     }
 
     func rescheduleDueReminders() {
-        guard settings.notifyDueTomorrow, let profile = active else {
-            Notifier.scheduleDueReminders([], studentName: "")
+        guard active != nil else {
+            Notifier.scheduleEvening(summary: nil, summaryDay: nil, due: [], hour: settings.summaryHour)
             return
         }
-        Notifier.scheduleDueReminders(dueItems.filter { !$0.done }, studentName: profile.firstName)
+        let day = nextEveningDay()
+        let summary = settings.notifySummary ? eveningAlert(for: day) : nil
+        let due = settings.notifyDueTomorrow ? dueItems.filter { !$0.done } : []
+        Notifier.scheduleEvening(summary: summary, summaryDay: day, due: due, hour: settings.summaryHour)
     }
 
     // MARK: Calendar and Reminders
@@ -325,6 +357,9 @@ extension AppModel {
         switch url.host {
         case "planner": section = .planner
         case "grades": section = .grades
+        case "class":
+            let id = url.pathComponents.dropFirst().first?.removingPercentEncoding
+            openClassFromAlert(id)
         default: section = .home
         }
     }

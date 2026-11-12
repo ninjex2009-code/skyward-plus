@@ -47,6 +47,13 @@ struct SyncMergeTests {
         #expect(merged == ["a", "c"])
     }
 
+    @Test("A new device takes the account's single values, like its theme")
+    func newDeviceTakesAccountValues() {
+        #expect(Merge.value(local: "midnight", remote: "obsidian", base: nil) == "obsidian")
+        #expect(Merge.value(local: ["a", "b"], remote: ["b", "a"], base: nil) == ["b", "a"])
+        #expect(Merge.value(local: "midnight", remote: nil, base: nil) == "midnight", "a brand-new account keeps this device's choice")
+    }
+
     @Test("Single values: the side that changed wins")
     func values() {
         #expect(Merge.value(local: 1, remote: 2, base: 1) == 2)

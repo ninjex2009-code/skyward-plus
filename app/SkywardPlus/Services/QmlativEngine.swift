@@ -16,6 +16,13 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
     #endif
 
     private var navContinuation: CheckedContinuation<Void, Never>?
+    /// How wide the web view was when the current page finished loading. Skyward
+    /// sets up a narrow layout for a narrow first load and keeps it, so a page
+    /// loaded while shown in a phone-sized sign-in view must be reloaded before use.
+    private var loadedWidth: CGFloat = 0
+
+    /// True when the page was last loaded at phone width (the iPhone sign-in view).
+    var loadedNarrow: Bool { loadedWidth > 0 && loadedWidth < 900 }
     private var navTimeoutTask: Task<Void, Never>?
     private var queueTail: Task<Void, Never>?
 
@@ -31,6 +38,28 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
         config.websiteDataStore = .default()
         config.preferences.javaScriptCanOpenWindowsAutomatically = true
         let controller = WKUserContentController()
+        #if os(iOS)
+        // The engine's web view is hidden and driven by script, and we send a Mac
+        // Safari user agent. Skyward switches to touch handling when the browser
+        // reports touch input, which an iPhone always does; hide it on Skyward's own
+        // pages so they behave exactly as on the Mac. (Sign-in pages are untouched.)
+        let host = (normalizedBase.host ?? "") + (normalizedBase.port.map { ":\($0)" } ?? "")
+        controller.addUserScript(WKUserScript(
+            source: """
+            (function () {
+              if (location.host !== \(Self.jsString(host))) return;
+              for (const p of [window, Window.prototype, Document.prototype, HTMLElement.prototype, Element.prototype]) {
+                for (const k of ['ontouchstart', 'ontouchmove', 'ontouchend', 'ontouchcancel']) {
+                  try { delete p[k]; } catch (e) {}
+                }
+              }
+              try { Object.defineProperty(Navigator.prototype, 'maxTouchPoints', { get: () => 0, configurable: true }); } catch (e) {}
+            })();
+            """,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: true
+        ))
+        #endif
         controller.addUserScript(WKUserScript(
             source: QmlativScript.source,
             injectionTime: .atDocumentEnd,
@@ -119,6 +148,13 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
         #endif
     }
 
+    /// A Swift string as a JavaScript string literal.
+    static func jsString(_ value: String) -> String {
+        let data = (try? JSONSerialization.data(withJSONObject: [value])) ?? Data("[\"\"]".utf8)
+        let array = String(decoding: data, as: UTF8.self)
+        return String(array.dropFirst().dropLast())
+    }
+
     // MARK: Serial Queue
 
     private func serialized<T>(_ operation: @escaping @MainActor () async -> T) async -> T {
@@ -165,24 +201,39 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
         (await _state())?.signedIn == true
     }
 
-    /// Signs back in without showing anything: presses the district sign-in
-    /// button, and when the district asks for credentials, fills in the ones the
-    /// student chose to remember. One attempt only; a failure means the sheet.
+    /// How a silent sign-in ended.
+    enum SilentOutcome: Equatable {
+        case signedIn
+        /// The district refused the saved sign-in. Never type it again.
+        case rejected
+        /// The district is waiting for a person: no saved sign-in, or a security code.
+        case needsPerson
+        /// Nothing came back in time (network, a slow district page). Safe to try later.
+        case noResponse
+    }
+
     /// True when the last silent sign-in typed the saved sign-in and the district
     /// did not accept it. The caller must stop using those details: sending a wrong
     /// password again is how accounts get locked.
     private(set) var lastSilentRejected = false
 
     func silentSignIn(credentials: DistrictCredentials? = nil) async -> Bool {
+        await signInQuietly(credentials: credentials) == .signedIn
+    }
+
+    /// Signs back in without showing anything: presses the district sign-in
+    /// button, and when the district asks for credentials, fills in the ones the
+    /// student chose to remember. One attempt only.
+    func signInQuietly(credentials: DistrictCredentials? = nil) async -> SilentOutcome {
         await serialized {
             self.lastSilentRejected = false
-            if (await self._state())?.signedIn == true { return true }
+            if (await self._state())?.signedIn == true { return .signedIn }
             _ = try? await self.callJS("return window.__sp.clickSSO()")
-            let deadline = Date().addingTimeInterval(credentials == nil ? 12 : 30)
+            let deadline = Date().addingTimeInterval(credentials == nil ? 15 : 30)
             var filledUser = false, filledPassword = false, askedAgain = 0
             while Date() < deadline {
                 try? await Task.sleep(nanoseconds: 700_000_000)
-                if (await self._state())?.signedIn == true { return true }
+                if (await self._state())?.signedIn == true { return .signedIn }
                 if filledPassword {
                     // The password went in once. If the page is back to an empty
                     // password box, it was refused: stop here rather than wait it out.
@@ -190,7 +241,7 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
                     askedAgain = again ? askedAgain + 1 : 0
                     if askedAgain >= 2 {
                         self.lastSilentRejected = true
-                        return false
+                        return .rejected
                     }
                     continue
                 }
@@ -203,7 +254,7 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
                 case "username":
                     if filledUser {  // asked for the username twice: it was refused
                         self.lastSilentRejected = true
-                        return false
+                        return .rejected
                     }
                     filledUser = true
                 case "password":
@@ -212,9 +263,15 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
                     break
                 }
             }
-            let signedIn = (await self._state())?.signedIn == true
-            if !signedIn, filledPassword { self.lastSilentRejected = true }
-            return signedIn
+            if (await self._state())?.signedIn == true { return .signedIn }
+            if filledPassword {
+                // Typed and not refused, but not in either: a security code or similar.
+                let form = (try? await self.callJS("return window.__sp.passwordAskedAgain()")) == "1"
+                if form { self.lastSilentRejected = true; return .rejected }
+                return .needsPerson
+            }
+            let form = (try? await self.callJS("return window.__sp.loginFormShown()")) == "1"
+            return form ? .needsPerson : .noResponse
         }
     }
 
@@ -333,16 +390,29 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
         ensureAttachedToWindow()
         #endif
         await ensureScriptInstalled()
-        let result = try await webView.callAsyncJavaScript(
-            body,
-            arguments: arguments,
-            in: nil,
-            contentWorld: .page
-        )
-        if let str = result as? String {
-            return str
+        // Installing the helper inside the same call means a page that reloaded a
+        // moment ago still has it; a script error comes back as text, not an exception.
+        let guarded = """
+        if (typeof window.__sp !== 'object') { \(QmlativScript.source); }
+        try { \(body) } catch (e) { return '__sp_error:' + (e && e.message ? e.message : String(e)); }
+        """
+        var lastError = ""
+        for attempt in 0..<2 {
+            if attempt > 0 { try? await Task.sleep(nanoseconds: 600_000_000) }
+            do {
+                let result = try await webView.callAsyncJavaScript(guarded, arguments: arguments, in: nil, contentWorld: .page)
+                guard let str = result as? String else { throw SkywardError.server("Unexpected script response from page.") }
+                if str.hasPrefix("__sp_error:") {
+                    lastError = String(str.dropFirst("__sp_error:".count))
+                    continue
+                }
+                return str
+            } catch let error as NSError where error.domain == WKError.errorDomain {
+                // The page went away mid-call (it navigated); try once more.
+                lastError = (error.userInfo["WKJavaScriptExceptionMessage"] as? String) ?? error.localizedDescription
+            }
         }
-        throw SkywardError.server("Unexpected script response from page.")
+        throw SkywardError.server("Skyward's page didn't respond as expected (\(lastError)).")
     }
 
     private func resolveNavigation() {
@@ -364,6 +434,7 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        loadedWidth = webView.bounds.width
         resolveNavigation()
     }
 

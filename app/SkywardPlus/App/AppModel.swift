@@ -8,6 +8,8 @@ enum SyncState: Equatable {
     case failed(String)
     /// Skyward wants the password or a security code again. Nothing retries until the user acts.
     case needsSignIn(String)
+    /// Paused on purpose and will try again by itself (see the message for when).
+    case waiting(String)
 
     var isSyncing: Bool {
         if case .syncing = self { return true }
@@ -122,6 +124,18 @@ final class AppModel {
     @ObservationIgnored var blockedAccounts: Set<String> = []
     @ObservationIgnored var now: () -> Date = { Date() }
     @ObservationIgnored var schedulerTimer: Timer?
+    /// Per account: no automatic sync before this time (after a failure or a pause).
+    @ObservationIgnored var retryAfter: [String: Date] = [:]
+    /// Per account: failures in a row, for backing off.
+    @ObservationIgnored var failureStreak: [String: Int] = [:]
+    /// Per account: the last sync that found the app signed in.
+    @ObservationIgnored var lastGoodSync: [String: Date] = [:]
+    /// Per student: the last sync that read every class and attendance.
+    @ObservationIgnored var lastFullSync: [UUID: Date] = [:]
+    #if os(macOS)
+    /// Keeps macOS from napping the app, so the timer fires on time with the window closed.
+    @ObservationIgnored var awakeActivity: NSObjectProtocol?
+    #endif
     @ObservationIgnored var exportTask: Task<Void, Never>?
 
     init(store: Store = Store()) {
@@ -311,8 +325,16 @@ final class AppModel {
     func updateSettings(_ change: (inout AppSettings) -> Void) {
         var copy = settings
         change(&copy)
+        let before = settings
         settings = copy
         save()
+        if before.backgroundSync != copy.backgroundSync { updateAwakeActivity() }
+        #if os(macOS)
+        if before.searchShortcut != copy.searchShortcut {
+            QuickSearch.shared.apply(QuickSearch.Shortcut(rawValue: copy.searchShortcut) ?? .off)
+        }
+        #endif
+        if before.notifySummary != copy.notifySummary || before.summaryHour != copy.summaryHour { rescheduleDueReminders() }
     }
 
     func setActive(_ id: UUID) {
@@ -626,7 +648,7 @@ final class AppModel {
 
     /// Refreshes one student (the active one by default). Students on the same
     /// account take turns, because they share one Skyward session.
-    func refresh(_ id: UUID? = nil) async {
+    func refresh(_ id: UUID? = nil, background: Bool = false) async {
         guard let profile = profiles.first(where: { $0.id == (id ?? active?.id) }) else { return }
         if syncStates[profile.id]?.isSyncing == true { return }
         if blockedAccounts.contains(profile.accountKey) {
@@ -637,7 +659,7 @@ final class AppModel {
         let previousTask = accountTasks[profile.accountKey]
         let task = Task { [weak self] in
             await previousTask?.value
-            await self?.performRefresh(profile.id)
+            await self?.performRefresh(profile.id, background: background)
         }
         accountTasks[profile.accountKey] = task
         await task.value
@@ -647,15 +669,24 @@ final class AppModel {
         for profile in profiles { await refresh(profile.id) }
     }
 
-    private func performRefresh(_ id: UUID) async {
+    private func performRefresh(_ id: UUID, background: Bool) async {
         guard let profile = profiles.first(where: { $0.id == id }) else { return }
+        let key = profile.accountKey
+        let started = now()
+        // In the background, a sign-out right after a good sync means the student
+        // signed in to Skyward somewhere else; signing straight back in would kick them.
+        let mayReSignIn = !background || started.timeIntervalSince(lastGoodSync[key] ?? .distantPast) > 12 * 60
+        let full = !background || started.timeIntervalSince(lastFullSync[id] ?? .distantPast) >= 30 * 60
         do {
             let previous = studentData[id]
             let updated: StudentData
             if isQmlativ(profile) {
                 let engine = try qmlativEngine(for: profile)
                 do {
-                    updated = try await SyncEngine.syncQmlativ(engine: engine, credentials: Keychain.usableDistrict(address: profile.address), previous: previous, now: now()) { [weak self] step in
+                    updated = try await SyncEngine.syncQmlativ(
+                        engine: engine, credentials: Keychain.usableDistrict(address: profile.address),
+                        previous: previous, now: now(), mayReSignIn: mayReSignIn, full: full
+                    ) { [weak self] step in
                         Task { @MainActor in
                             guard let self, self.syncStates[id]?.isSyncing == true else { return }
                             self.syncStates[id] = .syncing(step)
@@ -679,6 +710,24 @@ final class AppModel {
             store.saveData(updated, id)
             afterSync(id, previous: previous, updated: updated)
             syncStates[id] = .idle
+            retryAfter[key] = nil
+            failureStreak[key] = 0
+            lastGoodSync[key] = now()
+            if full || !isQmlativ(profile) { lastFullSync[id] = now() }
+        } catch let pause as QmlativPause {
+            let wait: TimeInterval
+            let message: String
+            switch pause {
+            case .signedInElsewhere:
+                wait = 30 * 60
+                message = "Skyward is open somewhere else, so checks pause until %@."
+            case .signInUnreachable:
+                wait = backOff(key)
+                message = "Couldn't reach the district sign-in. Trying again at %@."
+            }
+            let when = now().addingTimeInterval(wait)
+            retryAfter[key] = when
+            syncStates[id] = .waiting(String(format: message, Fmt.clock(when)))
         } catch let error as SkywardError {
             switch error {
             case .invalidLogin, .mfaRequired, .mfaInvalid, .sessionExpired, .notSignedIn, .ssoOnly:
@@ -687,11 +736,20 @@ final class AppModel {
                 let message = isQmlativ(profile) ? "Sign in again to keep syncing." : error.localizedDescription
                 syncStates[id] = .needsSignIn(message)
             default:
+                retryAfter[key] = now().addingTimeInterval(backOff(key))
                 syncStates[id] = .failed(error.localizedDescription)
             }
         } catch {
+            retryAfter[key] = now().addingTimeInterval(backOff(key))
             syncStates[id] = .failed(error.localizedDescription)
         }
+    }
+
+    /// 5, 10, 20, then 30 minutes between automatic tries after failures in a row.
+    private func backOff(_ key: String) -> TimeInterval {
+        let streak = (failureStreak[key] ?? 0) + 1
+        failureStreak[key] = streak
+        return TimeInterval(min(30, 5 << min(streak - 1, 3)) * 60)
     }
 
     private func afterSync(_ id: UUID, previous: StudentData?, updated: StudentData) {
@@ -716,7 +774,15 @@ final class AppModel {
         if settings.notifyNewGrades, previous?.lastSync != nil {
             let known = Set((previous?.changes ?? []).map { $0.id })
             let fresh = updated.changes.filter { !known.contains($0.id) }
-            if !fresh.isEmpty { Notifier.announce(fresh, studentName: profiles[index].firstName) }
+            if !fresh.isEmpty {
+                var averages: [String: Double] = [:]
+                if let lit = updated.currentLit {
+                    for course in updated.courses {
+                        if let value = updated.detail(course.id, lit)?.percent ?? course.grade(lit)?.number { averages[course.id] = value }
+                    }
+                }
+                for alert in AlertText.grades(fresh, averages: averages) { Notifier.post(alert) }
+            }
         }
         afterSyncFeatures(id, previous: previous, updated: updated)
     }
@@ -767,7 +833,9 @@ final class AppModel {
                 }
                 let engine = try qmlativEngine(for: profile)
                 let currentPath = (await engine.state())?.path ?? ""
-                if !currentPath.localizedCaseInsensitiveContains("/Grading/StudentSection/") {
+                // Also reload a gradebook first opened in the phone-sized sign-in view:
+                // Skyward keeps its narrow layout, and classes won't open in it.
+                if !currentPath.localizedCaseInsensitiveContains("/Grading/StudentSection/") || engine.loadedNarrow {
                     await engine.load("Grading/StudentSection/StudentAccess")
                 }
                 if (await engine.state())?.signedIn != true {
@@ -941,6 +1009,11 @@ enum Fmt {
         let f = DateFormatter()
         f.dateFormat = "EEE, MMM d"
         return f.string(from: date)
+    }
+
+    /// "4:10 PM" in the reader's own clock style.
+    static func clock(_ date: Date) -> String {
+        date.formatted(date: .omitted, time: .shortened)
     }
 
     static func shortDay(_ date: Date) -> String {

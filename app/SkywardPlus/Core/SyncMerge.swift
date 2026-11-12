@@ -3,11 +3,13 @@ import Foundation
 /// Three-way merges for account sync. `base` is what this device last synced:
 /// a change made on either side since then is kept, and when both sides changed
 /// the same thing, this device (`local`) wins. With no base yet (first sync on
-/// this device) the two sides are combined.
+/// this device) lists are combined and single values come from the account.
 enum Merge {
     static func value<T: Equatable>(local: T, remote: T?, base: T?) -> T {
         guard let remote else { return local }
-        guard let base else { return local }
+        // A device's first sync joins an existing account: the account's choice
+        // (theme, class order) comes back instead of being replaced by defaults.
+        guard let base else { return remote }
         return local == base ? remote : local
     }
 

@@ -73,6 +73,8 @@ enum EngineTest {
         }
         #if os(iOS)
         report["webViewWidth"] = Int(engine.webView.frame.width)
+        report["touchVisible"] = (try? await engine.webView.callAsyncJavaScript(
+            "return ('ontouchstart' in window) || navigator.maxTouchPoints > 0;", arguments: [:], in: nil, contentWorld: .page)) as? Bool ?? true
         report["inWindow"] = engine.webView.window != nil
         #endif
         report["seconds"] = (Date().timeIntervalSince(started) * 10).rounded() / 10

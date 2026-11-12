@@ -38,7 +38,8 @@ final class HelloOverlayController {
         if ProcessInfo.processInfo.environment["SKYWARDPLUS_SETUP_WINDOWED"] != nil {
             window.styleMask = [.titled, .resizable]
             window.title = "Setup"
-            window.level = .normal
+            // SKYWARDPLUS_SETUP_FLOATING keeps the real level, to test what floats above it.
+            window.level = ProcessInfo.processInfo.environment["SKYWARDPLUS_SETUP_FLOATING"] != nil ? .modalPanel : .normal
             window.collectionBehavior = []
             window.setFrame(NSRect(x: 80, y: 80, width: 1360, height: 860), display: false)
         }

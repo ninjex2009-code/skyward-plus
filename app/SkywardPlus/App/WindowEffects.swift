@@ -358,6 +358,8 @@ struct WindowEffects: ViewModifier {
         let aura = AppDelegate.shared?.aura
         if case .failed = model.syncState {
             aura?.announce("Couldn't reach Skyward", symbol: "wifi.slash")
+        } else if case .waiting = model.syncState {
+            return
         } else if model.unseenChangeCount > 0 {
             let n = model.unseenChangeCount
             aura?.announce(n == 1 ? "1 new grade" : "\(n) new grades", symbol: "arrow.down.circle.fill")

@@ -8,8 +8,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.2.1"
-    CURRENT_PROJECT_VERSION: "6"
+    MARKETING_VERSION: "1.3"
+    CURRENT_PROJECT_VERSION: "7"
 targets:
   SkywardPlus:
     type: application
@@ -45,6 +45,10 @@ targets:
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
         ITSAppUsesNonExemptEncryption: false
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.skywardplus.app.refresh
+        UIBackgroundModes:
+          - fetch
         CFBundleURLTypes:
           - CFBundleURLName: com.skywardplus.app
             CFBundleURLSchemes: [skywardplus]

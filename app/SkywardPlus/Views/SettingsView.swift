@@ -205,28 +205,54 @@ struct SettingsPageView: View {
     // MARK: Notifications
 
     @ViewBuilder private var notificationsPage: some View {
-        SettingsGroup {
-            ToggleRow(title: "New grades", isOn: notifySetting(\.notifyNewGrades))
-            ToggleRow(title: "Work due tomorrow and missing work", isOn: Binding(
-                get: { model.settings.notifyDueTomorrow },
-                set: { on in
-                    if on { Task { await Notifier.requestPermission() } }
-                    model.updateSettings { $0.notifyDueTomorrow = on }
-                    model.rescheduleDueReminders()
-                }
-            ))
-            ToggleRow(title: "A class drops under its goal", isOn: notifySetting(\.notifyBelowGoal))
+        NotificationStatusGroup()
+        SettingsGroup(title: "Tell me about") {
+            ToggleRow(title: "New and changed grades", isOn: notifySetting(\.notifyNewGrades))
+            ToggleRow(title: "Work marked missing", isOn: notifySetting(\.notifyMissing))
+            ToggleRow(title: "Work due tomorrow", isOn: eveningSetting(\.notifyDueTomorrow))
+            ToggleRow(title: "A class under its goal", isOn: notifySetting(\.notifyBelowGoal))
         }
+        SettingsGroup(title: "Evening summary", footer: "Today's grades, what's missing, what's due tomorrow and any class under its goal, in one note.") {
+            ToggleRow(title: "Send an evening summary", isOn: eveningSetting(\.notifySummary))
+            SettingRow(title: model.settings.notifySummary ? "Summary and reminders at" : "Due reminders at") {
+                Picker("Time", selection: setting(\.summaryHour)) {
+                    ForEach(15..<23) { hour in Text(hourLabel(hour)).tag(hour) }
+                }
+                .labelsHidden()
+                .fixedSize()
+            }
+        }
+        #if os(macOS)
+        PhoneRelayGroup()
+        #endif
+    }
+
+    private func hourLabel(_ hour: Int) -> String {
+        let date = Calendar.current.date(bySettingHour: hour, minute: 0, second: 0, of: Date()) ?? Date()
+        return date.formatted(date: .omitted, time: .shortened)
+    }
+
+    private func eveningSetting(_ keyPath: WritableKeyPath<AppSettings, Bool>) -> Binding<Bool> {
+        Binding(
+            get: { model.settings[keyPath: keyPath] },
+            set: { on in
+                if on { Task { await Notifier.requestPermission() } }
+                model.updateSettings { $0[keyPath: keyPath] = on }
+                model.rescheduleDueReminders()
+            }
+        )
     }
 
     // MARK: Syncing
 
     @ViewBuilder private var syncingPage: some View {
-        SettingsGroup(footer: model.settings.backgroundSync ? "Each check signs you out of Skyward in your browser." : nil) {
+        SettingsGroup(footer: model.settings.backgroundSync ? syncFooter : nil) {
             ToggleRow(title: "Check Skyward automatically", isOn: setting(\.backgroundSync))
             if model.settings.backgroundSync {
                 SettingRow(title: "Every") {
                     Picker("Every", selection: setting(\.syncMinutes)) {
+                        Text("5 minutes").tag(5)
+                        Text("10 minutes").tag(10)
                         Text("15 minutes").tag(15)
                         Text("30 minutes").tag(30)
                         Text("1 hour").tag(60)
@@ -266,6 +292,14 @@ struct SettingsPageView: View {
         }
     }
 
+    private var syncFooter: String {
+        #if os(macOS)
+        "Runs while Skyward Plus is in the menu bar, and signs back in by itself with your saved sign-in. Skyward allows one sign-in at a time: if you open Skyward in a browser, checks pause for 30 minutes instead of signing you out."
+        #else
+        "iOS decides how often the app may check in the background, usually every 15 minutes to a few hours. Skyward allows one sign-in at a time, so a check can sign you out of the Skyward website."
+        #endif
+    }
+
     // MARK: Mac
 
     @ViewBuilder private var macPage: some View {
@@ -275,6 +309,13 @@ struct SettingsPageView: View {
             ToggleRow(title: "Keep running when closed", isOn: setting(\.keepInMenuBar))
                 .disabled(!model.settings.showMenuBarIcon)
                 .opacity(model.settings.showMenuBarIcon ? 1 : 0.5)
+            SettingRow(title: "Search from any app", subtitle: model.settings.searchShortcut == "commandK" ? "Other apps lose their own ⌘K while this is on." : nil) {
+                Picker("Search from any app", selection: setting(\.searchShortcut)) {
+                    ForEach(QuickSearch.Shortcut.allCases) { Text($0.title).tag($0.rawValue) }
+                }
+                .labelsHidden()
+                .fixedSize()
+            }
             ToggleRow(title: "Open at login", isOn: Binding(
                 get: { model.settings.launchAtLogin },
                 set: { model.setLaunchAtLogin($0) }
@@ -338,6 +379,7 @@ struct SettingsGroup<Content: View>: View {
             VStack(spacing: 8) { content }
             if let footer {
                 Text(footer).font(.footnote).foregroundStyle(.secondary).padding(.horizontal, 4)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
     }

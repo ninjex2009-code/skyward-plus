@@ -8,6 +8,10 @@ struct CommandPalette: View {
     @State private var selection = 0
     @FocusState private var focused: Bool
     @Namespace private var highlight
+    /// Set when shown in the floating search panel instead of over the window.
+    var onClose: (() -> Void)? = nil
+    /// Called before an item runs, so the panel can bring the main window forward.
+    var onActivate: (() -> Void)? = nil
 
     struct Item: Identifiable {
         enum Kind { case section, course, assignment, action }
@@ -121,6 +125,7 @@ struct CommandPalette: View {
     }
 
     private func close() {
+        if let onClose { onClose(); query = ""; return }
         withAnimation(reduceMotion ? nil : Motion.snappy) { model.showPalette = false }
     }
 
@@ -128,6 +133,7 @@ struct CommandPalette: View {
         guard results.indices.contains(selection) else { return }
         let item = results[selection]
         close()
+        onActivate?()
         item.run(model)
     }
 

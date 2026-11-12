@@ -1268,6 +1268,18 @@ struct SyncStatusView: View {
             banner(symbol: "person.crop.circle.badge.exclamationmark", tint: Palette.bad, message: message, button: "Sign in") {
                 if let onSignIn { onSignIn() } else { model.requestReauth() }
             }
+        case .waiting(let message):
+            HStack(spacing: 10) {
+                Image(systemName: "clock").foregroundStyle(.secondary)
+                Text(message).font(.footnote.weight(.medium)).foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 8)
+                Button("Check now") { Task { await model.refresh() } }
+                    .buttonStyle(.bordered).controlSize(.small)
+            }
+            .padding(.horizontal, 14).padding(.vertical, 9)
+            .background(.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(.primary.opacity(0.10), lineWidth: 1))
         }
     }
 

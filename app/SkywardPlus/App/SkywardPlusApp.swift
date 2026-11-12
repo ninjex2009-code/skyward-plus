@@ -54,10 +54,7 @@ struct AppCommands: Commands {
         CommandGroup(after: .toolbar) {
             Button("Refresh Grades") { Task { await model.refresh() } }
                 .keyboardShortcut("r", modifiers: .command)
-            Button("Search…") {
-                AppDelegate.shared?.showMain(section: nil)
-                model.showPalette.toggle()
-            }
+            Button("Search…") { QuickSearch.shared.toggle() }
             .keyboardShortcut("k", modifiers: .command)
             Divider()
             Button("Export Grade Report…") { model.exportReport() }
@@ -108,6 +105,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
         #endif
         model.startScheduler()
+        QuickSearch.shared.install(model: model)
         LoginItem.sync(model.settings.launchAtLogin)
         AppIconApplier.apply(model.settings.appIcon)
 
@@ -264,12 +262,24 @@ struct MainWindowTracker: NSViewRepresentable {
 
 @main
 struct SkywardPlusApp: App {
-    @State private var model = AppModel()
+    @State private var model: AppModel
+    @Environment(\.scenePhase) private var phase
+
+    init() {
+        let model = AppModel()
+        _model = State(initialValue: model)
+        BackgroundRefresh.register(model: model)
+    }
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environment(model)
+                .onOpenURL { model.handle(url: $0) }
+                .onChange(of: phase) { _, phase in
+                    if phase == .background { BackgroundRefresh.schedule(model: model) }
+                    if phase == .active { model.syncIfDue() }
+                }
                 .task {
                     model.startScheduler()
                     await AccountSync.shared.sync(model: model)

@@ -25,11 +25,13 @@ enum RememberTest {
         await engine.load("Grading/StudentSection/StudentAccess")
         let before = await engine.state()
         let started = Date()
-        let result = await engine.silentSignIn(credentials: credentials)
+        let outcome = await engine.signInQuietly(credentials: credentials)
+        let result = outcome == .signedIn
         let after = await engine.state()
         let report: [String: Any] = [
             "signedInBefore": before?.signedIn ?? false,
             "result": result,
+            "outcome": String(describing: outcome),
             "rejected": engine.lastSilentRejected,
             "seconds": (Date().timeIntervalSince(started) * 10).rounded() / 10,
             "finalPath": after?.path ?? "",

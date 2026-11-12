@@ -459,7 +459,16 @@ extension AccountSync {
     final class Presenter: NSObject, ASWebAuthenticationPresentationContextProviding {
         @MainActor
         func authenticate(url: URL, scheme: String) async throws -> URL {
-            try await withCheckedThrowingContinuation { continuation in
+            #if os(macOS)
+            // Google's sheet opens at the normal window level. The full-screen hello
+            // (and the search panel) float above that and would hide it, so lower
+            // them while it is up.
+            let raised = NSApp.windows.filter { $0.isVisible && $0.level > .normal }
+            let levels = raised.map(\.level)
+            raised.forEach { $0.level = .normal }
+            defer { for (window, level) in zip(raised, levels) { window.level = level } }
+            #endif
+            return try await withCheckedThrowingContinuation { continuation in
                 let session = ASWebAuthenticationSession(url: url, callbackURLScheme: scheme) { callback, error in
                     if let callback { continuation.resume(returning: callback) }
                     else { continuation.resume(throwing: error ?? AccountError("Sign-in didn't finish.")) }

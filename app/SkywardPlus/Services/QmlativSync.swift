@@ -1,12 +1,29 @@
 import Foundation
 
+/// Why a background sync stopped without being an error worth a sign-in prompt.
+enum QmlativPause: Error, Equatable {
+    /// Skyward signed the app out moments after a good sync: someone signed in
+    /// elsewhere (Skyward allows one session). Signing straight back in would
+    /// sign them out, so wait a while.
+    case signedInElsewhere
+    /// The district's sign-in page didn't answer. Nothing was typed; try later.
+    case signInUnreachable
+}
+
 extension SyncEngine {
+    /// - Parameters:
+    ///   - mayReSignIn: false right after a good sync, when being signed out means
+    ///     the student signed in somewhere else.
+    ///   - full: false for the frequent background check, which reads the grade
+    ///     table and reopens only classes whose grade moved, and skips attendance.
     @MainActor
     static func syncQmlativ(
         engine: QmlativEngine,
         credentials: DistrictCredentials? = nil,
         previous: StudentData?,
         now: Date = Date(),
+        mayReSignIn: Bool = true,
+        full: Bool = true,
         progress: ((String) -> Void)? = nil
     ) async throws -> StudentData {
         progress?("Loading grades")
@@ -14,12 +31,15 @@ extension SyncEngine {
 
         var currentState = await engine.state()
         if currentState?.signedIn != true {
-            let signedInAfterSilent = await engine.silentSignIn(credentials: credentials)
-            guard signedInAfterSilent else {
-                throw SkywardError.sessionExpired
+            guard mayReSignIn else { throw QmlativPause.signedInElsewhere }
+            progress?("Signing in")
+            switch await engine.signInQuietly(credentials: credentials) {
+            case .signedIn: break
+            case .noResponse: throw QmlativPause.signInUnreachable
+            case .rejected, .needsPerson: throw SkywardError.sessionExpired
             }
             currentState = await engine.state()
-            if !(currentState?.path.localizedCaseInsensitiveContains("/Grading/StudentSection/") ?? false) {
+            if !(currentState?.path.localizedCaseInsensitiveContains("/Grading/StudentSection/") ?? false) || engine.loadedNarrow {
                 await engine.load("Grading/StudentSection/StudentAccess")
                 currentState = await engine.state()
             }
@@ -63,6 +83,10 @@ extension SyncEngine {
             for i in data.courses.indices {
                 let course = data.courses[i]
                 guard let grade = course.grade(lit), grade.hasDetail, !grade.bucket.isEmpty else { continue }
+                if !full, let old = previous?.courses.first(where: { $0.id == course.id })?.grade(lit),
+                   old.text == grade.text, previous?.details[StudentData.detailKey(course.id, lit)] != nil {
+                    continue  // Same grade as last time: its assignments are still current enough.
+                }
                 progress?("Loading \(Str.titleCase(course.name))")
                 do {
                     let panel = try await engine.open(bucketID: grade.bucket, weights: true)
@@ -85,6 +109,7 @@ extension SyncEngine {
         }
 
         // Load attendance page.
+        if full {
         progress?("Loading attendance")
         do {
             await engine.load("Attendance/StudentAttendance/StudentAccess")
@@ -92,6 +117,10 @@ extension SyncEngine {
             data.attendance = QmlativMapper.attendance(rawAtt).sorted { $0.date > $1.date }
         } catch {
             data.warnings.append("Attendance could not be loaded.")
+        }
+        } else {
+            // Keep the last full sync's attendance warning, if any, until the next full one.
+            if let old = previous?.warnings.first(where: { $0.hasPrefix("Attendance") }) { data.warnings.append(old) }
         }
 
         let finalState: QmlState?

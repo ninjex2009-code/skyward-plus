@@ -28,8 +28,11 @@ struct SettingsCompatibilityTests {
         #expect(settings.showMenuBarIcon)
         #expect(settings.launchAtLogin == false)
         #expect(settings.backgroundSync)
-        #expect(settings.syncMinutes == 30)
+        #expect(settings.syncMinutes == 5)
         #expect(settings.exportTarget == .off)
+        #expect(settings.notifyMissing == settings.notifyDueTomorrow, "missing work keeps the switch it used to share")
+        #expect(settings.notifySummary)
+        #expect(settings.phoneRelayTopic.isEmpty, "nothing goes to the phone until turned on")
         #expect(settings.helloShown, "people updating from 1.0 have already met the app")
     }
 

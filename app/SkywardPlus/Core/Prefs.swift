@@ -197,9 +197,21 @@ struct AppSettings: Codable, Hashable {
     var showMenuBarIcon = true
     var launchAtLogin = false
     var backgroundSync = true
-    var syncMinutes = 30
+    var syncMinutes = 5
     var notifyDueTomorrow = true
     var notifyBelowGoal = true
+    /// Work newly marked missing in Skyward.
+    var notifyMissing = true
+    /// One evening note: today's grades, what's missing, what's due tomorrow.
+    var notifySummary = true
+    /// Hour (0-23) the evening summary and due-tomorrow reminder arrive.
+    var summaryHour = 19
+    /// ntfy topic the Mac copies every alert to, so it reaches the phone. Empty: off.
+    var phoneRelayTopic = ""
+    /// Include scores and averages in alerts copied to the phone.
+    var phoneRelayScores = true
+    /// Shortcut that opens search from any app (Mac). "off", "optionCommandK", "controlOptionK", "commandK".
+    var searchShortcut = "optionCommandK"
     var exportTarget: ExportTarget = .off
     var helloShown = false
     var lastUpdateCheck: Date?
@@ -236,6 +248,13 @@ struct AppSettings: Codable, Hashable {
         syncMinutes = (try? c.decodeIfPresent(Int.self, forKey: .syncMinutes)) ?? d.syncMinutes
         notifyDueTomorrow = (try? c.decodeIfPresent(Bool.self, forKey: .notifyDueTomorrow)) ?? d.notifyDueTomorrow
         notifyBelowGoal = (try? c.decodeIfPresent(Bool.self, forKey: .notifyBelowGoal)) ?? d.notifyBelowGoal
+        // Missing work used to share the due-tomorrow switch.
+        notifyMissing = (try? c.decodeIfPresent(Bool.self, forKey: .notifyMissing)) ?? notifyDueTomorrow
+        notifySummary = (try? c.decodeIfPresent(Bool.self, forKey: .notifySummary)) ?? d.notifySummary
+        summaryHour = (try? c.decodeIfPresent(Int.self, forKey: .summaryHour)) ?? d.summaryHour
+        phoneRelayTopic = (try? c.decodeIfPresent(String.self, forKey: .phoneRelayTopic)) ?? d.phoneRelayTopic
+        phoneRelayScores = (try? c.decodeIfPresent(Bool.self, forKey: .phoneRelayScores)) ?? d.phoneRelayScores
+        searchShortcut = (try? c.decodeIfPresent(String.self, forKey: .searchShortcut)) ?? d.searchShortcut
         exportTarget = (try? c.decodeIfPresent(ExportTarget.self, forKey: .exportTarget)) ?? d.exportTarget
         // Anyone upgrading has already seen the app, so the hello only plays on a true first launch.
         helloShown = (try? c.decodeIfPresent(Bool.self, forKey: .helloShown)) ?? true

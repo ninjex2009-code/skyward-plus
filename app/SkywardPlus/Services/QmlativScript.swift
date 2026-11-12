@@ -54,7 +54,8 @@ enum QmlativScript {
   sp.grid = () => {
     const body = document.querySelector('table.unlockedBrowseTable');
     if (!body) return JSON.stringify({ heads: [], rows: [], missing: '' });
-    const browse = body.closest('.browse');
+    // Narrow layouts can lack the .browse wrapper; fall back to the whole page.
+    const browse = body.closest('.browse') || document;
     const heads = [...browse.querySelectorAll('.unlockedHeaderTableRow td')].map(td => ({
       text: T(td), current: /progressReportDetailsOpenHeader/.test(td.className)
     }));
@@ -161,7 +162,7 @@ enum QmlativScript {
     const body = document.querySelector('table.unlockedBrowseTable');
     const out = { heads: [], rows: [], legend: {}, totals: '' };
     if (!body) return JSON.stringify(out);
-    out.heads = [...body.closest('.browse').querySelectorAll('.unlockedHeaderTableRow td')].map(T);
+    out.heads = [...(body.closest('.browse') || document).querySelectorAll('.unlockedHeaderTableRow td')].map(T);
     out.rows = [...body.rows].map(r => [...r.cells].map(T));
     out.totals = ((document.body.innerText || '').match(/Days Absent[\s\S]{0,120}?Tardy Count\s*[\d.]+/) || [''])[0].replace(/\s+/g, ' ');
     const button = document.querySelector('#btnStudentAttendanceLegend');
@@ -243,6 +244,13 @@ enum QmlativScript {
     if (/skyward\.iscorp\.com$/i.test(location.host)) return '0';
     const pw = [...document.querySelectorAll('input[type=password]')].find(shown);
     return pw && !pw.value ? '1' : '0';
+  };
+
+  // True on the district's own sign-in page when it is waiting for someone to type.
+  sp.loginFormShown = () => {
+    if (/skyward\.iscorp\.com$/i.test(location.host)) return '0';
+    const inputs = [...document.querySelectorAll('input[type=password], input[type=text], input[type=email], input:not([type])')].filter(shown);
+    return inputs.length ? '1' : '0';
   };
 
   window.__sp = sp;

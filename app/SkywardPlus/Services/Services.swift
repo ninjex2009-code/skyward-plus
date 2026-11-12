@@ -202,71 +202,67 @@ enum Notifier {
         }
     }
 
-    // New grades
+    // MARK: Alerts
 
-    static func announce(_ changes: [GradeChange], studentName: String) {
+    /// Where the Mac copies alerts for the phone. Nil when that is off.
+    static var relay: PhoneRelay.Config?
+
+    /// Shows an alert now and, when set up, copies it to the phone.
+    static func post(_ alert: Alert, relay relayOverride: PhoneRelay.Config?? = nil) {
         guard isEnabled else { return }
-        let grades = changes.filter { $0.kind == .newGrade || $0.kind == .updatedGrade }
-        guard let first = grades.first else { return }
-        let content = UNMutableNotificationContent()
-        if grades.count == 1 {
-            content.title = "New grade in " + first.courseName
-            content.body = first.title + ": " + first.detail
-        } else {
-            content.title = "\(grades.count) new grades"
-            content.body = grades.prefix(3).map { $0.courseName + ": " + $0.title }.joined(separator: "\n")
-        }
-        content.sound = .default
-        center.add(UNNotificationRequest(identifier: "grades-" + UUID().uuidString, content: content, trigger: nil))
+        center.add(UNNotificationRequest(identifier: alert.id, content: content(for: alert), trigger: nil))
+        #if os(macOS)
+        if let config = relayOverride ?? relay { PhoneRelay.send(alert, config: config) }
+        #endif
     }
 
-    // Missing work and goals
-
-    static func announceMissing(_ items: [(course: String, title: String)], studentName: String) {
-        guard isEnabled, let first = items.first else { return }
+    static func content(for alert: Alert) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
-        if items.count == 1 {
-            content.title = "Missing in " + first.course
-            content.body = first.title + " is marked missing in Skyward."
-        } else {
-            content.title = "\(items.count) assignments marked missing"
-            content.body = items.prefix(3).map { $0.course + ": " + $0.title }.joined(separator: "\n")
-        }
+        content.title = alert.title
+        content.body = alert.body
         content.sound = .default
-        center.add(UNNotificationRequest(identifier: "missing-" + UUID().uuidString, content: content, trigger: nil))
+        content.threadIdentifier = alert.thread
+        if let courseID = alert.courseID { content.userInfo = ["courseID": courseID] }
+        return content
     }
 
-    static func announceBelowGoal(course: String, percent: Double, goal: Double, studentName: String) {
-        guard isEnabled else { return }
-        let content = UNMutableNotificationContent()
-        content.title = course + " is below your goal"
-        content.body = "Now \(Fmt.percent(percent)), goal \(Fmt.percent(goal))."
-        content.sound = .default
-        center.add(UNNotificationRequest(identifier: "goal-" + UUID().uuidString, content: content, trigger: nil))
-    }
-
-    /// One evening reminder (7 PM) for each day that has work due the next day.
-    static func scheduleDueReminders(_ items: [AppModel.DueItem], studentName: String) {
+    /// The evening alerts: the summary for the next evening (when on), and a
+    /// due-tomorrow reminder for each later evening that has work due.
+    static func scheduleEvening(summary: Alert?, summaryDay: Date?, due: [AppModel.DueItem], hour: Int) {
         guard isEnabled else { return }
         center.getPendingNotificationRequests { requests in
-            let old = requests.map { $0.identifier }.filter { $0.hasPrefix("due-") }
+            let old = requests.map { $0.identifier }.filter { $0.hasPrefix("due-") || $0.hasPrefix("evening") }
             center.removePendingNotificationRequests(withIdentifiers: old)
             let calendar = Calendar.current
-            let byDay = Dictionary(grouping: items) { calendar.startOfDay(for: $0.due) }
+            if let summary, let summaryDay,
+               let fire = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: summaryDay), fire > Date() {
+                center.add(UNNotificationRequest(
+                    identifier: "evening", content: content(for: summary),
+                    trigger: UNCalendarNotificationTrigger(dateMatching: calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fire), repeats: false)
+                ))
+            }
+            let byDay = Dictionary(grouping: due) { calendar.startOfDay(for: $0.due) }
             for (day, dayItems) in byDay.sorted(by: { $0.key < $1.key }).prefix(10) {
                 guard let eve = calendar.date(byAdding: .day, value: -1, to: day),
-                      let fire = calendar.date(bySettingHour: 19, minute: 0, second: 0, of: eve),
+                      let fire = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: eve),
                       fire > Date() else { continue }
+                // That evening's summary already lists it.
+                if summary != nil, let summaryDay, calendar.isDate(eve, inSameDayAs: summaryDay) { continue }
                 let content = UNMutableNotificationContent()
                 content.title = dayItems.count == 1 ? "Due tomorrow: " + dayItems[0].title : "\(dayItems.count) things due tomorrow"
                 content.body = dayItems.prefix(4).map { $0.course.isEmpty ? $0.title : $0.course + ": " + $0.title }.joined(separator: "\n")
                 content.sound = .default
-                let parts = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fire)
+                content.threadIdentifier = "due"
                 center.add(UNNotificationRequest(
                     identifier: "due-\(Int(day.timeIntervalSince1970))", content: content,
-                    trigger: UNCalendarNotificationTrigger(dateMatching: parts, repeats: false)
+                    trigger: UNCalendarNotificationTrigger(dateMatching: calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fire), repeats: false)
                 ))
             }
         }
+    }
+
+    static func authorizationStatus() async -> UNAuthorizationStatus {
+        guard isEnabled else { return .denied }
+        return await center.notificationSettings().authorizationStatus
     }
 }

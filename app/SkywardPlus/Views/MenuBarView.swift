@@ -76,6 +76,7 @@ struct MenuBarView: View {
         case .syncing(let step): return step + "…"
         case .failed: return "Last refresh failed"
         case .needsSignIn: return "Sign in again to keep syncing"
+        case .waiting: return "Paused · updated " + Fmt.ago(model.data.lastSync, now: model.now())
         case .idle: return "Updated " + Fmt.ago(model.data.lastSync, now: model.now())
         }
     }
