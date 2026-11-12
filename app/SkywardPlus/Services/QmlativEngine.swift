@@ -48,6 +48,18 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
             source: """
             (function () {
               if (location.host !== \(Self.jsString(host))) return;
+              // An iPhone lays a page with no viewport tag out 980 wide, however large
+              // the web view is. Skyward only opens the assignments side panel on a page
+              // at least 1200 wide; on a narrower one a click opens a separate window,
+              // which this hidden view can't use. Ask for the view's full desktop width.
+              // Pages with their own viewport tag (the sign-in page) keep theirs: it
+              // comes later in the page and replaces this one.
+              try {
+                const viewport = document.createElement('meta');
+                viewport.name = 'viewport';
+                viewport.content = 'width=1280';
+                (document.head || document.documentElement).appendChild(viewport);
+              } catch (e) {}
               for (const p of [window, Window.prototype, Document.prototype, HTMLElement.prototype, Element.prototype]) {
                 for (const k of ['ontouchstart', 'ontouchmove', 'ontouchend', 'ontouchcancel']) {
                   try { delete p[k]; } catch (e) {}
@@ -422,6 +434,33 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
         }
     }
 
+    /// Runs script in the page with a time limit. If the page is replaced while a call
+    /// is waiting, WebKit may never answer it; without the limit that would stall
+    /// every later sync for this account.
+    private func callPage(_ source: String, arguments: [String: Any], seconds: Double = 75) async throws -> Any? {
+        final class Once { var done = false }
+        let once = Once()
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Any?, Error>) in
+            let timer = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                guard !once.done else { return }
+                once.done = true
+                continuation.resume(throwing: SkywardError.server("Skyward's page stopped responding."))
+            }
+            webView.callAsyncJavaScript(source, arguments: arguments, in: nil, in: .page) { result in
+                MainActor.assumeIsolated {
+                    guard !once.done else { return }
+                    once.done = true
+                    timer.cancel()
+                    switch result {
+                    case .success(let value): continuation.resume(returning: value)
+                    case .failure(let error): continuation.resume(throwing: error)
+                    }
+                }
+            }
+        }
+    }
+
     private func callJS(_ body: String, arguments: [String: Any] = [:]) async throws -> String {
         #if os(iOS)
         ensureAttachedToWindow()
@@ -437,7 +476,7 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
         for attempt in 0..<2 {
             if attempt > 0 { try? await Task.sleep(nanoseconds: 600_000_000) }
             do {
-                let result = try await webView.callAsyncJavaScript(guarded, arguments: arguments, in: nil, contentWorld: .page)
+                let result = try await callPage(guarded, arguments: arguments)
                 guard let str = result as? String else { throw SkywardError.server("Unexpected script response from page.") }
                 if str.hasPrefix("__sp_error:") {
                     lastError = String(str.dropFirst("__sp_error:".count))
@@ -464,6 +503,13 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
     // MARK: WKNavigationDelegate & WKUIDelegate
 
     func webView(_ webView: WKWebView, createWebViewWith configuration: WKWebViewConfiguration, for navigationAction: WKNavigationAction, windowFeatures: WKWindowFeatures) -> WKWebView? {
+        // Inside the student site, a new window is Skyward showing details it found no
+        // room for on the page. Following it would take this hidden page off the
+        // gradebook (and strand whatever was reading it), so it is ignored. Sign-in
+        // pages live outside the student site and may still open their windows here.
+        if let current = webView.url, current.absoluteString.hasPrefix(base.absoluteString) {
+            return nil
+        }
         if let url = navigationAction.request.url {
             webView.load(URLRequest(url: url))
         }

@@ -139,7 +139,21 @@ enum QmlativScript {
   // unverified as a whole (the click and the panel were verified by hand)
   sp.open = async (bucketId, wantWeights) => {
     const cell = document.querySelector('td[data-student-grade-bucket-id="' + bucketId + '"]');
-    if (!cell) return JSON.stringify({ error: 'no-cell' });
+    if (!cell) {
+      const grid = !!document.querySelector('table.unlockedBrowseTable');
+      return JSON.stringify({ error: grid ? 'no-cell' : 'no-cell, the grades page is not showing' });
+    }
+    // Skyward opens the side panel only when it believes the page is at least 1200
+    // wide (skyward.bundle.js: canShowDetailsPanel); on a narrower page the click
+    // opens a separate window instead. If it still thinks the page is narrow, have it
+    // take the panel route anyway: the panel's contents are the same.
+    try {
+      const sky = window.skyward;
+      if (sky && sky.window && sky.detailsPanel && typeof sky.detailsPanel.canShowDetailsPanel === 'function'
+          && !sky.detailsPanel.canShowDetailsPanel()) {
+        Object.defineProperty(sky.window, 'clientWidth', { get: () => 1280, set: () => {}, configurable: true });
+      }
+    } catch (_) {}
     if (!cell.classList.contains('linkPanelCell--active')) {
       (cell.querySelector('a') || cell).click();
       await sleep(200);
@@ -147,7 +161,7 @@ enum QmlativScript {
     }
     let panel = null;
     for (let i = 0; i < 40 && !(panel = sp.panelData()); i++) await sleep(150);
-    if (!panel) return JSON.stringify({ error: 'no-panel' });
+    if (!panel) return JSON.stringify({ error: 'no-panel, page ' + document.documentElement.clientWidth + ' wide' });
     if (wantWeights) {
       try {
         panel.weights = await sp.weights();

@@ -14,8 +14,46 @@ import UIKit
 ///   detached  taken out of the window before use
 /// Only ever point this at a local server.
 enum EngineTest {
+    /// What the page believes about its own size, read from inside it.
+    @MainActor
+    static func pageMetrics(_ engine: QmlativEngine) async -> String {
+        let script = """
+        return JSON.stringify({
+          clientWidth: document.documentElement.clientWidth, innerWidth: window.innerWidth,
+          screenWidth: screen.width, scale: window.visualViewport ? window.visualViewport.scale : null,
+          viewportTags: [...document.querySelectorAll('meta[name=viewport]')].map(m => m.content),
+          screenWidthField: (document.getElementById('ScreenWidth') || {}).value || null,
+          platform: navigator.platform, touch: 'ontouchstart' in window, path: location.pathname
+        });
+        """
+        let value = try? await engine.webView.callAsyncJavaScript(script, arguments: [:], in: nil, contentWorld: .page)
+        return (value as? String) ?? "unreadable"
+    }
+
+    /// `--probe-url <public page URL> <output.json>`: loads one page in the hidden
+    /// web view and writes how it was laid out. Reads only; never types or submits.
+    @MainActor
+    static func probeIfRequested() async {
+        let args = CommandLine.arguments
+        guard let index = args.firstIndex(of: "--probe-url"), args.count > index + 2,
+              let url = URL(string: args[index + 1]), let host = url.host, let scheme = url.scheme,
+              let root = URL(string: "\(scheme)://\(host)\(url.port.map { ":\($0)" } ?? "")/") else { return }
+        try? await Task.sleep(nanoseconds: 800_000_000)
+        let engine = QmlativEngine(base: root)
+        await engine.load(url.path + (url.query.map { "?" + $0 } ?? ""))
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+        var report: [String: Any] = ["page": await pageMetrics(engine)]
+        #if os(iOS)
+        report["webViewWidth"] = Int(engine.webView.frame.width)
+        #endif
+        if let data = try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]) {
+            try? data.write(to: URL(fileURLWithPath: args[index + 2]))
+        }
+    }
+
     @MainActor
     static func runIfRequested() async {
+        await probeIfRequested()
         let args = CommandLine.arguments
         guard let index = args.firstIndex(of: "--engine-test"), args.count > index + 3,
               let base = URL(string: args[index + 1]),
@@ -51,6 +89,27 @@ enum EngineTest {
             container.removeFromSuperview()
         } else if scenario == "detached" {
             engine.webView.removeFromSuperview()
+        } else if scenario == "popups" {
+            // What happens to the main page when it opens a new window, two ways.
+            func js(_ source: String) async -> String {
+                ((try? await engine.webView.callAsyncJavaScript(source, arguments: [:], in: nil, contentWorld: .page)) as? String) ?? "call failed"
+            }
+            await engine.load("Grading/StudentSection/StudentAccess")
+            report["open"] = await js("const w = window.open('/MockISDStu/Gradebook/popout?id=direct'); return String(w);")
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            report["pathAfterOpen"] = await js("return location.pathname")
+            await engine.load("Grading/StudentSection/StudentAccess")
+            report["form"] = await js("const f = document.createElement('form'); f.method = 'POST'; f.target = '_blank'; f.action = '/MockISDStu/Gradebook/popout?id=form'; document.body.appendChild(f); f.submit(); f.remove(); return 'submitted';")
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            report["pathAfterForm"] = await js("return location.pathname")
+            await engine.load("Grading/StudentSection/StudentAccess")
+            report["click"] = await js("const a = document.querySelector('td.linkPanelCell a'); a.click(); return 'clicked at width ' + document.documentElement.clientWidth;")
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            report["pathAfterClick"] = await js("return location.pathname")
+            if let data = try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]) {
+                try? data.write(to: output)
+            }
+            return
         } else if scenario == "mobile" || scenario == "narrowsignin" {
             // Test values from the mock portal (tools/mock-portal/server.py).
             let credentials = DistrictCredentials(username: "teststudent", password: "test-pass-123")
@@ -70,6 +129,7 @@ enum EngineTest {
                     web.bottomAnchor.constraint(equalTo: container.bottomAnchor),
                 ])
                 await engine.load("Grading/StudentSection/StudentAccess")
+                report["signInPage"] = await pageMetrics(engine)
                 report["narrowSignIn"] = String(describing: await engine.signInQuietly(credentials: credentials))
                 engine.attachToHiddenHost()
                 container.removeFromSuperview()
@@ -94,6 +154,7 @@ enum EngineTest {
 
         await engine.load("Grading/StudentSection/StudentAccess")
         report["signedIn"] = (await engine.state())?.signedIn ?? false
+        report["page"] = await pageMetrics(engine)
         do {
             let grid = try await engine.grid()
             let mapped = QmlativMapper.gradebook(grid)
@@ -109,6 +170,7 @@ enum EngineTest {
         } catch {
             report["error"] = error.localizedDescription
         }
+        report["pathAfter"] = (await engine.state())?.path ?? ""
         #if os(iOS)
         report["webViewWidth"] = Int(engine.webView.frame.width)
         report["touchVisible"] = (try? await engine.webView.callAsyncJavaScript(

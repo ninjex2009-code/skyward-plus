@@ -15,7 +15,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 USER, PASS = "teststudent", "test-pass-123"
 BASE, STS = "/MockISDStu/", "/MockISDStuSTS/Session/Signin"
-state = {"mode": "twostep", "signedIn": False, "log": [], "mobile": False, "screenWidth": 1280}
+state = {"mode": "twostep", "signedIn": False, "log": [], "mobile": False, "screenWidth": 1280, "meta": "1"}
 
 # A signed-in Qmlativ gradebook, built from the selectors the app's page script
 # reads. Like a responsive site, the class panel becomes a full-screen
@@ -24,6 +24,15 @@ CLASSES = [("1001", "AP CALCULUS BC", "1", ["93", "94", "94", "95"]),
            ("1002", "AP ENGLISH LITERATURE", "2", ["90", "91", "92", "93"]),
            ("1003", "SYMPHONIC BAND", "8", ["99", "99", "100", ""])]
 LITS = ["PR1", "Q1", "PR2", "Q2"]
+
+def viewport_tag():
+    # meta=1: sized to the view (the default). meta=0: no tag, like a desktop-only page.
+    # meta=<number>: a fixed width, which wins over any tag added before it.
+    if state["meta"] == "1":
+        return '<meta name="viewport" content="width=device-width, initial-scale=1">'
+    if state["meta"] == "0":
+        return ""
+    return '<meta name="viewport" content="width=%s">' % state["meta"]
 
 def gradebook():
     head = "".join('<td class="%s">%s</td>' % ("progressReportDetailsOpenHeader" if lit == "Q2" else "", lit) for lit in LITS)
@@ -36,17 +45,24 @@ def gradebook():
                     '<span class="visualLabel">%s</span><span class="visualLabel">Period %s</span></a></td><td>Teacher</td>%s</tr>'
                     % (section, name, name, period, cells))
     return (GRADEBOOK.replace("{HEAD}", head).replace("{ROWS}", "".join(rows))
-            .replace("{MOBILE}", "true" if state["mobile"] else "false"))
+            .replace("{MOBILE}", "true" if state["mobile"] else "false")
+            .replace("{VIEWPORT}", viewport_tag()))
 
 GRADEBOOK = """<!doctype html><title>Gradebook</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+{VIEWPORT}
 <style>
   body { font: 14px -apple-system, sans-serif; margin: 0; }
   #detailsPanel { display: none; background: #fff; }
   #detailsPanel.open { display: block; position: absolute; top: 0; right: 0; width: 460px; }
   @media (max-width: 800px) { #detailsPanel.open { position: fixed; inset: 0; width: auto; } }
 </style>
-<script>window.skyward = { global: { mobileAccess: {MOBILE}, mobileAccessEmulation: false } };</script>
+<script>window.skyward = { global: { mobileAccess: {MOBILE}, mobileAccessEmulation: false } };
+// Like Skyward (skyward.bundle.js): the page measures its width when it loads and on
+// resize, and the assignments side panel is only allowed on a page at least 1200 wide.
+window.skyward.window = { clientWidth: document.documentElement.clientWidth };
+window.skyward.detailsPanel = { canShowDetailsPanel: () => window.skyward.window.clientWidth >= 1200 };
+window.addEventListener('resize', () => { window.skyward.window.clientWidth = document.documentElement.clientWidth; });
+</script>
 <button id="myAccountButton">Test Student</button> <a id="signOutButton" href="/MockISDStu/signout">Sign Out</a>
 <p>Current Missing Assignments: 1</p>
 <div class="browse">
@@ -60,6 +76,15 @@ document.querySelectorAll('td.linkPanelCell a').forEach(a => a.addEventListener(
   // Like Skyward: a session signed in at phone width never opens the side panel.
   if (window.skyward.global.mobileAccess) return;
   const cell = a.closest('td');
+  // Skyward's own rule: too narrow for the side panel, so the details open in a new window.
+  if (!window.skyward.detailsPanel.canShowDetailsPanel()) {
+    // Like Skyward's "popout": a hidden form posted to a new window.
+    const form = document.createElement('form');
+    form.method = 'POST'; form.target = '_blank';
+    form.action = '/MockISDStu/Gradebook/popout?id=' + cell.dataset.studentGradeBucketId;
+    document.body.appendChild(form); form.submit(); form.remove();
+    return;
+  }
   const xhr = new XMLHttpRequest();
   xhr.open('GET', '/MockISDStu/api/bucket?id=' + cell.dataset.studentGradeBucketId);
   xhr.onload = () => {
@@ -178,14 +203,19 @@ class Handler(BaseHTTPRequestHandler):
             mode = query.get("mode", ["twostep"])[0]
             # "gradebook" starts signed in, for testing what happens after sign-in.
             # "mobile" starts signed in to a session made at phone width.
+            # meta=0 serves the gradebook without a viewport tag, like a desktop-only page.
             state.update(mode=mode, signedIn=mode in ("gradebook", "mobile"), log=[],
-                         mobile=mode == "mobile", screenWidth=1280)
+                         mobile=mode == "mobile", screenWidth=1280,
+                         meta=query.get("meta", ["1"])[0])
             return self.send("ok", kind="text/plain")
         if url.path == "/__log":
             return self.send(json.dumps(state["log"]), kind="application/json")
         if url.path == BASE + "api/bucket":
             lit = query.get("id", ["b0000Q2"])[0][5:]
             return self.send(PANEL.replace("{LIT}", lit))
+        if url.path == BASE + "Gradebook/popout":
+            state["log"].append({"step": "popout-get", "id": query.get("id", [""])[0]})
+            return self.send("<!doctype html><title>Details</title><p>Details in a new window</p>")
         if url.path == BASE + "signout":
             state["signedIn"] = False
             state["log"].append({"step": "signout"})
@@ -202,6 +232,9 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         raw = self.rfile.read(int(self.headers.get("Content-Length", 0))).decode()
+        if self.path.startswith(BASE + "Gradebook/popout"):
+            state["log"].append({"step": "popout-post"})
+            return self.send("<!doctype html><title>Details</title><p>Details in a new window</p>")
         if self.path == "/MockISDStuSTS/sso":
             form = urllib.parse.parse_qs(raw)
             width = int(float(form.get("ScreenWidth", ["0"])[0] or 0))
