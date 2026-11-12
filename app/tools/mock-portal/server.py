@@ -15,7 +15,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 USER, PASS = "teststudent", "test-pass-123"
 BASE, STS = "/MockISDStu/", "/MockISDStuSTS/Session/Signin"
-state = {"mode": "twostep", "signedIn": False, "log": []}
+state = {"mode": "twostep", "signedIn": False, "log": [], "mobile": False, "screenWidth": 1280}
 
 # A signed-in Qmlativ gradebook, built from the selectors the app's page script
 # reads. Like a responsive site, the class panel becomes a full-screen
@@ -35,7 +35,8 @@ def gradebook():
         rows.append('<tr><td><a data-studentsectionid="%s" data-studentid="77" data-coursedescription="%s">'
                     '<span class="visualLabel">%s</span><span class="visualLabel">Period %s</span></a></td><td>Teacher</td>%s</tr>'
                     % (section, name, name, period, cells))
-    return GRADEBOOK.replace("{HEAD}", head).replace("{ROWS}", "".join(rows))
+    return (GRADEBOOK.replace("{HEAD}", head).replace("{ROWS}", "".join(rows))
+            .replace("{MOBILE}", "true" if state["mobile"] else "false"))
 
 GRADEBOOK = """<!doctype html><title>Gradebook</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -45,7 +46,8 @@ GRADEBOOK = """<!doctype html><title>Gradebook</title>
   #detailsPanel.open { display: block; position: absolute; top: 0; right: 0; width: 460px; }
   @media (max-width: 800px) { #detailsPanel.open { position: fixed; inset: 0; width: auto; } }
 </style>
-<button id="myAccountButton">Test Student</button> <a id="signOutButton" href="#">Sign Out</a>
+<script>window.skyward = { global: { mobileAccess: {MOBILE}, mobileAccessEmulation: false } };</script>
+<button id="myAccountButton">Test Student</button> <a id="signOutButton" href="/MockISDStu/signout">Sign Out</a>
 <p>Current Missing Assignments: 1</p>
 <div class="browse">
   <table><tr class="unlockedHeaderTableRow"><td>Class</td><td>Teacher</td>{HEAD}</tr></table>
@@ -55,6 +57,8 @@ GRADEBOOK = """<!doctype html><title>Gradebook</title>
 <script>
 document.querySelectorAll('td.linkPanelCell a').forEach(a => a.addEventListener('click', e => {
   e.preventDefault();
+  // Like Skyward: a session signed in at phone width never opens the side panel.
+  if (window.skyward.global.mobileAccess) return;
   const cell = a.closest('td');
   const xhr = new XMLHttpRequest();
   xhr.open('GET', '/MockISDStu/api/bucket?id=' + cell.dataset.studentGradeBucketId);
@@ -82,9 +86,21 @@ PANEL = """<a href="#"><span class="anchorText">Dana Whitfield</span></a>
   <tr><td class="column0">FRQ Set</td><td class="column1">10/20/2026</td><td class="column2">A</td><td class="column3">95</td><td class="column4">19/20</td><td class="column5">1</td></tr>
 </table></div>"""
 
+# Like Skyward's: the window size goes along with the sign-in (set at page ready).
 SKYWARD_SIGN_IN = """<!doctype html><title>Sign In</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <h1>Mock ISD</h1><p>Sign in to Skyward</p>
-<a href="/portal/">Sign In with Mock SSO</a>"""
+<form id="f" method="post" action="/MockISDStuSTS/sso">
+  <input type="hidden" id="ScreenWidth" name="ScreenWidth" value="0">
+  <input type="hidden" id="ScreenHeight" name="ScreenHeight" value="0">
+</form>
+<button type="button" onclick="document.getElementById('f').submit()">Sign In with Mock SSO</button>
+<script>
+document.addEventListener('DOMContentLoaded', () => setTimeout(() => {
+  document.getElementById('ScreenWidth').value = window.innerWidth;
+  document.getElementById('ScreenHeight').value = window.innerHeight;
+}, 0));
+</script>"""
 
 TWO_STEP = """<!doctype html><title>Mock Portal</title>
 <div id="view"></div><p id="error" style="color:#b00"></p>
@@ -161,13 +177,19 @@ class Handler(BaseHTTPRequestHandler):
         if url.path == "/__reset":
             mode = query.get("mode", ["twostep"])[0]
             # "gradebook" starts signed in, for testing what happens after sign-in.
-            state.update(mode=mode, signedIn=mode == "gradebook", log=[])
+            # "mobile" starts signed in to a session made at phone width.
+            state.update(mode=mode, signedIn=mode in ("gradebook", "mobile"), log=[],
+                         mobile=mode == "mobile", screenWidth=1280)
             return self.send("ok", kind="text/plain")
         if url.path == "/__log":
             return self.send(json.dumps(state["log"]), kind="application/json")
         if url.path == BASE + "api/bucket":
             lit = query.get("id", ["b0000Q2"])[0][5:]
             return self.send(PANEL.replace("{LIT}", lit))
+        if url.path == BASE + "signout":
+            state["signedIn"] = False
+            state["log"].append({"step": "signout"})
+            return self.redirect(STS)
         if url.path.startswith(BASE):
             return self.send(gradebook()) if state["signedIn"] else self.redirect(STS)
         if url.path == STS:
@@ -180,6 +202,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         raw = self.rfile.read(int(self.headers.get("Content-Length", 0))).decode()
+        if self.path == "/MockISDStuSTS/sso":
+            form = urllib.parse.parse_qs(raw)
+            width = int(float(form.get("ScreenWidth", ["0"])[0] or 0))
+            state["screenWidth"] = width
+            state["log"].append({"step": "sso", "screenWidth": width})
+            return self.redirect("/portal/")
         if self.path == "/portal/api/user":
             user = json.loads(raw).get("user", "")
             ok = user == USER and state["mode"] != "baduser"
@@ -189,12 +217,14 @@ class Handler(BaseHTTPRequestHandler):
             ok = json.loads(raw).get("pass", "") == PASS and state["mode"] != "wrongpass"
             state["log"].append({"step": "pass", "accepted": ok})
             state["signedIn"] = ok
+            if ok: state["mobile"] = state["screenWidth"] < 768
             return self.send(json.dumps({"ok": ok}), kind="application/json")
         if self.path == "/portal/login":
             form = urllib.parse.parse_qs(raw)
             ok = form.get("username", [""])[0] == USER and form.get("password", [""])[0] == PASS
             state["log"].append({"step": "login", "hasUser": bool(form.get("username")), "accepted": ok})
             state["signedIn"] = ok
+            if ok: state["mobile"] = state["screenWidth"] < 768
             return self.redirect(BASE + "Grading/StudentSection/StudentAccess" if ok else "/portal/?error=1")
         self.send("not found", 404, "text/plain")
 

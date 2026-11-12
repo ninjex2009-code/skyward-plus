@@ -51,6 +51,44 @@ enum EngineTest {
             container.removeFromSuperview()
         } else if scenario == "detached" {
             engine.webView.removeFromSuperview()
+        } else if scenario == "mobile" || scenario == "narrowsignin" {
+            // Test values from the mock portal (tools/mock-portal/server.py).
+            let credentials = DistrictCredentials(username: "teststudent", password: "test-pass-123")
+            if scenario == "narrowsignin" {
+                // Sign in inside a phone-width view, as the iPhone sign-in sheet does.
+                let window = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first?.windows.first
+                let container = UIView(frame: CGRect(x: 0, y: 0, width: 390, height: 700))
+                window?.addSubview(container)
+                let web = engine.webView
+                web.removeFromSuperview()
+                web.translatesAutoresizingMaskIntoConstraints = false
+                container.addSubview(web)
+                NSLayoutConstraint.activate([
+                    web.leadingAnchor.constraint(equalTo: container.leadingAnchor),
+                    web.trailingAnchor.constraint(equalTo: container.trailingAnchor),
+                    web.topAnchor.constraint(equalTo: container.topAnchor),
+                    web.bottomAnchor.constraint(equalTo: container.bottomAnchor),
+                ])
+                await engine.load("Grading/StudentSection/StudentAccess")
+                report["narrowSignIn"] = String(describing: await engine.signInQuietly(credentials: credentials))
+                engine.attachToHiddenHost()
+                container.removeFromSuperview()
+            }
+            await engine.load("Grading/StudentSection/StudentAccess")
+            report["mobileBefore"] = (await engine.state())?.mobile ?? false
+            do {
+                let data = try await SyncEngine.syncQmlativ(engine: engine, credentials: credentials, previous: nil)
+                report["details"] = data.details.count
+                report["warnings"] = data.warnings.joined(separator: " | ")
+            } catch {
+                report["error"] = error.localizedDescription
+            }
+            report["mobileAfter"] = (await engine.state())?.mobile ?? false
+            report["seconds"] = (Date().timeIntervalSince(started) * 10).rounded() / 10
+            if let data = try? JSONSerialization.data(withJSONObject: report, options: [.sortedKeys]) {
+                try? data.write(to: output)
+            }
+            return
         }
         #endif
 

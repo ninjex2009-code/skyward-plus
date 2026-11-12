@@ -850,6 +850,13 @@ final class AppModel {
                         await engine.load("Grading/StudentSection/StudentAccess")
                     }
                 }
+                if (await engine.state())?.mobile == true,
+                   !(await engine.replaceMobileSession(credentials: Keychain.usableDistrict(address: profile.address))) {
+                    blockedAccounts.insert(profile.accountKey)
+                    syncStates[profile.id] = .needsSignIn("Sign in again to keep syncing.")
+                    detailErrors[key] = "Sign in again to see assignments."
+                    return
+                }
                 // Wait until the gradebook has actually drawn before clicking into it.
                 _ = try await engine.grid()
                 var panel: QmlPanel

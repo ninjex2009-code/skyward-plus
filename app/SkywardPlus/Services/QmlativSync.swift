@@ -45,6 +45,14 @@ extension SyncEngine {
             }
         }
 
+        // A session signed in at phone width is set up for phones, and its classes
+        // never open. Trade it for a desktop one (once).
+        if currentState?.mobile == true {
+            progress?("Switching Skyward to the full layout")
+            guard await engine.replaceMobileSession(credentials: credentials) else { throw SkywardError.sessionExpired }
+            currentState = await engine.state()
+        }
+
         let rawGrid = try await engine.grid()
         let mapped = QmlativMapper.gradebook(rawGrid)
         guard !mapped.courses.isEmpty else {
@@ -80,6 +88,7 @@ extension SyncEngine {
         // Open each class that hasDetail in the default marking period, one at a time.
         if let lit = data.currentLit {
             var failedCourses: [String] = []
+            var firstReason = ""
             for i in data.courses.indices {
                 let course = data.courses[i]
                 guard let grade = course.grade(lit), grade.hasDetail, !grade.bucket.isEmpty else { continue }
@@ -98,13 +107,16 @@ extension SyncEngine {
                         }
                     } else {
                         failedCourses.append(Str.titleCase(course.name))
+                        if firstReason.isEmpty { firstReason = "the panel was empty" }
                     }
                 } catch {
                     failedCourses.append(Str.titleCase(course.name))
+                    if firstReason.isEmpty { firstReason = error.localizedDescription }
                 }
             }
             if !failedCourses.isEmpty {
-                data.warnings.append("Assignments could not be loaded for: " + failedCourses.joined(separator: ", ") + ".")
+                let mobile = (await engine.state())?.mobile == true ? " Skyward is in its phone layout." : ""
+                data.warnings.append("Assignments could not be loaded for: " + failedCourses.joined(separator: ", ") + ". Reason: " + firstReason + mobile)
             }
         }
 

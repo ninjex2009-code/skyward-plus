@@ -54,6 +54,20 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
                 }
               }
               try { Object.defineProperty(Navigator.prototype, 'maxTouchPoints', { get: () => 0, configurable: true }); } catch (e) {}
+              // Skyward's sign-in page sends the window size with the sign-in and sets
+              // the whole session up for a phone when it is narrow; in that session
+              // classes never open. Always report the hidden view's desktop size.
+              const wide = () => {
+                const w = document.getElementById('ScreenWidth'), h = document.getElementById('ScreenHeight');
+                if (w && Number(w.value) < 1280) w.value = '1280';
+                if (h && Number(h.value) < 900) h.value = '900';
+              };
+              const submit = HTMLFormElement.prototype.submit;
+              HTMLFormElement.prototype.submit = function () { wide(); return submit.apply(this, arguments); };
+              document.addEventListener('submit', wide, true);
+              document.addEventListener('click', wide, true);
+              const timer = setInterval(wide, 200);
+              setTimeout(() => clearInterval(timer), 120000);
             })();
             """,
             injectionTime: .atDocumentStart,
@@ -273,6 +287,29 @@ final class QmlativEngine: NSObject, WKNavigationDelegate, WKUIDelegate {
             let form = (try? await self.callJS("return window.__sp.loginFormShown()")) == "1"
             return form ? .needsPerson : .noResponse
         }
+    }
+
+    /// Accounts whose phone-width session was already traded in this run, so it happens once.
+    private var replacedMobileSession = false
+
+    /// When Skyward set this session up for a phone, signs out of Skyward only (the
+    /// district sign-in stays) and back in at desktop width, once. True when the
+    /// app ends up signed in to a desktop session.
+    func replaceMobileSession(credentials: DistrictCredentials?) async -> Bool {
+        guard let state = await _state(), state.signedIn, state.mobile == true else { return true }
+        guard !replacedMobileSession else { return true }
+        replacedMobileSession = true
+        await serialized {
+            _ = try? await self.callJS("const b = document.querySelector('#signOutButton'); if (b) b.click(); return b ? 'clicked' : 'none';")
+            for _ in 0..<30 {
+                try? await Task.sleep(nanoseconds: 400_000_000)
+                if (await self._state())?.signedIn != true { break }
+            }
+            await self._load("Grading/StudentSection/StudentAccess")
+        }
+        guard await signInQuietly(credentials: credentials) == .signedIn else { return false }
+        await load("Grading/StudentSection/StudentAccess")
+        return (await _state())?.signedIn == true
     }
 
     func grid() async throws -> QmlGrid {

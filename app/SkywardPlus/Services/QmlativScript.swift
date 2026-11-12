@@ -46,7 +46,8 @@ enum QmlativScript {
       signInPage: !signedIn && (password || /\/Session\/Signin/i.test(path)),
       duplicateSession: /sign in was detected from a different window/i.test(text),
       name: T(document.querySelector('#myAccountButton')),
-      school: T(document.querySelector('.headerSelect__label'))
+      school: T(document.querySelector('.headerSelect__label')),
+      mobile: !!(window.skyward && window.skyward.global && (window.skyward.global.mobileAccess || window.skyward.global.mobileAccessEmulation))
     });
   };
 

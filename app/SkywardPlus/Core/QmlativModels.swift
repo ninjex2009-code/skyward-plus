@@ -9,6 +9,8 @@ struct QmlState: Decodable, Equatable {
     var duplicateSession: Bool
     var name: String
     var school: String
+    /// Skyward set this session up for a phone (it was signed in at phone width).
+    var mobile: Bool? = nil
 }
 
 struct QmlGrid: Decodable, Equatable {
