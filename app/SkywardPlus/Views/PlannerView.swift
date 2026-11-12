@@ -10,7 +10,15 @@ struct PlannerView: View {
 
     @Environment(AppModel.self) private var model
     @Environment(\.horizontalSizeClass) private var sizeClass
-    @State private var filter: FilterMode = .upcoming
+    @State private var filter: FilterMode = PlannerView.initialFilter
+
+    private static var initialFilter: FilterMode {
+        #if DEBUG
+        // SKYWARDPLUS_PLANNER=By Day opens straight to a view, for screenshots.
+        if let raw = ProcessInfo.processInfo.environment["SKYWARDPLUS_PLANNER"], let mode = FilterMode(rawValue: raw) { return mode }
+        #endif
+        return .upcoming
+    }
     @State private var selectedDay: Date = Date()
     @State private var editingTask: PlannerTask?
     @State private var creatingTask = false
@@ -125,22 +133,26 @@ struct PlannerView: View {
     }
 
     private var byDayContent: some View {
+        // A big month on the left with the chosen day beside it on wide windows; stacked otherwise.
+        CalendarBeside {
+            PlannerCalendar(selection: $selectedDay)
+        } side: {
+            dayList
+        }
+    }
+
+    private var dayList: some View {
         let dayTasks = model.tasks(dueOn: selectedDay)
         let daySkyward = model.assignments(dueOn: selectedDay)
 
         return VStack(alignment: .leading, spacing: 14) {
-            Card {
-                DatePicker("Select Date", selection: $selectedDay, displayedComponents: .date)
-                    .datePickerStyle(.graphical)
-            }
-
             SectionHeader(Fmt.day(selectedDay), subtitle: "\(dayTasks.count + daySkyward.count) items")
             if dayTasks.isEmpty && daySkyward.isEmpty {
                 Card {
                     EmptyState(
                         symbol: "calendar",
                         title: "Nothing due on \(Fmt.shortDay(selectedDay))",
-                        message: "Use Add Task to schedule work for this day."
+                        message: "Use New Task to plan work for this day."
                     )
                 }
             } else {
@@ -403,6 +415,28 @@ struct TaskEditorSheet: View {
             if let remind = task.remindAt {
                 hasReminder = true
                 reminderDate = remind
+            }
+        }
+    }
+}
+
+/// The month with the chosen day's list beside it on wide windows, below it otherwise.
+/// Its own view so it reads the page's size from inside the page.
+private struct CalendarBeside<Main: View, Side: View>: View {
+    @Environment(\.windowMetrics) private var metrics
+    @ViewBuilder var main: Main
+    @ViewBuilder var side: Side
+
+    var body: some View {
+        if metrics.width >= 1000 {
+            HStack(alignment: .top, spacing: 20) {
+                main.frame(maxWidth: .infinity)
+                side.frame(width: 340)
+            }
+        } else {
+            VStack(alignment: .leading, spacing: 18) {
+                main
+                side
             }
         }
     }
