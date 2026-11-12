@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		034FC14D05FC7D34C2D1F98E /* GradeShare.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6B0375B64F7FB146CAEA160 /* GradeShare.swift */; };
+		0757D7BE9FDB8404F29473C0 /* GradeShare.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6B0375B64F7FB146CAEA160 /* GradeShare.swift */; };
 		0AD791A4DD2C87B5F55FC9AD /* QmlativSignInSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B752C3A0F48BEB3A28DB99DF /* QmlativSignInSheet.swift */; };
 		0F36E9441AB282CF20B5FF3C /* SyncMerge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55BD35D67244F0ABB427646B /* SyncMerge.swift */; };
 		125B7485A77D072D191508DD /* QmlativSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCF9BEDC78B4CD9C4B4D97D6 /* QmlativSync.swift */; };
@@ -79,6 +81,7 @@
 		C0411EB28C31E7332E4D642B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FE20DF5BF5561E38EA6FFFCC /* GoogleService-Info.plist */; };
 		C10ED0BB52D5711DD582C48E /* RememberTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95613240EC4C5437526932 /* RememberTest.swift */; };
 		C87FB6756FC2C1D523444670 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2CF78A49BB78D9DAC2D04FE8 /* Assets.xcassets */; };
+		C8ED09A870DBE800B9528D26 /* GradeShareTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48F3BDA167C30EFB1F55FE42 /* GradeShareTests.swift */; };
 		CB5300E404A89729C32EB1D6 /* FakeSkyward.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A5D20717E4F4320999EF990 /* FakeSkyward.swift */; };
 		D121280D68BE53A0187771B9 /* WebSignIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29CB6352585661A55E46D29E /* WebSignIn.swift */; };
 		D48126C6C9A045E67E7B82A5 /* AppModel+Alerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50E6F9A4EA069DA606B4FAC /* AppModel+Alerts.swift */; };
@@ -133,6 +136,7 @@
 		3CB787630CC9A188139A3CB8 /* GradesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradesView.swift; sourceTree = "<group>"; };
 		438C2C429D9F9B7D76A9422C /* BellBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BellBanner.swift; sourceTree = "<group>"; };
 		465AE02F163DACCF529D48A3 /* HelloOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloOverlay.swift; sourceTree = "<group>"; };
+		48F3BDA167C30EFB1F55FE42 /* GradeShareTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradeShareTests.swift; sourceTree = "<group>"; };
 		4E02AC6A1A6C250C5C317CD1 /* SkywardPlusTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = SkywardPlusTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		526154364A8088FACCB1ECFC /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		53B7A3593D65D0F76A561542 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
@@ -175,6 +179,7 @@
 		E091B189B46447F692A2A7C9 /* Hubs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hubs.swift; sourceTree = "<group>"; };
 		E260F82AEE42BD8E728CE32C /* SettingsCompatibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCompatibilityTests.swift; sourceTree = "<group>"; };
 		E31909742C82022679140233 /* PlannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannerView.swift; sourceTree = "<group>"; };
+		E6B0375B64F7FB146CAEA160 /* GradeShare.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradeShare.swift; sourceTree = "<group>"; };
 		E8EF32BA21333B6040A8C7FD /* QmlativModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativModels.swift; sourceTree = "<group>"; };
 		E93007BE5100E31BD55F0FD7 /* ScheduleViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleViews.swift; sourceTree = "<group>"; };
 		EB4A069FD1F428CFE318D292 /* BackgroundRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundRefresh.swift; sourceTree = "<group>"; };
@@ -228,6 +233,7 @@
 				8A5D20717E4F4320999EF990 /* FakeSkyward.swift */,
 				EF57EB24B79476D792924EDC /* GPA.swift */,
 				55CAC84C164C53F6FD1EAB90 /* GradeMath.swift */,
+				E6B0375B64F7FB146CAEA160 /* GradeShare.swift */,
 				9F22A200A187962B286EAD91 /* HTML.swift */,
 				1A52C1E493421AD57F9F31F8 /* JSLiteral.swift */,
 				DA50AAD86D1DD6BC29ABB70D /* Models.swift */,
@@ -328,6 +334,7 @@
 			children = (
 				55995CFD7BD7FEBC5FF9AA69 /* AlertTextTests.swift */,
 				3AA1A605954E668AA5A75622 /* CoreAndParserTests.swift */,
+				48F3BDA167C30EFB1F55FE42 /* GradeShareTests.swift */,
 				2BA9B17E8BAEDDEF6DB89570 /* LoginTests.swift */,
 				60E605D9276B82CC3940FFB4 /* QmlativMapperTests.swift */,
 				E260F82AEE42BD8E728CE32C /* SettingsCompatibilityTests.swift */,
@@ -466,6 +473,7 @@
 				4EF8FD011CB27AD3ED57D0F2 /* GPAView.swift in Sources */,
 				5ECB3F926BD59DCFC525920F /* GradeMath.swift in Sources */,
 				1531E3636492770CF3A30D55 /* GradeReport.swift in Sources */,
+				0757D7BE9FDB8404F29473C0 /* GradeShare.swift in Sources */,
 				AF0B3E4E0F97964E4CBA6DD8 /* GradesView.swift in Sources */,
 				F0CC1EF2F38037656E52DF04 /* HTML.swift in Sources */,
 				4ACCC885F5CBBEA7551A23B9 /* HelloOverlay.swift in Sources */,
@@ -518,6 +526,8 @@
 				CB5300E404A89729C32EB1D6 /* FakeSkyward.swift in Sources */,
 				1914C71068429101E899BCCD /* GPA.swift in Sources */,
 				45395F9633F30EC4667C771F /* GradeMath.swift in Sources */,
+				034FC14D05FC7D34C2D1F98E /* GradeShare.swift in Sources */,
+				C8ED09A870DBE800B9528D26 /* GradeShareTests.swift in Sources */,
 				68FF1FB6BEED628870E17FCB /* HTML.swift in Sources */,
 				BAE4E033DF8B659804B8323C /* JSLiteral.swift in Sources */,
 				BD130E98E11EC81A62842B00 /* LoginTests.swift in Sources */,
@@ -591,7 +601,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -611,7 +621,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.3.2;
+				MARKETING_VERSION = 1.3.3;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -796,7 +806,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 9;
+				CURRENT_PROJECT_VERSION = 10;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -810,7 +820,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.3.2;
+				MARKETING_VERSION = 1.3.3;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

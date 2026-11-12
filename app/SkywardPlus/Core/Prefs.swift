@@ -210,6 +210,8 @@ struct AppSettings: Codable, Hashable {
     var phoneRelayTopic = ""
     /// Include scores and averages in alerts copied to the phone.
     var phoneRelayScores = true
+    /// Share grades with the student's other devices through their account.
+    var shareGrades = true
     /// Nimbus, the little cloud who walks around empty space on the Mac.
     var showMascot = true
     /// Shortcut that opens search from any app (Mac). "off", "optionCommandK", "controlOptionK", "commandK".
@@ -258,6 +260,7 @@ struct AppSettings: Codable, Hashable {
         phoneRelayScores = (try? c.decodeIfPresent(Bool.self, forKey: .phoneRelayScores)) ?? d.phoneRelayScores
         searchShortcut = (try? c.decodeIfPresent(String.self, forKey: .searchShortcut)) ?? d.searchShortcut
         showMascot = (try? c.decodeIfPresent(Bool.self, forKey: .showMascot)) ?? d.showMascot
+        shareGrades = (try? c.decodeIfPresent(Bool.self, forKey: .shareGrades)) ?? d.shareGrades
         exportTarget = (try? c.decodeIfPresent(ExportTarget.self, forKey: .exportTarget)) ?? d.exportTarget
         // Anyone upgrading has already seen the app, so the hello only plays on a true first launch.
         helloShown = (try? c.decodeIfPresent(Bool.self, forKey: .helloShown)) ?? true

@@ -278,7 +278,12 @@ struct SkywardPlusApp: App {
                 .onOpenURL { model.handle(url: $0) }
                 .onChange(of: phase) { _, phase in
                     if phase == .background { BackgroundRefresh.schedule(model: model) }
-                    if phase == .active { model.syncIfDue() }
+                    if phase == .active {
+                        Task {
+                            await AccountSync.shared.sync(model: model)
+                            model.syncIfDue()
+                        }
+                    }
                 }
                 .task {
                     model.startScheduler()

@@ -45,7 +45,12 @@ extension AppModel {
     /// One quick check of every student, for iOS background refresh.
     func backgroundCheck() async {
         guard settings.backgroundSync, !isLocked else { return }
+        // Grades another device already read are the cheapest, kindest update:
+        // no Skyward sign-in, so no one gets signed out.
+        await AccountSync.shared.sync(model: self)
         for profile in profiles where !profile.isDemo {
+            let last = data(for: profile.id).lastSync ?? .distantPast
+            if now().timeIntervalSince(last) < syncInterval { continue }
             if blockedAccounts.contains(profile.accountKey) { continue }
             if let wait = retryAfter[profile.accountKey], now() < wait { continue }
             if Task.isCancelled { return }

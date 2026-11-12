@@ -3,7 +3,7 @@ import SwiftUI
 
 /// What Nimbus is up to.
 enum MascotAct: Equatable {
-    case walk, look, sit, fiddle, nap, cheer, sad
+    case walk, look, sit, fiddle, nap, float, cheer, sad
 }
 
 /// A grade reaction the model asks for after a sync.
@@ -18,7 +18,7 @@ final class MascotBrain {
     static let shared = MascotBrain()
 
     struct Particle {
-        enum Kind { case drop, z, spark }
+        enum Kind { case drop, z, spark, wisp }
         var kind: Kind
         var x: Double
         var y: Double
@@ -30,9 +30,14 @@ final class MascotBrain {
     private(set) var act: MascotAct = .walk
     private(set) var frame = 0
     private(set) var look = 0
+    /// Top row of his body in lane pixels.
     private(set) var oy = 0
+    /// How high he is floating, in pixels above the ground.
+    private(set) var altitude: Double = 0
     private(set) var particles: [Particle] = []
+    private(set) var ground = 19
     private var target: Double = 30
+    private var altitudeTarget: Double = 0
     private var until: Double = 0
     private var reactionUntil: Double = 0
     private var last: Double = 0
@@ -41,16 +46,30 @@ final class MascotBrain {
     private var blinkUntil: Double = 0
     private var nextBlink: Double = 0
     private var lastSpawn: Double = 0
-    private var cols = 60
+    private var lastWisp: Double = 0
 
     static let width = 20
+
+    #if DEBUG
+    init() {
+        // SKYWARDPLUS_MASCOT=float|sad|cheer starts him that way, for screenshots.
+        switch ProcessInfo.processInfo.environment["SKYWARDPLUS_MASCOT"] {
+        case "float": act = .float; altitude = 14; altitudeTarget = 14; x = 60; target = 60
+        case "sad": act = .sad; reactionUntil = .greatestFiniteMagnitude; x = 60; target = 60
+        case "cheer": act = .cheer; reactionUntil = .greatestFiniteMagnitude; x = 60; target = 60
+        default: break
+        }
+    }
+    #endif
+
+    var airborne: Bool { altitude > 0.6 }
 
     func isBlinking(_ now: Double) -> Bool { now < blinkUntil }
 
     func react(_ next: MascotAct, now: Double, seconds: Double = 6) {
         act = next
         reactionUntil = now + seconds
-        particles.removeAll()
+        particles.removeAll { $0.kind != .wisp }
     }
 
     /// The pixel rectangle he occupies, for taps.
@@ -62,51 +81,101 @@ final class MascotBrain {
     func step(now: Double, cols: Int, rows: Int, reduceMotion: Bool) {
         let dt = last == 0 ? 0 : min(0.05, now - last)
         last = now
-        self.cols = cols
+        ground = rows - 1
         let minX = 3.0, maxX = max(3.0, Double(cols - Self.width - 4))
+        // Room to float: the lane minus his height, the cap and a margin for sparkles.
+        let maxAltitude = Double(max(0, rows - 22))
+        let canFloat = maxAltitude >= 6 && !reduceMotion
         x = min(max(x, minX), maxX)
         target = min(max(target, minX), maxX)
+        altitudeTarget = min(altitudeTarget, maxAltitude)
+
+        func startFloating() {
+            act = .float
+            target = Double.random(in: minX...maxX)
+            altitudeTarget = Double.random(in: min(6, maxAltitude)...maxAltitude)
+        }
 
         if now < reactionUntil {
-            // A reaction plays out before anything else.
+            // A reaction plays out before anything else, wherever he is.
         } else if act == .cheer || act == .sad {
-            act = .look
+            act = airborne ? .float : .look
             until = now + 2
-            particles.removeAll()
+            particles.removeAll { $0.kind != .wisp }
+            if act == .float { target = x }
         } else if reduceMotion || maxX - minX < 4 {
             act = .sit
-        } else if act == .walk {
-            if abs(target - x) < 0.5 {
-                let choices: [(MascotAct, Double)] = [(.look, 3), (.look, 3), (.fiddle, 6), (.sit, 6), (.nap, 10)]
-                let pick = choices.randomElement()!
-                act = pick.0
-                until = now + pick.1
+            altitudeTarget = 0
+            altitude = 0
+        } else {
+            switch act {
+            case .walk:
+                if abs(target - x) < 0.5 {
+                    var choices: [(MascotAct, Double)] = [(.look, 3), (.look, 3), (.fiddle, 6), (.sit, 6), (.nap, 10)]
+                    if canFloat { choices += [(.float, 0), (.float, 0)] }
+                    let pick = choices.randomElement()!
+                    if pick.0 == .float { startFloating() } else { act = pick.0; until = now + pick.1 }
+                }
+            case .float:
+                let there = abs(target - x) < 0.5 && abs(altitudeTarget - altitude) < 0.3
+                if there {
+                    if altitudeTarget > 0, Bool.random() {
+                        // Drift somewhere else, or come down for a rest.
+                        target = Double.random(in: minX...maxX)
+                        altitudeTarget = Double.random(in: min(6, maxAltitude)...max(min(6, maxAltitude), maxAltitude))
+                    } else if altitudeTarget > 0 {
+                        altitudeTarget = 0
+                    } else {
+                        altitude = 0
+                        act = .look
+                        until = now + 2
+                    }
+                }
+            default:
+                if now > until {
+                    if canFloat, Double.random(in: 0...1) < 0.45 { startFloating() } else {
+                        act = .walk
+                        target = Double.random(in: minX...maxX)
+                    }
+                }
             }
-        } else if now > until {
-            act = .walk
-            target = Double.random(in: minX...maxX)
         }
 
         if act == .walk {
             face = target > x ? 1 : -1
             x += Double(face) * min(4.2 * dt, abs(target - x))
+        } else if act == .float {
+            if abs(target - x) > 0.3 { face = target > x ? 1 : -1 }
+            x += Double(face) * min(2.6 * dt, abs(target - x))
         }
+        // Rise and settle smoothly, wherever he is.
+        if act != .walk {
+            let goal = act == .float || now < reactionUntil ? altitudeTarget : 0
+            altitude += (goal - altitude) * min(1, 1.6 * dt)
+            if abs(goal - altitude) < 0.05 { altitude = goal }
+        } else {
+            altitude = 0
+        }
+
         if now - frameAt > 0.17 { frame ^= 1; frameAt = now }
         if act == .look, now - lookAt > 0.7 { look = look >= 0 ? -1 : 1; lookAt = now }
         if now > nextBlink { blinkUntil = now + 0.13; nextBlink = now + Double.random(in: 2.2...4.2) }
 
-        // Where his body sits this frame: standing, sitting, breathing or mid-jump.
-        let ground = rows - 1
+        // Where his body sits this frame: standing, sitting, breathing, floating or mid-jump.
         let sitting = act == .sit || act == .fiddle || act == .nap
         var top = sitting ? ground - 9 : ground - 11
         if act == .nap { top += Int(now / 0.9) % 2 }
+        if airborne {
+            top -= Int(altitude.rounded())
+            top += Int((sin(now * 2.1) * 1.2).rounded())
+        }
         if act == .cheer {
             let phase = now.truncatingRemainder(dividingBy: 0.95) / 0.7
             if phase < 1 { top -= Int((6 * sin(.pi * phase)).rounded()) }
         }
         oy = top
 
-        // Rain, sleepy Zs and sparkles.
+        // Rain, sleepy Zs, sparkles and the wisps a floating cloud leaves behind.
         switch act {
         case .sad where now - lastSpawn > 0.11:
             particles.append(Particle(kind: .drop, x: x + Double.random(in: 2...17), y: Double(oy + 9), born: now))
@@ -120,6 +189,11 @@ final class MascotBrain {
         default:
             break
         }
+        if airborne, now - lastWisp > 0.22 {
+            let behind = face > 0 ? x - 1 : x + Double(Self.width)
+            particles.append(Particle(kind: .wisp, x: behind, y: Double(oy) + Double.random(in: 3...8), born: now))
+            lastWisp = now
+        }
         particles = particles.compactMap { p in
             var p = p
             let age = now - p.born
@@ -131,17 +205,21 @@ final class MascotBrain {
                 return age < 2.6 ? p : nil
             case .spark:
                 return age < 0.7 ? p : nil
+            case .wisp:
+                p.x -= Double(face) * 1.5 * dt
+                return age < 1.1 ? p : nil
             }
         }
     }
 }
 
-/// The strip along the bottom of a page where Nimbus lives. Shown only when the
-/// page leaves that much room empty.
+/// The free space at the bottom of a page where Nimbus lives. Shown only when the
+/// page leaves room for him; the more room, the higher he can float.
 struct MascotLane: View {
-    static let pixel: CGFloat = 4
-    static let rows = 20
-    static var height: CGFloat { CGFloat(rows) * pixel }
+    static let pixel: CGFloat = 5
+    /// Enough for him to stand, with his cap and a hop.
+    static let minimumHeight: CGFloat = 21 * pixel
+    var height: CGFloat
 
     @Environment(AppModel.self) private var model
     @Environment(\.backgroundTheme) private var theme
@@ -151,13 +229,14 @@ struct MascotLane: View {
 
     var body: some View {
         GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: 1.0 / 24, paused: activeState == .inactive && !isKey)) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / 24, paused: activeState == .inactive && !NSApp.isActive)) { timeline in
                 let now = timeline.date.timeIntervalSinceReferenceDate
                 let cols = Int(geo.size.width / Self.pixel)
-                let _ = brain.step(now: now, cols: cols, rows: Self.rows, reduceMotion: reduceMotion)
+                let rows = Int(geo.size.height / Self.pixel)
+                let _ = brain.step(now: now, cols: cols, rows: rows, reduceMotion: reduceMotion)
                 Canvas { context, _ in
                     MascotPainter(brain: brain, now: now, pixel: Self.pixel, accent: model.theme.color,
-                                  outlined: !theme.isDark).paint(in: &context)
+                                  dark: theme.isDark).paint(in: &context)
                 }
             }
             .contentShape(Rectangle())
@@ -167,7 +246,7 @@ struct MascotLane: View {
                 }
             }
         }
-        .frame(height: Self.height)
+        .frame(height: height)
         .accessibilityElement()
         .accessibilityLabel("Nimbus, a little cloud")
         .accessibilityHint("Reacts to new grades")
@@ -176,19 +255,15 @@ struct MascotLane: View {
             brain.react(reaction.act, now: Date().timeIntervalSinceReferenceDate)
         }
     }
-
-    /// Keeps him moving while the window is in front even if SwiftUI reports a
-    /// stale inactive state.
-    private var isKey: Bool { NSApp.isActive }
 }
 
-/// Draws one frame of Nimbus, pixel by pixel.
+/// Draws one frame of Nimbus, pixel by pixel, with soft shading that sets him in the page.
 private struct MascotPainter {
     let brain: MascotBrain
     let now: Double
     let pixel: CGFloat
     let accent: Color
-    let outlined: Bool
+    let dark: Bool
 
     private static let body = [
         "........wwww........",
@@ -215,16 +290,18 @@ private struct MascotPainter {
     func paint(in context: inout GraphicsContext) {
         let act = brain.act
         let sitting = act == .sit || act == .fiddle || act == .nap
+        let airborne = brain.airborne
         let f = brain.frame
         var cells: [(Int, Int, Color)] = []
         func px(_ c: Int, _ r: Int, _ color: Color) { cells.append((c, r, color)) }
 
         // Cap and tassel. A lighter navy on dark pages, where ink would vanish.
-        let cap = outlined ? ink : Color(hex: 0x3A4578)
+        let cap = dark ? Color(hex: 0x3A4578) : ink
         for c in 6...13 { px(c, -2, cap) }
         for c in 8...11 { px(c, -1, cap) }
         px(13, -1, accent)
         px(13, 0, accent)
+        if airborne { px(14, 1, accent) }  // the tassel trails in the breeze
 
         // Body.
         for (r, row) in Self.body.enumerated() {
@@ -233,17 +310,22 @@ private struct MascotPainter {
             }
         }
 
-        // Arms.
+        // Arms: floating, he spreads them a little and paddles slowly.
         switch act {
         case .walk: px(-1, f == 1 ? 6 : 5, shade); px(20, f == 1 ? 5 : 6, shade)
         case .cheer: px(-1, 4, shade); px(-2, 3, shade); px(20, 4, shade); px(21, 3, shade)
         case .fiddle: px(-1, 6, shade); px(20, 4, shade); px(21, 3, shade)
         case .sad, .nap: px(-1, 6, shade); px(20, 6, shade)
+        case .float:
+            let up = Int(now / 0.5) % 2 == 0
+            px(-1, up ? 4 : 5, shade); px(-2, up ? 4 : 5, shade); px(20, up ? 5 : 4, shade); px(21, up ? 5 : 4, shade)
         default: px(-1, 5, shade); px(20, 5, shade)
         }
 
-        // Legs.
-        if act == .walk {
+        // Legs: tucked up while floating, just two little nubs.
+        if airborne {
+            px(7, 9, shade); px(12, 9, shade)
+        } else if act == .walk {
             if f == 1 { px(6, 9, shade); px(5, 10, shade); px(13, 9, shade); px(14, 10, shade) }
             else { px(6, 9, shade); px(7, 10, shade); px(13, 9, shade); px(12, 10, shade) }
         } else if !sitting {
@@ -251,7 +333,7 @@ private struct MascotPainter {
         }
 
         // Face.
-        let lx = act == .walk ? 1 : act == .look ? brain.look : 0
+        let lx = act == .walk || act == .float ? 1 : act == .look ? brain.look : 0
         for (i, ec) in [6 + lx, 13 + lx].enumerated() {
             switch act {
             case .cheer: px(ec - 1, 5, ink); px(ec, 4, ink); px(ec + 1, 5, ink)
@@ -261,7 +343,7 @@ private struct MascotPainter {
                 if brain.isBlinking(now) { px(ec, 5, ink) } else { px(ec, 4, ink); px(ec, 5, ink) }
             }
         }
-        if act != .sad { px(4, 6, cheek); px(15, 6, cheek) }
+        if act != .sad { px(4 + lx, 6, cheek); px(15 + lx, 6, cheek) }
         if act == .cheer { px(9, 6, ink); px(10, 6, ink) }
         if act == .sad { px(9, 7, ink); px(10, 7, ink) }
 
@@ -285,15 +367,39 @@ private struct MascotPainter {
             return CGRect(x: CGFloat(ox + cc) * pixel, y: CGFloat(oy + r) * pixel, width: pixel, height: pixel)
         }
 
-        // A soft shadow on the ground.
-        do {
-            let ground = MascotLane.rows - 1
-            let shadow = CGRect(x: CGFloat(ox + 3) * pixel, y: CGFloat(ground) * pixel, width: 14 * pixel, height: pixel)
-            context.fill(Path(shadow), with: .color(.black.opacity(0.14)))
+        // Shading that sets him in the page.
+        // 1. A soft contact shadow on the ground, smaller and fainter the higher he floats.
+        let height = CGFloat(brain.altitude)
+        let spread = max(0.45, 1 - height / 40)
+        let groundY = CGFloat(brain.ground) * pixel
+        let centerX = CGFloat(ox) * pixel + CGFloat(MascotBrain.width) * pixel / 2
+        let shadowWidth = 17 * pixel * spread
+        context.drawLayer { layer in
+            layer.addFilter(.blur(radius: 3 + height * 0.25))
+            layer.fill(Path(ellipseIn: CGRect(x: centerX - shadowWidth / 2, y: groundY - pixel * 0.6,
+                                              width: shadowWidth, height: pixel * 1.8)),
+                       with: .color(.black.opacity((dark ? 0.42 : 0.2) * Double(spread))))
+        }
+        // 2. His silhouette cast softly onto the page behind him, as if lit from the top left.
+        context.drawLayer { layer in
+            layer.opacity = dark ? 0.32 : 0.16
+            layer.addFilter(.blur(radius: pixel * 1.4))
+            layer.translateBy(x: pixel * 1.5, y: pixel * 2.2)
+            for (c, r, _) in cells { layer.fill(Path(rect(c, r)), with: .color(.black)) }
+        }
+
+        // 3. A faint glow around him on dark pages, so the white reads as soft cloud.
+        if dark {
+            context.drawLayer { layer in
+                layer.addFilter(.blur(radius: 10))
+                let glow = CGRect(x: CGFloat(ox - 2) * pixel, y: CGFloat(oy - 1) * pixel,
+                                  width: CGFloat(MascotBrain.width + 4) * pixel, height: 11 * pixel)
+                layer.fill(Path(roundedRect: glow, cornerRadius: 5 * pixel), with: .color(Color(hex: 0xC9D6FF).opacity(0.10)))
+            }
         }
 
         // On light pages a faint rim keeps the white cloud from vanishing.
-        if outlined {
+        if !dark {
             let filled = Set(cells.map { "\($0.0),\($0.1)" })
             var rimCells = Set<String>()
             for (c, r, _) in cells {
@@ -328,6 +434,10 @@ private struct MascotPainter {
                 if age < 0.4 {
                     for q in [(-1, 0), (1, 0), (0, -1), (0, 1)] { abs(p.x + Double(q.0), p.y + Double(q.1), pencil) }
                 }
+            case .wisp:
+                let alpha = max(0, 0.7 - age / 1.1 * 0.7)
+                abs(p.x, p.y, white, alpha)
+                if age < 0.5 { abs(p.x - Double(brain.face), p.y, white, alpha * 0.6) }
             }
         }
     }

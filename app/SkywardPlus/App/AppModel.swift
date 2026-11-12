@@ -168,6 +168,16 @@ final class AppModel {
 
     func data(for id: UUID) -> StudentData { studentData[id] ?? StudentData() }
 
+    /// Grades another device read from Skyward, shared through the account.
+    func adoptAccountGrades(_ data: StudentData, for id: UUID) {
+        studentData[id] = data
+        store.saveData(data, id)
+        if id == active?.id {
+            rescheduleDueReminders()
+            publishWidgetSnapshot()
+        }
+    }
+
     /// The marking period on screen: the one picked by hand if it still exists, else the current one.
     var selectedLit: String? {
         let d = data
@@ -718,6 +728,7 @@ final class AppModel {
             failureStreak[key] = 0
             lastGoodSync[key] = now()
             if full || !isQmlativ(profile) { lastFullSync[id] = now() }
+            if id == active?.id, settings.shareGrades { Task { await AccountSync.shared.sync(model: self) } }
         } catch let pause as QmlativPause {
             let wait: TimeInterval
             let message: String

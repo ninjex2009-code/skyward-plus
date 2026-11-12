@@ -3,13 +3,16 @@ import CryptoKit
 import Foundation
 import SwiftUI
 
+/// The grades themselves (AccountSync has its own StudentData for planner data).
+typealias SkywardGrades = StudentData
+
 /// The optional Skyward Plus account: "Continue with Google", then the planner,
 /// done marks, goals and look stay the same on every device.
 ///
 /// It talks to the user's own Firebase project over its REST APIs (no SDK):
 /// Google sign-in with PKCE in the system sign-in sheet, Firebase Auth to turn the
-/// Google token into a Firebase session, and the Realtime Database for the data. Grades never
-/// leave the device.
+/// Google token into a Firebase session, and the Realtime Database for the data. Grades
+/// are shared too when "Share grades between my devices" is on (the default).
 @MainActor @Observable
 final class AccountSync {
     static let shared = AccountSync()
@@ -109,12 +112,44 @@ final class AccountSync {
                 if merged != local { apply { model.updatePrefs { merged.apply(to: &$0) } } }
                 if merged != remote { try await Database.put(config: config, path: path, token: token, value: merged) }
                 Base.save(merged, key: key)
+
+                if model.settings.shareGrades {
+                    try await shareGrades(model: model, profile: profile, key: key, uid: uid, config: config, token: token)
+                }
             }
             lastSync = Date()
             lastError = nil
         } catch {
             lastError = error.localizedDescription
         }
+    }
+
+    /// Grades go both ways: the device that read Skyward last uploads them, and the
+    /// others download them. A small record beside them says when they were read,
+    /// so nobody downloads the whole gradebook to find out nothing changed.
+    private func shareGrades(model: AppModel, profile: Profile, key: String, uid: String, config: Config, token: String) async throws {
+        let metaPath = "users/\(uid)/gradesMeta/\(key)"
+        let gradesPath = "users/\(uid)/grades/\(key)"
+        let remoteMeta: GradeShare.Meta? = try await Database.get(config: config, path: metaPath, token: token)
+        var local = model.studentData[profile.id]
+        let localStamp = local?.lastSync?.timeIntervalSince1970 ?? 0
+
+        // Download when the account has newer grades, or has assignment lists this device couldn't load.
+        let missing = local.map { !GradeShare.missingDetails($0).isEmpty } ?? true
+        if let remoteMeta, remoteMeta.syncedAt > localStamp + 1 || (missing && remoteMeta.syncedAt > 0) {
+            if let remote: SkywardGrades = try await Database.get(config: config, path: gradesPath, token: token),
+               let combined = GradeShare.combine(local: local, remote: remote) {
+                apply { model.adoptAccountGrades(combined, for: profile.id) }
+                local = combined
+            }
+        }
+
+        // Upload when this device read Skyward more recently and something changed.
+        guard let local, let stamp = local.lastSync?.timeIntervalSince1970, stamp > (remoteMeta?.syncedAt ?? 0) + 1 else { return }
+        let hash = GradeShare.fingerprint(local)
+        if hash == remoteMeta?.hash, stamp - (remoteMeta?.syncedAt ?? 0) < 30 * 60 { return }
+        try await Database.put(config: config, path: gradesPath, token: token, value: local)
+        try await Database.put(config: config, path: metaPath, token: token, value: GradeShare.Meta(syncedAt: stamp, hash: hash))
     }
 
     /// Changes from the server shouldn't immediately schedule another sync.
@@ -511,7 +546,9 @@ struct AccountSettingsSection: View {
                 SettingRow(title: "Account sync isn't set up in this build") { EmptyView() }
             }
         } else if let email = account.email {
-            SettingsGroup(footer: "Your planner, done marks, goals and theme stay the same on every device. Grades stay on this device.") {
+            SettingsGroup(footer: model.settings.shareGrades
+                ? "Your planner, done marks, goals, theme and grades stay the same on every device. Grades are kept in your own account, readable only by you."
+                : "Your planner, done marks, goals and theme stay the same on every device. Grades stay on each device.") {
                 SettingRow(title: "Signed in as") { Text(email).foregroundStyle(.secondary).lineLimit(1) }
                 SettingRow(title: "Last synced") {
                     if account.isSyncing {
@@ -523,6 +560,13 @@ struct AccountSettingsSection: View {
                 if let error = account.lastError {
                     Text(error).foregroundStyle(Palette.bad).padding(.horizontal, 4)
                 }
+                ToggleRow(title: "Share grades between my devices", isOn: Binding(
+                    get: { model.settings.shareGrades },
+                    set: { on in
+                        model.updateSettings { $0.shareGrades = on }
+                        if on { Task { await account.sync(model: model) } }
+                    }
+                ))
                 ActionRow(title: "Sync Now") { Task { await account.sync(model: model) } }
                     .disabled(account.isSyncing)
             }
@@ -530,7 +574,7 @@ struct AccountSettingsSection: View {
                 ActionRow(title: "Sign Out", role: .destructive) { account.signOut() }
             }
         } else {
-            SettingsGroup(footer: "Keeps your planner, done marks, goals and theme the same on every device. Grades stay on this device.") {
+            SettingsGroup(footer: "Keeps your planner, done marks, goals, theme and grades the same on every device, so your iPhone shows what your Mac reads from Skyward.") {
                 GoogleButton()
                 if let error = account.lastError {
                     Text(error).foregroundStyle(Palette.bad).padding(.horizontal, 4)

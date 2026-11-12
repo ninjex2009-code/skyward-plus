@@ -727,6 +727,7 @@ struct Screen<Content: View>: View {
     @ViewBuilder var content: Content
     @State private var viewSize: CGSize = CGSize(width: 390, height: 844)
     @State private var contentHeight: CGFloat = .infinity
+    @Environment(\.displayScale) private var displayScale
     #if os(macOS)
     @Environment(AppModel.self) private var model
     #endif
@@ -744,6 +745,8 @@ struct Screen<Content: View>: View {
                 .padding(.horizontal, metrics.horizontalPadding)
                 .padding(.top, metrics.scaled(12))
                 .padding(.bottom, metrics.scaled(60))
+                // Draw at the zoomed resolution, so text stays sharp when it's scaled up.
+                .environment(\.displayScale, displayScale * scale)
                 .scaleEffect(scale, anchor: .topLeading)
             }
             .background {
@@ -758,9 +761,9 @@ struct Screen<Content: View>: View {
         #if os(macOS)
         .overlay(alignment: .bottom) {
             // Nimbus walks along the bottom when the page leaves room for him.
-            let free = viewSize.height - (contentHeight - 60 * scale)
-            if model.settings.showMascot, free >= MascotLane.height + 8 {
-                MascotLane()
+            let free = viewSize.height - (contentHeight - 60 * scale) - 8
+            if model.settings.showMascot, free >= MascotLane.minimumHeight {
+                MascotLane(height: min(free, 420))
                     .transition(.opacity)
             }
         }
