@@ -3,7 +3,7 @@ import SwiftUI
 
 /// What Nimbus is up to.
 enum MascotAct: Equatable {
-    case walk, look, sit, fiddle, nap, float, cheer, sad
+    case walk, look, sit, fiddle, nap, float, cheer, sad, wave, stretch, hop
 }
 
 /// A grade reaction the model asks for after a sync.
@@ -57,6 +57,8 @@ final class MascotBrain {
         case "float": act = .float; altitude = 14; altitudeTarget = 14; x = 60; target = 60
         case "sad": act = .sad; reactionUntil = .greatestFiniteMagnitude; x = 60; target = 60
         case "cheer": act = .cheer; reactionUntil = .greatestFiniteMagnitude; x = 60; target = 60
+        case "wave": act = .wave; until = .greatestFiniteMagnitude; x = 60; target = 60
+        case "stretch": act = .stretch; until = .greatestFiniteMagnitude; x = 60; target = 60
         default: break
         }
     }
@@ -111,7 +113,8 @@ final class MascotBrain {
             switch act {
             case .walk:
                 if abs(target - x) < 0.5 {
-                    var choices: [(MascotAct, Double)] = [(.look, 3), (.look, 3), (.fiddle, 6), (.sit, 6), (.nap, 10)]
+                    var choices: [(MascotAct, Double)] = [(.look, 3), (.look, 3), (.fiddle, 6), (.sit, 6), (.nap, 10),
+                                                         (.wave, 2.4), (.stretch, 2.6), (.hop, 1.9)]
                     if canFloat { choices += [(.float, 0), (.float, 0)] }
                     let pick = choices.randomElement()!
                     if pick.0 == .float { startFloating() } else { act = pick.0; until = now + pick.1 }
@@ -165,6 +168,12 @@ final class MascotBrain {
         let sitting = act == .sit || act == .fiddle || act == .nap
         var top = sitting ? ground - 9 : ground - 11
         if act == .nap { top += Int(now / 0.9) % 2 }
+        if act == .walk { top -= frame }  // a little bounce in his step
+        if act == .hop {
+            let phase = now.truncatingRemainder(dividingBy: 0.62) / 0.5
+            if phase < 1 { top -= Int((4 * sin(.pi * phase)).rounded()) }
+        }
+        if act == .stretch { top -= Int(now / 0.65) % 2 }
         if airborne {
             top -= Int(altitude.rounded())
             top += Int((sin(now * 2.1) * 1.2).rounded())
@@ -316,6 +325,13 @@ private struct MascotPainter {
         case .cheer: px(-1, 4, shade); px(-2, 3, shade); px(20, 4, shade); px(21, 3, shade)
         case .fiddle: px(-1, 6, shade); px(20, 4, shade); px(21, 3, shade)
         case .sad, .nap: px(-1, 6, shade); px(20, 6, shade)
+        case .wave:
+            let up = Int(now / 0.22) % 2 == 0
+            px(-1, 5, shade); px(20, up ? 3 : 4, shade); px(21, up ? 2 : 3, shade)
+        case .stretch:
+            px(-1, 3, shade); px(-2, 2, shade); px(20, 3, shade); px(21, 2, shade)
+        case .hop:
+            px(-1, 4, shade); px(20, 4, shade)
         case .float:
             let up = Int(now / 0.5) % 2 == 0
             px(-1, up ? 4 : 5, shade); px(-2, up ? 4 : 5, shade); px(20, up ? 5 : 4, shade); px(21, up ? 5 : 4, shade)
@@ -336,7 +352,8 @@ private struct MascotPainter {
         let lx = act == .walk || act == .float ? 1 : act == .look ? brain.look : 0
         for (i, ec) in [6 + lx, 13 + lx].enumerated() {
             switch act {
-            case .cheer: px(ec - 1, 5, ink); px(ec, 4, ink); px(ec + 1, 5, ink)
+            case .cheer, .wave, .hop: px(ec - 1, 5, ink); px(ec, 4, ink); px(ec + 1, 5, ink)
+            case .stretch: px(ec - 1, 5, ink); px(ec, 5, ink)
             case .nap: px(ec, 5, ink); px(ec + (i == 1 ? -1 : 1), 5, ink)
             case .sad: px(ec, 5, ink); px(ec, 6, ink)
             default:
@@ -345,6 +362,7 @@ private struct MascotPainter {
         }
         if act != .sad { px(4 + lx, 6, cheek); px(15 + lx, 6, cheek) }
         if act == .cheer { px(9, 6, ink); px(10, 6, ink) }
+        if act == .stretch, Int(now / 0.65) % 2 == 1 { px(9, 6, ink); px(10, 6, ink); px(9, 7, ink); px(10, 7, ink) }  // a big yawn
         if act == .sad { px(9, 7, ink); px(10, 7, ink) }
 
         // The pencil he twirls and tosses.
