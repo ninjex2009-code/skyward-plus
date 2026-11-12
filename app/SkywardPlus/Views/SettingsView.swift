@@ -197,6 +197,7 @@ struct SettingsPageView: View {
         SettingsGroup(title: "Window") {
             ToggleRow(title: "Translucent window", isOn: setting(\.translucentWindow))
             ToggleRow(title: "Glow around the window", isOn: setting(\.windowGlow))
+            ToggleRow(title: "Nimbus walks around empty space", isOn: setting(\.showMascot))
             SettingRow(title: "App icon") { AppIconPicker() }
         }
         #endif

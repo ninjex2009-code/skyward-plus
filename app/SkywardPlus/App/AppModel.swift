@@ -113,6 +113,10 @@ final class AppModel {
     var whatIfs: [String: WhatIf] = [:]
     private(set) var loadingDetails: Set<String> = []
     private(set) var detailErrors: [String: String] = [:]
+    #if os(macOS)
+    /// Asks Nimbus to react to a sync's new grades.
+    var mascotReaction: MascotReaction?
+    #endif
     /// Bumped when a profile picture changes so views reload it.
     private(set) var avatarVersion = 0
 
@@ -784,6 +788,17 @@ final class AppModel {
                 for alert in AlertText.grades(fresh, averages: averages) { Notifier.post(alert) }
             }
         }
+        #if os(macOS)
+        if previous?.lastSync != nil, id == active?.id {
+            let known = Set((previous?.changes ?? []).map { $0.id })
+            let graded = updated.changes.filter { !known.contains($0.id) && ($0.kind == .newGrade || $0.kind == .updatedGrade) }
+            if graded.contains(where: { ($0.newValue ?? 100) < 70 }) {
+                mascotReaction = MascotReaction(act: .sad)
+            } else if graded.contains(where: { ($0.newValue ?? 0) >= 90 }) {
+                mascotReaction = MascotReaction(act: .cheer)
+            }
+        }
+        #endif
         afterSyncFeatures(id, previous: previous, updated: updated)
     }
 

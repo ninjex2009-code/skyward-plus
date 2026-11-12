@@ -726,6 +726,10 @@ struct Screen<Content: View>: View {
     var maxWidth: CGFloat? = nil
     @ViewBuilder var content: Content
     @State private var viewSize: CGSize = CGSize(width: 390, height: 844)
+    @State private var contentHeight: CGFloat = .infinity
+    #if os(macOS)
+    @Environment(AppModel.self) private var model
+    #endif
 
     var body: some View {
         let scale = Screen.scale(forWidth: viewSize.width)
@@ -742,7 +746,25 @@ struct Screen<Content: View>: View {
                 .padding(.bottom, metrics.scaled(60))
                 .scaleEffect(scale, anchor: .topLeading)
             }
+            .background {
+                GeometryReader { geo in
+                    Color.clear.preference(key: ScreenContentHeightKey.self, value: geo.size.height)
+                }
+            }
         }
+        .onPreferenceChange(ScreenContentHeightKey.self) { height in
+            if abs(height - contentHeight) > 1 { contentHeight = height }
+        }
+        #if os(macOS)
+        .overlay(alignment: .bottom) {
+            // Nimbus walks along the bottom when the page leaves room for him.
+            let free = viewSize.height - (contentHeight - 60 * scale)
+            if model.settings.showMascot, free >= MascotLane.height + 8 {
+                MascotLane()
+                    .transition(.opacity)
+            }
+        }
+        #endif
         .background {
             GeometryReader { geo in
                 Color.clear
@@ -786,6 +808,14 @@ private struct ScaledLayout: Layout {
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         subviews.first?.place(at: bounds.origin, anchor: .topLeading,
                               proposal: ProposedViewSize(width: bounds.width / scale, height: bounds.height / scale))
+    }
+}
+
+private struct ScreenContentHeightKey: PreferenceKey {
+    static var defaultValue: CGFloat = .infinity
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        let next = nextValue()
+        if next.isFinite { value = next }
     }
 }
 
