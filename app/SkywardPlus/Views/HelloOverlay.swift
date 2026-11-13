@@ -732,7 +732,7 @@ private struct PersonalizeStep: View {
             StepTitle(title: "Make it yours", subtitle: "You can change all of this later in Settings.")
             GlassPanel(width: 560) {
                 Text("Theme").font(.headline)
-                BackgroundThemePicker(columns: 3)
+                BackgroundThemePicker(columns: 3, compact: true)
                     .environment(\.colorScheme, .dark)
                 Divider().overlay(.white.opacity(0.1))
                 toggle("Tell me about new grades", \.notifyNewGrades, asksPermission: true)
@@ -861,6 +861,8 @@ private struct DoneStep: View {
         VStack(spacing: 2) {
             Text(value)
                 .font(.display(38).monospacedDigit())
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
                 .contentTransition(.numericText())
             Text(label).font(.callout).foregroundStyle(.white.opacity(0.6))
         }

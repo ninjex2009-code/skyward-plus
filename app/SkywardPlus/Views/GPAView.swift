@@ -39,12 +39,16 @@ struct GPAView: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Fmt.gpa(result.weighted))
                         .font(.display(44).monospacedDigit())
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
                         .contentTransition(.numericText())
                     Text("Weighted GPA").font(.callout).foregroundStyle(.secondary)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Fmt.gpa(result.unweighted))
                         .font(.display(26, weight: .medium).monospacedDigit())
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
                         .foregroundStyle(.secondary)
                         .contentTransition(.numericText())
                     Text("Unweighted").font(.callout).foregroundStyle(.secondary)

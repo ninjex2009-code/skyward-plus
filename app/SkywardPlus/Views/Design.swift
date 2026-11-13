@@ -318,9 +318,14 @@ struct ThemeField: View {
 
     var body: some View {
         GeometryReader { geo in
+            // A new theme is a new scene that cross-fades in. Without the identity
+            // change, an animated theme switch would interpolate the shader's scene
+            // number and flash through every scene in between.
             Rectangle()
                 .fill(theme.baseColor)
                 .colorEffect(theme.sceneShader(size: geo.size, time: time, look: look))
+                .id(theme)
+                .transition(.opacity)
         }
     }
 }
@@ -397,11 +402,26 @@ struct BackgroundThemePicker: View {
     @Environment(AppModel.self) private var model
     @Environment(\.windowMetrics) private var metrics
     var columns = 3
+    /// Shows a few themes with a button for the rest (for first-run setup).
+    var compact = false
+    @State private var showAll = false
+
+    /// A varied six to start from.
+    static let featured: [BackgroundTheme] = [.midnight, .aurora, .forest, .sunset, .galaxy, .synthwave]
+
+    /// The themes to show: all of them, or the featured six with the current one swapped in.
+    private func shown(current: BackgroundTheme) -> [BackgroundTheme] {
+        guard compact, !showAll else { return BackgroundTheme.allCases }
+        var list = Self.featured
+        if !list.contains(current) { list[list.count - 1] = current }
+        return list
+    }
 
     var body: some View {
         let current = model.settings.backgroundTheme
+        VStack(spacing: 12) {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: columns), spacing: 12) {
-            ForEach(BackgroundTheme.allCases) { item in
+            ForEach(shown(current: current)) { item in
                 let selected = item == current
                 Button {
                     withAnimation(.easeInOut(duration: 0.4)) {
@@ -435,7 +455,24 @@ struct BackgroundThemePicker: View {
                 .buttonStyle(BubbleButtonStyle())
                 .accessibilityLabel(item.title + (item.isDark ? ", dark" : ", light"))
                 .accessibilityAddTraits(selected ? .isSelected : [])
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
             }
+        }
+        if compact {
+            Button {
+                withAnimation(.snappy(duration: 0.3)) { showAll.toggle() }
+            } label: {
+                HStack(spacing: 6) {
+                    Text(showAll ? "Show fewer" : "Show all \(BackgroundTheme.allCases.count) themes")
+                    Image(systemName: showAll ? "chevron.up" : "chevron.down").font(.caption.weight(.bold))
+                }
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.tint)
+                .frame(maxWidth: .infinity, minHeight: 36)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+        }
         }
     }
 }

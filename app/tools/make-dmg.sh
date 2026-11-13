@@ -24,12 +24,17 @@ VERSION=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/C
 ARCHS_BUILT=$(lipo -archs "$APP/Contents/MacOS/Skyward Plus")
 [[ "$ARCHS_BUILT" == *arm64* && "$ARCHS_BUILT" == *x86_64* ]] || { echo "Expected a universal binary, got: $ARCHS_BUILT"; exit 1; }
 
-echo "› Signing (ad-hoc)"
+# Sign with the same self-made certificate every release, so macOS sees each update
+# as the same app and keeps its keychain access (no password prompt after updating).
+# Falls back to ad-hoc signing on a Mac without that certificate.
+SIGN_ID=$(security find-identity -p codesigning 2>/dev/null | awk '/"Skyward Plus Signing"/ {print $2; exit}')
+SIGN_ID=${SIGN_ID:--}
+if [[ "$SIGN_ID" == "-" ]]; then echo "› Signing (ad-hoc: no 'Skyward Plus Signing' certificate)"; else echo "› Signing (Skyward Plus Signing)"; fi
 # Sign nested code first (widget extension, if any), then the app.
 find "$APP/Contents" -name "*.appex" -maxdepth 3 -print0 2>/dev/null | while IFS= read -r -d '' ext; do
-  codesign --force --sign - --timestamp=none --preserve-metadata=entitlements "$ext"
+  codesign --force --sign "$SIGN_ID" --timestamp=none --preserve-metadata=entitlements "$ext"
 done
-codesign --force --sign - --timestamp=none --preserve-metadata=entitlements "$APP"
+codesign --force --sign "$SIGN_ID" --timestamp=none --preserve-metadata=entitlements "$APP"
 codesign --verify --deep --strict "$APP"
 
 echo "› Staging"

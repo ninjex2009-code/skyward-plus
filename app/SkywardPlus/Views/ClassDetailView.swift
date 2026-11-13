@@ -206,6 +206,8 @@ struct ClassDetailView: View {
         let grade = VStack(alignment: compact ? .leading : .trailing, spacing: 2) {
             Text(displayText)
                 .font(.display(40).monospacedDigit())
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
                 .foregroundStyle(tint)
                 .contentTransition(.numericText())
                 .animation(.snappy, value: displayText)
@@ -238,6 +240,8 @@ struct ClassDetailView: View {
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
                         Text(displayText)
                             .font(.display(40).monospacedDigit())
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
                             .foregroundStyle(tint)
                             .contentTransition(.numericText())
                             .animation(.snappy, value: displayText)

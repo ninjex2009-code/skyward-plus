@@ -359,6 +359,7 @@ struct TranscriptView: View {
 
 struct TeachersView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.horizontalSizeClass) private var sizeClass
     @State private var editingTeacher: AppModel.Teacher?
     @State private var customEmail = ""
 
@@ -373,45 +374,69 @@ struct TeachersView: View {
 
         Screen(title: "Teachers", maxWidth: 1000) {
             Card {
-                HStack {
+                // Side by side on a wide window; stacked on a phone, where a row
+                // split between text and controls crushes both.
+                let compact = sizeClass == .compact
+                let top = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 12)) : AnyLayout(HStackLayout(spacing: 12))
+                top {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("Teacher e-mail addresses").font(.headline)
                         Text("Skyward doesn't list them. Enter your district's e-mail domain and pick the format; every address fills in.")
                             .font(.subheadline).foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
-                    Spacer()
+                    if !compact { Spacer() }
                     if model.prefs.emailDomain.isEmpty,
                        let active = model.active,
                        let suggested = suggestedDomain(for: active) {
-                        Button("Use \(suggested)") {
+                        Button {
                             withAnimation(Motion.snappy) {
                                 model.updatePrefs { $0.emailDomain = suggested }
                             }
+                        } label: {
+                            Text("Use \(suggested)")
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
+                                .frame(maxWidth: compact ? .infinity : nil)
                         }
                         .buttonStyle(.bordered)
                     }
                 }
 
-                HStack(spacing: 12) {
+                let fields = compact ? AnyLayout(VStackLayout(alignment: .leading, spacing: 10)) : AnyLayout(HStackLayout(spacing: 12))
+                fields {
                     TextField("District domain (e.g. district.org)", text: Binding(
                         get: { model.prefs.emailDomain },
                         set: { dom in model.updatePrefs { $0.emailDomain = dom } }
                     ))
-                    .textFieldStyle(.roundedBorder)
+                    .textFieldStyle(.plain)
                     .autocorrectionDisabled()
+                    #if os(iOS)
+                    .textInputAutocapitalization(.never)
+                    .keyboardType(.URL)
+                    #endif
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 9)
+                    .background(RoundedRectangle(cornerRadius: 10, style: .continuous).fill(Color.primary.opacity(0.08)))
 
-                    Picker("Format", selection: Binding(
-                        get: { model.prefs.emailPattern },
-                        set: { pat in model.updatePrefs { $0.emailPattern = pat } }
-                    )) {
-                        ForEach(EmailPattern.allCases) { pat in
-                            let domain = model.prefs.emailDomain.trimmingCharacters(in: .whitespaces)
-                            let host = domain.isEmpty ? "district.org" : domain.replacingOccurrences(of: "@", with: "")
-                            Text("\(pat.example)@\(host)").tag(pat)
+                    HStack(spacing: 8) {
+                        if compact {
+                            Text("Format").foregroundStyle(.secondary)
+                            Spacer(minLength: 8)
                         }
+                        Picker("Format", selection: Binding(
+                            get: { model.prefs.emailPattern },
+                            set: { pat in model.updatePrefs { $0.emailPattern = pat } }
+                        )) {
+                            ForEach(EmailPattern.allCases) { pat in
+                                let domain = model.prefs.emailDomain.trimmingCharacters(in: .whitespaces)
+                                let host = domain.isEmpty ? "district.org" : domain.replacingOccurrences(of: "@", with: "")
+                                Text("\(pat.example)@\(host)").tag(pat)
+                            }
+                        }
+                        .labelsHidden()
+                        .fixedSize()
                     }
-                    .labelsHidden()
-                    .fixedSize()
                 }
             }
             .staggered(0)

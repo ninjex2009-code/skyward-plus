@@ -169,7 +169,8 @@ struct OnboardingSheet: View {
 
             Card {
                 Text("Accent Theme").font(.headline)
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 84), spacing: 10)], spacing: 12) {
+                // Five to a row: every accent fits in two short rows.
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: 5), spacing: 8) {
                     ForEach(ThemeColor.allCases) { theme in
                         let isSelected = model.theme == theme
                         Button {
@@ -181,12 +182,12 @@ struct OnboardingSheet: View {
                                 ZStack {
                                     Circle()
                                         .fill(theme.gradient)
-                                        .frame(width: 38, height: 38)
+                                        .frame(width: 32, height: 32)
                                         .shadow(color: theme.color.opacity(isSelected ? 0.4 : 0.15), radius: isSelected ? 6 : 2, y: 2)
                                     if isSelected {
                                         Circle()
                                             .strokeBorder(Color.white, lineWidth: 2.5)
-                                            .frame(width: 38, height: 38)
+                                            .frame(width: 32, height: 32)
                                         Image(systemName: "checkmark")
                                             .font(.caption.weight(.bold))
                                             .foregroundStyle(.white)
@@ -194,11 +195,13 @@ struct OnboardingSheet: View {
                                 }
                                 .scaleEffect(isSelected ? 1.08 : 1.0)
                                 Text(theme.title)
-                                    .font(.caption.weight(isSelected ? .semibold : .regular))
+                                    .font(.caption2.weight(isSelected ? .semibold : .regular))
                                     .foregroundStyle(isSelected ? theme.color : .primary)
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.8)
                             }
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 6)
+                            .padding(.vertical, 4)
                             .background(
                                 RoundedRectangle(cornerRadius: 10, style: .continuous)
                                     .fill(isSelected ? theme.color.opacity(0.10) : Color.clear)
@@ -211,7 +214,7 @@ struct OnboardingSheet: View {
                 Divider()
 
                 Text("Background Theme").font(.headline)
-                BackgroundThemePicker()
+                BackgroundThemePicker(compact: true)
 
                 Divider()
 
@@ -253,6 +256,8 @@ struct OnboardingSheet: View {
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(Fmt.gpa(computed.weighted))
                                     .font(.display(26, weight: .bold).monospacedDigit())
+                                    .lineLimit(1)
+                                    .minimumScaleFactor(0.6)
                                     .foregroundStyle(model.theme.color)
                                     .contentTransition(.numericText())
                                 Text("Weighted (\(currentScale.name))")

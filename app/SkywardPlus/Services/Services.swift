@@ -12,7 +12,13 @@ struct AccountSecret: Codable {
 }
 
 enum Keychain {
+    /// Debug builds keep their own items, so a test build never reaches for the real
+    /// app's saved sign-in (macOS would ask for the login password to allow it).
+    #if DEBUG
+    static let service = "com.skywardplus.app.account.debug"
+    #else
     static let service = "com.skywardplus.app.account"
+    #endif
 
     /// Screenshot runs never touch the keychain: the real app's items would make
     /// macOS ask for access and the run would wait on that prompt forever.

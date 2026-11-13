@@ -121,10 +121,34 @@ private struct HomeSectionView: View {
 private struct GradesStrip: View {
     @Environment(AppModel.self) private var model
     @Environment(\.windowMetrics) private var metrics
+    @Environment(\.horizontalSizeClass) private var sizeClass
 
     var body: some View {
         if let lit = model.selectedLit {
             let courses = model.courses(in: lit).filter { !model.gradeText($0, lit).isEmpty }
+            if sizeClass == .compact {
+                // On a phone, one row you swipe through, so Home doesn't open on
+                // four rows of chips; the fade at the edge says there's more.
+                ScrollView(.horizontal) {
+                    HStack(spacing: 10) {
+                        ForEach(courses) { course in
+                            NavigationLink(value: CourseRoute(courseID: course.id)) {
+                                GlanceChip(course: course, lit: lit).frame(width: 140)
+                            }
+                            .buttonStyle(BubbleButtonStyle())
+                        }
+                    }
+                    .scrollTargetLayout()
+                    .padding(.vertical, 2)
+                    .padding(.trailing, 24)
+                }
+                .scrollIndicators(.never)
+                .scrollTargetBehavior(.viewAligned)
+                .mask {
+                    LinearGradient(stops: [.init(color: .black, location: 0), .init(color: .black, location: 0.9), .init(color: .clear, location: 1)],
+                                   startPoint: .leading, endPoint: .trailing)
+                }
+            } else {
             // Every class shows, in balanced rows (8 classes: 4 + 4, never 7 + 1).
             let available = min(metrics.width - metrics.horizontalPadding * 2, metrics.contentMaxWidth)
             let fit = max(1, Int((available + 10) / 160))
@@ -137,6 +161,7 @@ private struct GradesStrip: View {
                     }
                     .buttonStyle(BubbleButtonStyle())
                 }
+            }
             }
         }
     }
@@ -273,6 +298,8 @@ private struct HomeHeader: View {
                         .foregroundStyle(.secondary)
                     Text(model.active?.firstName ?? "Home")
                         .font(.display(34, weight: .bold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
                 }
                 Spacer(minLength: 16)
                 figures.fixedSize()
@@ -301,6 +328,8 @@ private struct FigureButton: View {
             VStack(alignment: .leading, spacing: 2) {
                 RollingNumber(value: number, format: format)
                     .font(.display(27).monospacedDigit())
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
                     .foregroundStyle(tint)
                 HStack(spacing: 4) {
                     Text(label).font(.subheadline).foregroundStyle(.secondary)
