@@ -84,6 +84,16 @@ final class AccountSync {
     }
 
     /// Pulls, merges and pushes the look and the active student's planner data.
+    /// The latest shared-grades record seen for each student, by student key.
+    private(set) var gradesMeta: [String: GradeShare.Meta] = [:]
+
+    /// True when this phone should skip signing in to Skyward because the student's
+    /// Mac checked it recently (grades arrive through the account instead).
+    func macIsChecking(_ profile: Profile, now: Date) -> Bool {
+        guard session != nil, model?.settings.shareGrades == true else { return false }
+        return GradeShare.macIsChecking(gradesMeta[Self.studentKey(profile)], now: now.timeIntervalSince1970)
+    }
+
     func sync(model: AppModel) async {
         self.model = model
         guard let config, session != nil, !isSyncing else { return }
@@ -131,6 +141,7 @@ final class AccountSync {
         let metaPath = "users/\(uid)/gradesMeta/\(key)"
         let gradesPath = "users/\(uid)/grades/\(key)"
         let remoteMeta: GradeShare.Meta? = try await Database.get(config: config, path: metaPath, token: token)
+        gradesMeta[key] = remoteMeta
         var local = model.studentData[profile.id]
         let localStamp = local?.lastSync?.timeIntervalSince1970 ?? 0
 
@@ -145,11 +156,25 @@ final class AccountSync {
         }
 
         // Upload when this device read Skyward more recently and something changed.
-        guard let local, let stamp = local.lastSync?.timeIntervalSince1970, stamp > (remoteMeta?.syncedAt ?? 0) + 1 else { return }
+        guard let local, let stamp = local.lastSync?.timeIntervalSince1970,
+              stamp > max(remoteMeta?.syncedAt ?? 0, remoteMeta?.checkedAt ?? 0) + 1 else { return }
         let hash = GradeShare.fingerprint(local)
-        if hash == remoteMeta?.hash, stamp - (remoteMeta?.syncedAt ?? 0) < 30 * 60 { return }
+        let every = Double(max(5, model.settings.syncMinutes))
+        if let remoteMeta, hash == remoteMeta.hash, stamp - remoteMeta.syncedAt < 30 * 60 {
+            // Nothing changed: just note that this device checked, so a phone
+            // knows the Mac is on it (a few bytes, not the whole gradebook).
+            var beat = remoteMeta
+            beat.device = GradeShare.thisDevice
+            beat.checkedAt = stamp
+            beat.everyMinutes = every
+            try await Database.put(config: config, path: metaPath, token: token, value: beat)
+            gradesMeta[key] = beat
+            return
+        }
         try await Database.put(config: config, path: gradesPath, token: token, value: local)
-        try await Database.put(config: config, path: metaPath, token: token, value: GradeShare.Meta(syncedAt: stamp, hash: hash))
+        let meta = GradeShare.Meta(syncedAt: stamp, hash: hash, device: GradeShare.thisDevice, checkedAt: stamp, everyMinutes: every)
+        try await Database.put(config: config, path: metaPath, token: token, value: meta)
+        gradesMeta[key] = meta
     }
 
     /// Changes from the server shouldn't immediately schedule another sync.
@@ -624,5 +649,159 @@ struct GoogleButton: View {
         }
         .buttonStyle(BubbleButtonStyle())
         .disabled(account.isSigningIn || !account.isConfigured)
+    }
+}
+
+// MARK: - Google Calendar
+
+/// Copies due dates into a "Skyward Plus" calendar in the student's Google Calendar.
+/// It asks Google only for calendars the app creates itself, so it can't see or
+/// change anything else. The refresh token lives in the Keychain.
+extension AccountSync {
+    private static let calendarScope = "https://www.googleapis.com/auth/calendar.app.created"
+    private static let calendarKey = "google-calendar"
+    private static let calendarIDKey = "googleCalendar.id"
+    private static let pushedKey = "googleCalendar.pushed"
+
+    var isCalendarConnected: Bool { UserDefaults.standard.string(forKey: Self.calendarIDKey) != nil }
+
+    /// Asks Google for calendar access and creates the app's own calendar.
+    func connectCalendar() async throws {
+        guard let config else { throw AccountError("Google sign-in isn't set up in this build.") }
+        struct Token: Decodable { let access_token: String?; let refresh_token: String? }
+        let verifier = Self.randomString(64)
+        let challenge = Data(SHA256.hash(data: Data(verifier.utf8))).base64URL
+        let state = Self.randomString(24)
+        let redirect = config.reversedClientID + ":/oauth2redirect"
+        var components = URLComponents(string: "https://accounts.google.com/o/oauth2/v2/auth")!
+        components.queryItems = [
+            .init(name: "client_id", value: config.clientID),
+            .init(name: "redirect_uri", value: redirect),
+            .init(name: "response_type", value: "code"),
+            .init(name: "scope", value: Self.calendarScope),
+            .init(name: "code_challenge", value: challenge),
+            .init(name: "code_challenge_method", value: "S256"),
+            .init(name: "state", value: state),
+            .init(name: "access_type", value: "offline"),
+            .init(name: "prompt", value: "consent"),
+        ]
+        let callback = try await presenter.authenticate(url: components.url!, scheme: config.reversedClientID)
+        let items = URLComponents(url: callback, resolvingAgainstBaseURL: false)?.queryItems ?? []
+        guard items.first(where: { $0.name == "state" })?.value == state,
+              let code = items.first(where: { $0.name == "code" })?.value else {
+            throw AccountError("Google didn't finish connecting the calendar.")
+        }
+        let token: Token = try await HTTP.form("https://oauth2.googleapis.com/token", [
+            "code": code, "client_id": config.clientID, "redirect_uri": redirect,
+            "grant_type": "authorization_code", "code_verifier": verifier,
+        ])
+        guard let refresh = token.refresh_token, let access = token.access_token else {
+            throw AccountError("Google didn't allow calendar access.")
+        }
+        Keychain.save(AccountSecret(password: refresh), for: Self.calendarKey)
+
+        struct NewCalendar: Encodable { let summary = "Skyward Plus"; let description = "Due dates from Skyward Plus." }
+        struct Created: Decodable { let id: String }
+        let calendar: Created = try await HTTP.json("https://www.googleapis.com/calendar/v3/calendars", token: access, body: NewCalendar())
+        UserDefaults.standard.set(calendar.id, forKey: Self.calendarIDKey)
+        UserDefaults.standard.removeObject(forKey: Self.pushedKey)
+    }
+
+    /// Stops copying and gives the calendar permission back to Google. The calendar
+    /// itself stays in Google Calendar for the student to keep or delete.
+    func disconnectCalendar() async {
+        if let refresh = Keychain.load(Self.calendarKey)?.password {
+            struct Empty: Decodable {}
+            let _: Empty? = try? await HTTP.form("https://oauth2.googleapis.com/revoke", ["token": refresh])
+        }
+        Keychain.remove(Self.calendarKey)
+        UserDefaults.standard.removeObject(forKey: Self.calendarIDKey)
+        UserDefaults.standard.removeObject(forKey: Self.pushedKey)
+    }
+
+    private func calendarAccessToken() async throws -> String {
+        guard let config, let refresh = Keychain.load(Self.calendarKey)?.password else { throw AccountError("Calendar isn't connected.") }
+        struct Token: Decodable { let access_token: String }
+        let token: Token = try await HTTP.form("https://oauth2.googleapis.com/token", [
+            "client_id": config.clientID, "refresh_token": refresh, "grant_type": "refresh_token",
+        ])
+        return token.access_token
+    }
+
+    /// Makes the calendar match: one all-day event per open due item from the last
+    /// week onward; finished or removed work is taken off.
+    func syncCalendar(_ items: [AppModel.DueItem], now: Date) async {
+        guard let calendarID = UserDefaults.standard.string(forKey: Self.calendarIDKey) else { return }
+        do {
+            let token = try await calendarAccessToken()
+            let base = "https://www.googleapis.com/calendar/v3/calendars/\(calendarID.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) ?? calendarID)/events"
+            let since = Calendar.current.date(byAdding: .day, value: -7, to: Calendar.current.startOfDay(for: now)) ?? now
+            let wanted = items.filter { !$0.done && $0.due >= since }
+            var pushed = Set(UserDefaults.standard.stringArray(forKey: Self.pushedKey) ?? [])
+            let day = DateFormatter()
+            day.calendar = Calendar(identifier: .gregorian)
+            day.dateFormat = "yyyy-MM-dd"
+
+            struct When: Codable { let date: String }
+            struct Event: Codable {
+                var id: String
+                var summary: String
+                var description: String
+                var start: When
+                var end: When
+                var transparency = "transparent"
+            }
+            struct Reply: Decodable { let id: String? }
+            var current = Set<String>()
+            for item in wanted {
+                // Google event ids: 5-1024 characters of 0-9 and a-v; a hex hash fits.
+                let id = "sp" + Str.hash(item.id).lowercased().filter { $0.isHexDigit }
+                current.insert(id)
+                let next = Calendar.current.date(byAdding: .day, value: 1, to: item.due) ?? item.due
+                let event = Event(id: id, summary: item.title, description: item.course,
+                                  start: When(date: day.string(from: item.due)), end: When(date: day.string(from: next)))
+                do {
+                    let _: Reply = try await HTTP.json("\(base)/\(id)", method: "PUT", token: token, body: event)
+                } catch HTTP.Failure.status(404, _) {
+                    let _: Reply = try await HTTP.json(base, token: token, body: event)
+                }
+                pushed.insert(id)
+            }
+            for stale in pushed.subtracting(current) {
+                struct Empty: Decodable {}
+                _ = try? await HTTP.json("\(base)/\(stale)", method: "DELETE", token: token, body: Optional<Event>.none) as Empty?
+                pushed.remove(stale)
+            }
+            UserDefaults.standard.set(Array(pushed), forKey: Self.pushedKey)
+        } catch {
+            lastError = "Google Calendar: " + error.localizedDescription
+        }
+    }
+}
+
+// MARK: - Plain database access (study groups)
+
+/// Study groups are stored as plain JSON so the database rules can check members
+/// and codes; personal data keeps using the wrapped form above.
+extension AccountSync {
+    var userID: String? { session?.uid }
+
+    private func plainURL(_ path: String) async throws -> String {
+        guard let config else { throw AccountError("Account sync isn't set up in this build.") }
+        let token = try await idToken(config: config)
+        return "\(config.databaseURL)/\(path).json?auth=\(token)"
+    }
+
+    func plainGet<T: Decodable>(_ path: String) async throws -> T? {
+        let reply: T? = try await HTTP.json(try await plainURL(path), method: "GET", body: Optional<String>.none)
+        return reply
+    }
+
+    func plainPut<T: Encodable>(_ path: String, _ value: T) async throws {
+        let _: IgnoredReply? = try await HTTP.json(try await plainURL(path), method: "PUT", body: value)
+    }
+
+    func plainDelete(_ path: String) async throws {
+        let _: IgnoredReply? = try await HTTP.json(try await plainURL(path), method: "DELETE", body: Optional<String>.none)
     }
 }

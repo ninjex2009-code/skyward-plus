@@ -100,7 +100,7 @@ extension AppModel {
         Notifier.relay = phoneRelayConfig
         Notifier.gradeSound = settings.soundsOn && settings.soundGradeChimes
             ? UNNotificationSound(named: UNNotificationSoundName("chime.wav")) : nil
-        let anyOn = settings.notifyNewGrades || settings.notifyMissing || settings.notifyDueTomorrow
+        let anyOn = settings.notifyNewGrades || settings.notifyMissing || settings.notifyAttendance || settings.notifyDueTomorrow
             || settings.notifyBelowGoal || settings.notifySummary
         guard anyOn, active != nil, settings.helloShown else { return }
         if await Notifier.authorizationStatus() == .notDetermined {

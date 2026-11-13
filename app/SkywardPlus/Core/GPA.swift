@@ -360,3 +360,13 @@ enum GPA {
         return nil
     }
 }
+
+extension GPA {
+    /// The term GPA needed so the cumulative GPA (earlier credits plus this term's)
+    /// lands on `goal`. Nil when this term carries no credits.
+    static func termGPANeeded(goal: Double, earlier: GPAResult, term: GPAResult) -> Double? {
+        guard term.credits > 0 else { return nil }
+        let earlierPoints = (earlier.weighted ?? 0) * earlier.credits
+        return (goal * (earlier.credits + term.credits) - earlierPoints) / term.credits
+    }
+}

@@ -12,6 +12,9 @@ struct HomeView: View {
             HomeHeader()
                 .staggered(0)
             SyncStatusView { model.requestReauth() }
+            #if os(iOS)
+            UpdateBanner()
+            #endif
             if model.data.courses.isEmpty {
                 Card {
                     EmptyState(
@@ -24,6 +27,14 @@ struct HomeView: View {
                 ForEach(Array(HomeSection.rows(sectionsWithContent).enumerated()), id: \.offset) { index, row in
                     HomeRow(sections: row).staggered(index + 1)
                 }
+                #if os(iOS)
+                // On iPhone Nimbus has his own little patch of ground at the end of Home.
+                if model.settings.showMascot {
+                    MascotLane(freeHeight: 150, perches: NimbusPerches())
+                        .frame(height: 150)
+                        .padding(.horizontal, -16)
+                }
+                #endif
             }
         }
         .refreshable { await model.refresh() }

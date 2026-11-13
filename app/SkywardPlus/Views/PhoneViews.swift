@@ -31,6 +31,7 @@ struct PhoneTabs: View {
                 PhoneYou()
                     .navigationDestination(for: AppSection.self) { SectionScreen(section: $0) }
                     .navigationDestination(for: CourseRoute.self) { ClassDetailView(courseID: $0.courseID) }
+                    .navigationDestination(for: GroupRoute.self) { GroupDetailView(id: $0.id) }
             }
             .tabItem { Label("You", systemImage: "person.crop.circle") }
             .tag(PhoneTab.you)
@@ -52,6 +53,11 @@ struct PhoneTabs: View {
             let env = ProcessInfo.processInfo.environment
             if let raw = env["SKYWARDPLUS_SECTION"] {
                 if raw == "you" { tab = .you } else if let section = AppSection(rawValue: raw) { model.section = section }
+            }
+            if env["SKYWARDPLUS_FOCUS"] != nil, model.focus == nil {
+                let task = PlannerTask(title: "Chapter 18 reading notes", courseID: model.courses.first?.id, due: model.now())
+                model.saveTask(task)
+                model.startFocus(task)
             }
             if env["SKYWARDPLUS_OPEN_COURSE"] != nil, let first = model.courses.first {
                 model.section = .grades

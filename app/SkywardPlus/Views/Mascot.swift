@@ -1,4 +1,3 @@
-#if os(macOS)
 import SwiftUI
 
 /// What Nimbus is up to.
@@ -381,12 +380,12 @@ struct MascotLane: View {
     @Environment(AppModel.self) private var model
     @Environment(\.backgroundTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.controlActiveState) private var activeState
+    @Environment(\.scenePhase) private var phase
     private let brain = MascotBrain.shared
 
     var body: some View {
         GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: 1.0 / 24, paused: activeState == .inactive && !NSApp.isActive)) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / 24, paused: phase != .active)) { timeline in
                 let now = timeline.date.timeIntervalSinceReferenceDate
                 let cols = Int(geo.size.width / Self.pixel)
                 let rows = Int(geo.size.height / Self.pixel)
@@ -757,4 +756,3 @@ private struct MascotPainter {
         }
     }
 }
-#endif

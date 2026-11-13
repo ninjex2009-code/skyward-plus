@@ -162,6 +162,13 @@ struct SettingsPageView: View {
                     }
                 }
             }
+            #if os(iOS)
+            if Biometrics.isAvailable {
+                SettingsGroup(title: "Privacy", footer: "Asks for \(Biometrics.name) every time you open Skyward Plus, so someone holding your phone can't see your grades.") {
+                    ToggleRow(title: "Require \(Biometrics.name) to open", isOn: setting(\.biometricLock))
+                }
+            }
+            #endif
             SettingsGroup {
                 NavigationLink(value: AppSection.students) {
                     SettingRow(title: "All Students") { Chevron() }
@@ -192,6 +199,9 @@ struct SettingsPageView: View {
                 .fixedSize()
             }
             ToggleRow(title: "Colour by letter grade", isOn: setting(\.colorBubbles))
+            #if os(iOS)
+            ToggleRow(title: "Nimbus at the bottom of Home", isOn: setting(\.showMascot))
+            #endif
         }
         #if os(macOS)
         SettingsGroup(title: "Window") {
@@ -210,6 +220,7 @@ struct SettingsPageView: View {
         SettingsGroup(title: "Tell me about") {
             ToggleRow(title: "New and changed grades", isOn: notifySetting(\.notifyNewGrades))
             ToggleRow(title: "Work marked missing", isOn: notifySetting(\.notifyMissing))
+            ToggleRow(title: "Absences and tardies", isOn: notifySetting(\.notifyAttendance))
             ToggleRow(title: "Work due tomorrow", isOn: eveningSetting(\.notifyDueTomorrow))
             ToggleRow(title: "A class under its goal", isOn: notifySetting(\.notifyBelowGoal))
         }
@@ -255,6 +266,9 @@ struct SettingsPageView: View {
     // MARK: Syncing
 
     @ViewBuilder private var syncingPage: some View {
+        if AccountSync.shared.isConfigured {
+            GoogleCalendarGroup()
+        }
         SettingsGroup(footer: model.settings.backgroundSync ? syncFooter : nil) {
             ToggleRow(title: "Check Skyward automatically", isOn: setting(\.backgroundSync))
             if model.settings.backgroundSync {
@@ -305,7 +319,7 @@ struct SettingsPageView: View {
         #if os(macOS)
         "Runs while Skyward Plus is in the menu bar, and signs back in by itself with your saved sign-in. Skyward allows one sign-in at a time: if you open Skyward in a browser, checks pause for 30 minutes instead of signing you out."
         #else
-        "iOS decides how often the app may check in the background, usually every 15 minutes to a few hours. Skyward allows one sign-in at a time, so a check can sign you out of the Skyward website."
+        "iOS decides how often the app may check in the background, usually every 15 minutes to a few hours. If your Mac is signed in to the same account with Skyward Plus open, your phone gets grades from it instead of signing in, so the two never sign each other out. Otherwise, Skyward allows one sign-in at a time, so a check can sign you out of the Skyward website."
         #endif
     }
 
@@ -348,6 +362,8 @@ struct SettingsPageView: View {
                 .frame(minHeight: 54)
                 .bubble()
             ActionRow(title: "Play the Welcome Again") { AppDelegate.shared?.replayHello() }
+            #else
+            PhoneUpdateRows()
             #endif
         }
     }
@@ -557,3 +573,46 @@ private struct UpdateRow: View {
     }
 }
 #endif
+
+/// Settings → Syncing: copy due dates into a calendar of their own in Google Calendar.
+private struct GoogleCalendarGroup: View {
+    @Environment(AppModel.self) private var model
+    @State private var connected = AccountSync.shared.isCalendarConnected
+    @State private var working = false
+    @State private var message: String?
+
+    var body: some View {
+        SettingsGroup(title: "Google Calendar", footer: message ?? "Due dates go into a \"Skyward Plus\" calendar of their own. The app can only see and change that calendar.") {
+            SettingRow(title: connected ? "Connected" : "Copy due dates to Google Calendar") {
+                if working {
+                    ProgressView().controlSize(.small)
+                } else if connected {
+                    Button("Disconnect", role: .destructive) {
+                        Task {
+                            working = true
+                            await AccountSync.shared.disconnectCalendar()
+                            connected = false
+                            working = false
+                            message = nil
+                        }
+                    }
+                } else {
+                    Button("Connect…") {
+                        Task {
+                            working = true
+                            do {
+                                try await AccountSync.shared.connectCalendar()
+                                connected = true
+                                message = nil
+                                model.exportDueDates()
+                            } catch {
+                                message = error.localizedDescription
+                            }
+                            working = false
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

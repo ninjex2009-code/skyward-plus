@@ -234,7 +234,8 @@ enum SyncEngine {
                             id: Str.hash(kind.rawValue, course.id, grade.lit, a.id, detailText),
                             date: now, kind: kind, courseID: course.id, courseName: display, lit: grade.lit,
                             title: a.name, detail: detailText, assignmentID: a.id,
-                            oldValue: oldByID[a.id]?.scorePercent, newValue: a.scorePercent
+                            oldValue: oldByID[a.id]?.scorePercent, newValue: a.scorePercent,
+                            impact: kind == .newGrade ? GradeMath.impact(of: a.id, in: newDetail) : nil
                         ))
                     }
                 }

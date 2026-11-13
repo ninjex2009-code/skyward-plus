@@ -247,6 +247,15 @@ struct PlannerView: View {
                                 Image(systemName: "bell").font(.caption).foregroundStyle(.secondary)
                                     .accessibilityLabel("Reminder set")
                             }
+                            if task.repeats != .never {
+                                Image(systemName: "repeat").font(.caption).foregroundStyle(.secondary)
+                                    .accessibilityLabel(task.repeats.title)
+                            }
+                            if !task.subtasks.isEmpty {
+                                Text("\(task.subtasks.filter(\.done).count)/\(task.subtasks.count)")
+                                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                                    .accessibilityLabel("\(task.subtasks.filter(\.done).count) of \(task.subtasks.count) steps done")
+                            }
                         }
                         if !task.notes.isEmpty {
                             Text(task.notes).font(.caption).foregroundStyle(.secondary).lineLimit(1)
@@ -370,6 +379,31 @@ struct TaskEditorSheet: View {
                     }
                 }
                 DatePicker("Due Date", selection: $task.due, displayedComponents: .date)
+                Picker("Repeat", selection: $task.repeats) {
+                    ForEach(TaskRepeat.allCases) { Text($0.title).tag($0) }
+                }
+            }
+
+            Section("Checklist") {
+                ForEach($task.subtasks) { $item in
+                    HStack(spacing: 10) {
+                        Button {
+                            item.done.toggle()
+                        } label: {
+                            Image(systemName: item.done ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(item.done ? AnyShapeStyle(model.theme.color) : AnyShapeStyle(.secondary))
+                        }
+                        .buttonStyle(.plain)
+                        TextField("Step", text: $item.title)
+                            .strikethrough(item.done)
+                    }
+                }
+                .onDelete { task.subtasks.remove(atOffsets: $0) }
+                Button {
+                    task.subtasks.append(Subtask(title: ""))
+                } label: {
+                    Label("Add Step", systemImage: "plus")
+                }
             }
 
             Section("Reminder") {
@@ -382,6 +416,29 @@ struct TaskEditorSheet: View {
             Section("Notes") {
                 TextField("Optional notes…", text: $task.notes, axis: .vertical)
                     .lineLimit(3...6)
+            }
+
+            if !isNew, !task.done {
+                Section("Focus") {
+                    if model.focus?.taskID == task.id {
+                        Text("Focusing on this now").foregroundStyle(.secondary)
+                    } else {
+                        Button {
+                            model.startFocus(task)
+                            dismiss()
+                        } label: {
+                            Label("Focus for 25 Minutes", systemImage: "timer")
+                        }
+                        .disabled(model.focus != nil)
+                    }
+                    let spent = task.focusMinutesRaw ?? 0
+                    let streak = model.focusStreak
+                    if spent > 0 || streak > 1 {
+                        Text([spent > 0 ? "\(spent) min focused" : "", streak > 1 ? "\(streak)-day streak" : ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
 
             if !isNew {
@@ -401,6 +458,7 @@ struct TaskEditorSheet: View {
             }
             ToolbarItem(placement: .confirmationAction) {
                 Button("Save") {
+                    task.subtasks.removeAll { $0.title.trimmingCharacters(in: .whitespaces).isEmpty }
                     task.remindAt = hasReminder ? reminderDate : nil
                     if hasReminder {
                         Task { await Notifier.requestPermission() }

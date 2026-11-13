@@ -29,6 +29,16 @@ struct WidgetSnapshot: Codable {
     /// The app's data folder. The widget is sandboxed, so it resolves the real
     /// home folder rather than its container.
     static var fileURL: URL {
+        #if os(iOS)
+        // On iPhone the app and its widgets share an app group folder. AltStore and
+        // SideStore rename app groups when they install, and list the real names here.
+        let altGroups = Bundle.main.object(forInfoDictionaryKey: "ALTAppGroups") as? [String]
+        let debug = (Bundle.main.bundleIdentifier ?? "").contains(".debug")
+        let group = altGroups?.first ?? (debug ? "group.com.skywardplus.app.debug" : "group.com.skywardplus.app")
+        let folder = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: group)
+            ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        return folder.appendingPathComponent(fileName)
+        #else
         let home: String = {
             if let pw = getpwuid(getuid()), let dir = pw.pointee.pw_dir { return String(cString: dir) }
             return NSHomeDirectory()
@@ -36,6 +46,7 @@ struct WidgetSnapshot: Codable {
         return URL(fileURLWithPath: home)
             .appendingPathComponent("Library/Application Support/SkywardPlus", isDirectory: true)
             .appendingPathComponent(fileName)
+        #endif
     }
 
     static func load() -> WidgetSnapshot? {

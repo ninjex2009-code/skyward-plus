@@ -6,6 +6,8 @@ struct GPAView: View {
     @State private var editingScale = false
     @State private var overrides: [String: Double] = [:]
     @State private var editingCourse: Course?
+    @State private var settingGoal = false
+    @State private var goalText = ""
 
     var body: some View {
         let lit = model.selectedLit ?? model.data.currentLit ?? ""
@@ -95,6 +97,10 @@ struct GPAView: View {
             }
             .staggered(2)
 
+            // The goal is one quiet line: where you're aiming and what this term needs.
+            goalLine(result: result, earlier: GPA.compute(transcriptEntries), term: currentOnly)
+                .staggered(2)
+
             if !overrides.isEmpty {
                 Card(tint: Palette.warn) {
                     HStack {
@@ -122,6 +128,16 @@ struct GPAView: View {
                     Label("GPA Scale", systemImage: "slider.horizontal.3")
                 }
             }
+        }
+        .alert("GPA Goal", isPresented: $settingGoal) {
+            TextField("4.50", text: $goalText)
+                #if os(iOS)
+                .keyboardType(.decimalPad)
+                #endif
+            Button("Save", action: saveGoal)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("The cumulative weighted GPA you're aiming for.")
         }
         .sheet(isPresented: $editingScale) {
             NavigationStack {
@@ -288,6 +304,42 @@ struct GPAView: View {
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
+    }
+
+    @ViewBuilder
+    private func goalLine(result: GPAResult, earlier: GPAResult, term: GPAResult) -> some View {
+        if let goal = model.prefs.gpaGoalRaw {
+            Menu {
+                Button("Change Goal…") { goalText = Fmt.gpa(goal); settingGoal = true }
+                Button("Remove Goal", role: .destructive) { model.updatePrefs { $0.gpaGoalRaw = nil } }
+            } label: {
+                Text(goalSentence(goal: goal, result: result, earlier: earlier, term: term))
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .fixedSize()
+        } else {
+            Button("Set a GPA goal") { goalText = ""; settingGoal = true }
+                .font(.callout)
+                .buttonStyle(.plain)
+                .foregroundStyle(.tint)
+        }
+    }
+
+    private func saveGoal() {
+        if let value = Double(goalText.replacingOccurrences(of: ",", with: ".")), value > 0 {
+            model.updatePrefs { $0.gpaGoalRaw = value }
+        }
+    }
+
+    private func goalSentence(goal: Double, result: GPAResult, earlier: GPAResult, term: GPAResult) -> String {
+        let aim = "Goal \(Fmt.gpa(goal))"
+        if let now = result.weighted, now >= goal { return aim + " · you're there" }
+        guard let needed = GPA.termGPANeeded(goal: goal, earlier: earlier, term: term) else { return aim }
+        return aim + " · needs a \(Fmt.gpa(needed)) this term"
     }
 }
 

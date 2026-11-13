@@ -8,8 +8,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "1.5.1"
-    CURRENT_PROJECT_VERSION: "15"
+    MARKETING_VERSION: "1.6"
+    CURRENT_PROJECT_VERSION: "16"
 targets:
   SkywardPlus:
     type: application
@@ -64,14 +64,20 @@ targets:
         ENABLE_PREVIEWS: YES
         TARGETED_DEVICE_FAMILY: "1,2"
         "CODE_SIGN_IDENTITY[sdk=macosx*]": "-"
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphone*]": SkywardPlus/Resources/SkywardPlus-iOS.entitlements
+        SP_APP_GROUP: group.com.skywardplus.app
       configs:
         # Test builds get their own identity so they never touch the installed app.
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: com.skywardplus.app.debug
+          SP_APP_GROUP: group.com.skywardplus.app.debug
     dependencies:
       - target: SkywardPlusWidget
         embed: true
         destinationFilters: [macOS]
+      - target: SkywardPlusWidgetiOS
+        embed: true
+        destinationFilters: [iOS]
     scheme:
       testTargets:
         - SkywardPlusTests
@@ -103,6 +109,38 @@ targets:
       configs:
         Debug:
           PRODUCT_BUNDLE_IDENTIFIER: com.skywardplus.app.debug.widget
+  SkywardPlusWidgetiOS:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: SkywardPlusWidget
+        excludes:
+          - "*.entitlements"
+          - "Info.plist"
+    info:
+      path: SkywardPlusWidget/Info-iOS.plist
+      properties:
+        CFBundleDisplayName: Skyward Plus
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.skywardplus.app.widget
+        PRODUCT_NAME: SkywardPlusWidgetiOS
+        PRODUCT_MODULE_NAME: SkywardPlusWidget
+        CODE_SIGN_ENTITLEMENTS: SkywardPlusWidget/SkywardPlusWidget-iOS.entitlements
+        CODE_SIGN_STYLE: Automatic
+        SP_APP_GROUP: group.com.skywardplus.app
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: ""
+        SKIP_INSTALL: YES
+      configs:
+        Debug:
+          PRODUCT_BUNDLE_IDENTIFIER: com.skywardplus.app.debug.widget
+          SP_APP_GROUP: group.com.skywardplus.app.debug
   SkywardPlusTests:
     type: bundle.unit-test
     supportedDestinations: [iOS, macOS]

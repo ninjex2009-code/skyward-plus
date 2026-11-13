@@ -179,6 +179,23 @@ enum Notifier {
         center.add(request)
     }
 
+    /// A gentle note when a focus session ends.
+    static func scheduleFocusEnd(_ session: FocusSession) {
+        guard isEnabled else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "Focus done"
+        content.body = "\(session.minutes) minutes on \(session.title)."
+        content.sound = .default
+        let seconds = max(1, session.end.timeIntervalSinceNow)
+        center.add(UNNotificationRequest(identifier: "focus", content: content,
+                                         trigger: UNTimeIntervalNotificationTrigger(timeInterval: seconds, repeats: false)))
+    }
+
+    static func cancelFocusEnd() {
+        guard isEnabled else { return }
+        center.removePendingNotificationRequests(withIdentifiers: ["focus"])
+    }
+
     static func cancel(taskID: UUID) {
         guard isEnabled else { return }
         center.removePendingNotificationRequests(withIdentifiers: ["task-" + taskID.uuidString])

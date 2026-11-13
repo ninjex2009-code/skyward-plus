@@ -116,10 +116,13 @@ final class AppModel {
     private(set) var detailErrors: [String: String] = [:]
     /// A burst of confetti for great new grades; the overlay plays it once per id.
     var celebration: Celebration?
-    #if os(macOS)
+    /// The focus session running now, if any.
+    var focus: FocusSession?
+    @ObservationIgnored var googleCalendarTask: Task<Void, Never>?
+    /// An invite code from a skywardplus://join/… link, waiting for the Groups screen.
+    var pendingGroupCode: String?
     /// Asks Nimbus to react to a sync's new grades.
     var mascotReaction: MascotReaction?
-    #endif
     /// Bumped when a profile picture changes so views reload it.
     private(set) var avatarVersion = 0
 
@@ -674,6 +677,18 @@ final class AppModel {
             syncStates[profile.id] = .needsSignIn("Sign in again to keep syncing.")
             return
         }
+        #if os(iOS)
+        // When the student's Mac is checking Skyward, take its grades from the account
+        // instead of signing in here, so the two devices never sign each other out.
+        if !profile.isDemo, profile.id == active?.id, AccountSync.shared.isConfigured {
+            syncStates[profile.id] = .syncing("Checking your Mac's grades")
+            await AccountSync.shared.sync(model: self)
+            if AccountSync.shared.macIsChecking(profile, now: now()) {
+                syncStates[profile.id] = .idle
+                return
+            }
+        }
+        #endif
         syncStates[profile.id] = .syncing("Signing in")
         let previousTask = accountTasks[profile.accountKey]
         let task = Task { [weak self] in
@@ -804,6 +819,10 @@ final class AppModel {
                 for alert in AlertText.grades(fresh, averages: averages) { Notifier.post(alert) }
             }
         }
+        if settings.notifyAttendance, let previous, previous.lastSync != nil,
+           let alert = AlertText.attendance(AlertText.newAttendance(previous: previous.attendance, current: updated.attendance, now: now())) {
+            Notifier.post(alert)
+        }
         if previous?.lastSync != nil, id == active?.id {
             let known = Set((previous?.changes ?? []).map { $0.id })
             let graded = updated.changes.filter { !known.contains($0.id) && ($0.kind == .newGrade || $0.kind == .updatedGrade) }
@@ -815,13 +834,11 @@ final class AppModel {
                                               colors: graded.map { classColorChoice($0.courseID) })
                 }
             }
-            #if os(macOS)
             if graded.contains(where: { ($0.newValue ?? 100) < 70 }) {
                 mascotReaction = MascotReaction(act: .sad)
             } else if graded.contains(where: { ($0.newValue ?? 0) >= 90 }) {
                 mascotReaction = MascotReaction(act: .cheer)
             }
-            #endif
         }
         afterSyncFeatures(id, previous: previous, updated: updated)
     }
@@ -964,6 +981,7 @@ final class AppModel {
         }
         let name = task.courseID.flatMap { course($0) }.map { Str.titleCase($0.name) }
         Notifier.schedule(task: task, courseName: name)
+        exportDueDates()
     }
 
     func deleteTask(_ id: UUID) {
@@ -975,6 +993,54 @@ final class AppModel {
         guard var task = prefs.tasks.first(where: { $0.id == id }) else { return }
         task.done.toggle()
         if task.done { SoundEffects.play(.tick, settings: settings) }
+        saveTask(task)
+        // A repeating task comes back as a fresh copy on its next day.
+        if task.done, let next = task.nextOccurrence(today: now()),
+           !prefs.tasks.contains(where: { !$0.done && $0.title == next.title && Calendar.current.isDate($0.due, inSameDayAs: next.due) }) {
+            saveTask(next)
+        }
+    }
+
+    // MARK: Focus
+
+    var focusStreak: Int { FocusStreak.count(days: prefs.focusDaysRaw ?? [], today: now()) }
+
+    func startFocus(_ task: PlannerTask, minutes: Int = 25) {
+        let start = now()
+        let session = FocusSession(taskID: task.id, title: task.title, start: start,
+                                   end: start.addingTimeInterval(TimeInterval(minutes * 60)))
+        focus = session
+        Task { await Notifier.requestPermission() }
+        Notifier.scheduleFocusEnd(session)
+    }
+
+    /// Ends the session. Time spent counts toward the task, and a session of five
+    /// minutes or more counts toward the streak.
+    func finishFocus() {
+        guard let session = focus else { return }
+        focus = nil
+        Notifier.cancelFocusEnd()
+        let spent = Int((min(now(), session.end).timeIntervalSince(session.start) / 60).rounded())
+        guard spent >= 1 else { return }
+        if var task = prefs.tasks.first(where: { $0.id == session.taskID }) {
+            task.focusMinutesRaw = (task.focusMinutesRaw ?? 0) + spent
+            saveTask(task)
+        }
+        if spent >= 5 {
+            updatePrefs { prefs in
+                var days = prefs.focusDaysRaw ?? []
+                days.insert(FocusStreak.key(self.now()))
+                prefs.focusDaysRaw = days
+            }
+            if now() >= session.end { SoundEffects.play(.gradeGreat, settings: settings) }
+        }
+    }
+
+    func toggleSubtask(_ subtaskID: UUID, in taskID: UUID) {
+        guard var task = prefs.tasks.first(where: { $0.id == taskID }),
+              let index = task.subtasks.firstIndex(where: { $0.id == subtaskID }) else { return }
+        task.subtasks[index].done.toggle()
+        if task.subtasks[index].done { SoundEffects.play(.tick, settings: settings) }
         saveTask(task)
     }
 

@@ -1,0 +1,46 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && auth.uid === $uid"
+      }
+    },
+    "invites": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && newData.isString() && root.child('groups').child(newData.val()).child('owner').val() === auth.uid) || (!newData.exists() && root.child('groups').child(data.val()).child('owner').val() === auth.uid))"
+      }
+    },
+    "groups": {
+      "$gid": {
+        ".read": "auth != null && data.child('members').child(auth.uid).exists()",
+        ".write": "auth != null && ((!data.exists() && newData.child('owner').val() === auth.uid && newData.child('members').child(auth.uid).exists()) || (data.child('owner').val() === auth.uid && !newData.exists()))",
+        "name": {
+          ".write": "auth != null && data.parent().child('owner').val() === auth.uid"
+        },
+        "members": {
+          "$uid": {
+            ".write": "auth != null && (($uid === auth.uid && !newData.exists()) || ($uid === auth.uid && !data.exists() && newData.child('code').val() === root.child('groups').child($gid).child('code').val() && root.child('groups').child($gid).child('members').numChildren() < 8) || (root.child('groups').child($gid).child('owner').val() === auth.uid && !newData.exists()))"
+          }
+        },
+        "tasks": {
+          ".write": "auth != null && root.child('groups').child($gid).child('members').child(auth.uid).exists()"
+        },
+        "sessions": {
+          ".write": "auth != null && root.child('groups').child($gid).child('members').child(auth.uid).exists()"
+        },
+        "dues": {
+          ".write": "auth != null && root.child('groups').child($gid).child('members').child(auth.uid).exists()"
+        },
+        "averages": {
+          "$uid": {
+            ".write": "auth != null && $uid === auth.uid && root.child('groups').child($gid).child('members').child(auth.uid).exists()"
+          }
+        }
+      }
+    }
+  }
+}

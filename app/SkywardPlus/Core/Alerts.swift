@@ -16,6 +16,46 @@ struct Alert: Equatable {
 
 /// The wording of every alert. Pure, so it can be tested.
 enum AlertText {
+    /// New absences and tardies since the last check, recent ones only (Skyward
+    /// sometimes back-fills old records, which shouldn't ring the phone).
+    static func newAttendance(previous: [AttendanceEvent], current: [AttendanceEvent], now: Date) -> [AttendanceEvent] {
+        let known = Set(previous.map(\.id))
+        let since = now.addingTimeInterval(-14 * 86_400)
+        return current.filter { !known.contains($0.id) && $0.date >= since }.sorted { $0.date < $1.date }
+    }
+
+    /// One alert for new attendance records: what was recorded and when, nothing more.
+    static func attendance(_ events: [AttendanceEvent]) -> Alert? {
+        guard let first = events.first else { return nil }
+        let day = DateFormatter()
+        day.setLocalizedDateFormatFromTemplate("EEEEMMMd")
+        func label(_ e: AttendanceEvent) -> String {
+            switch e.kind {
+            case .tardy: return "Tardy"
+            case .excused: return "Excused absence"
+            case .unexcused: return "Unexcused absence"
+            case .other: return e.reason.isEmpty ? "Attendance" : e.reason
+            }
+        }
+        func when(_ e: AttendanceEvent) -> String {
+            let periods = e.periods.trimmingCharacters(in: .whitespaces)
+            return day.string(from: e.date) + (periods.isEmpty ? "" : " · period \(periods)")
+        }
+        let title = events.count == 1 ? "\(label(first)) recorded" : "\(events.count) attendance records"
+        let body = events.count == 1 ? when(first) : events.prefix(3).map { "\(label($0)): \(when($0))" }.joined(separator: "\n")
+        return Alert(
+            id: "attendance-" + Str.hash(events.map(\.id).joined(separator: ",")),
+            title: title, body: body,
+            plainTitle: "Attendance updated", plainBody: "Open Skyward Plus to see it.",
+            courseID: nil, thread: "attendance"
+        )
+    }
+
+    /// "+0.6" or "−1.2", one decimal.
+    static func signed(_ value: Double) -> String {
+        (value >= 0 ? "+" : "−") + String(format: "%.1f", abs(value))
+    }
+
     static func pct(_ value: Double) -> String {
         let rounded = (value * 10).rounded() / 10
         let text = rounded == rounded.rounded() ? String(Int(rounded)) : String(format: "%.1f", rounded)
@@ -55,7 +95,12 @@ enum AlertText {
                     lines.append("\(one.title): \(one.detail)")
                 } else {
                     title = "\(course): \(one.detail)"
-                    lines.append(one.title)
+                    // One quiet fact: how much this grade moved the class.
+                    if let impact = one.impact, abs(impact) >= 0.05 {
+                        lines.append("\(one.title) · \(signed(impact)) to your average")
+                    } else {
+                        lines.append(one.title)
+                    }
                 }
             } else if graded.count > 1 {
                 title = "\(course): \(graded.count) new grades"

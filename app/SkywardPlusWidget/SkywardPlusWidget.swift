@@ -46,7 +46,11 @@ struct GradesWidgetView: View {
         if let s = entry.snapshot {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(s.period.isEmpty ? "Grades" : s.period).font(.headline)
+                    // Small: the big number leads and the period is a short label.
+                    Text(family == .systemSmall ? shortPeriod(s.period) : (s.period.isEmpty ? "Grades" : s.period))
+                        .font(family == .systemSmall ? .caption.weight(.semibold) : .headline)
+                        .foregroundStyle(family == .systemSmall ? .secondary : .primary)
+                        .lineLimit(1)
                     Spacer()
                     if let average = s.average {
                         Text(shortNumber(average))
@@ -57,13 +61,15 @@ struct GradesWidgetView: View {
                 let limit = family == .systemLarge ? 10 : (family == .systemMedium ? 4 : 3)
                 ForEach(Array(s.courses.prefix(limit)), id: \.self) { course in
                     HStack {
-                        Text(course.name).font(.subheadline).lineLimit(1)
+                        Text(family == .systemSmall ? shortName(course.name) : course.name)
+                            .font(family == .systemSmall ? .caption : .subheadline)
+                            .lineLimit(1)
                         Spacer(minLength: 4)
                         if course.belowGoal {
                             Image(systemName: "flag.fill").font(.caption2).foregroundStyle(.orange)
                         }
                         Text(course.grade)
-                            .font(.subheadline.weight(.semibold).monospacedDigit())
+                            .font((family == .systemSmall ? Font.caption : .subheadline).weight(.semibold).monospacedDigit())
                             .foregroundStyle(gradeColor(course.percent))
                     }
                 }
@@ -140,11 +146,85 @@ struct DueWidget: Widget {
     }
 }
 
+#if os(iOS)
+/// Lock Screen: the average as a ring, or one line.
+struct AverageLockWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "SkywardPlusAverage", provider: SnapshotProvider()) { entry in
+            AverageLockView(entry: entry)
+                .containerBackground(.clear, for: .widget)
+                .widgetURL(URL(string: "skywardplus://grades"))
+        }
+        .configurationDisplayName("Average")
+        .description("Your average for the current marking period.")
+        .supportedFamilies([.accessoryCircular, .accessoryInline])
+    }
+}
+
+struct AverageLockView: View {
+    @Environment(\.widgetFamily) private var family
+    var entry: SnapshotEntry
+
+    var body: some View {
+        let average = entry.snapshot?.average
+        if family == .accessoryInline {
+            Text(average.map { "Average \(shortNumber($0))" } ?? "Skyward Plus")
+        } else {
+            Gauge(value: min(100, max(60, average ?? 60)), in: 60...100) {
+                Text("Avg")
+            } currentValueLabel: {
+                Text(average.map { shortNumber($0) } ?? "–")
+            }
+            .gaugeStyle(.accessoryCircularCapacity)
+        }
+    }
+}
+
+/// Lock Screen: the next thing due.
+struct NextDueLockWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "SkywardPlusNextDue", provider: SnapshotProvider()) { entry in
+            NextDueLockView(entry: entry)
+                .containerBackground(.clear, for: .widget)
+                .widgetURL(URL(string: "skywardplus://planner"))
+        }
+        .configurationDisplayName("Next Due")
+        .description("The next assignment or task that's due.")
+        .supportedFamilies([.accessoryRectangular])
+    }
+}
+
+struct NextDueLockView: View {
+    var entry: SnapshotEntry
+
+    var body: some View {
+        if let next = entry.snapshot?.due.first {
+            VStack(alignment: .leading, spacing: 1) {
+                Text(next.due, format: .dateTime.weekday(.wide))
+                    .font(.caption2.weight(.semibold))
+                    .widgetAccentable()
+                Text(next.title).font(.headline).lineLimit(1)
+                if !next.course.isEmpty {
+                    Text(next.course).font(.caption).lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            Text("Nothing due").font(.headline)
+        }
+    }
+}
+#endif
+
 @main
 struct SkywardPlusWidgets: WidgetBundle {
     var body: some Widget {
         GradesWidget()
         DueWidget()
+        #if os(iOS)
+        AverageLockWidget()
+        NextDueLockWidget()
+        #endif
     }
 }
 
@@ -159,4 +239,19 @@ extension WidgetSnapshot {
         due: [.init(title: "Unit 4 Integration Test", course: "AP Calculus BC", due: .now.addingTimeInterval(86_400 * 2))],
         updated: .now
     )
+}
+
+/// "Quarter 2" → "Q2", "Semester 1" → "S1".
+func shortPeriod(_ period: String) -> String {
+    let parts = period.split(separator: " ")
+    guard parts.count == 2, let first = parts.first?.first else { return period.isEmpty ? "Grades" : period }
+    return "\(first)\(parts[1])"
+}
+
+/// Drops the "AP " / "Honors" noise so a class fits a small widget.
+func shortName(_ name: String) -> String {
+    var n = name
+    for prefix in ["AP ", "Pre-AP ", "IB "] where n.hasPrefix(prefix) { n.removeFirst(prefix.count) }
+    for suffix in [" Honors", " Hon"] where n.hasSuffix(suffix) { n.removeLast(suffix.count) }
+    return n
 }

@@ -269,6 +269,8 @@ struct GradeChange: Codable, Hashable, Identifiable {
     var assignmentID: String?
     var oldValue: Double?
     var newValue: Double?
+    /// For a new grade: how much it moved the class average (with it minus without it).
+    var impact: Double? = nil
 }
 
 /// Everything fetched from Skyward for one student.

@@ -147,7 +147,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }
         Task { await model.checkForUpdates(manual: false) }
-        Task { await AccountSync.shared.sync(model: model) }
+        Task {
+            await AccountSync.shared.sync(model: model)
+            await StudyGroups.shared.load()
+        }
     }
 
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
@@ -278,7 +281,10 @@ struct SkywardPlusApp: App {
                 .environment(model)
                 .onOpenURL { model.handle(url: $0) }
                 .onChange(of: phase) { _, phase in
-                    if phase == .background { BackgroundRefresh.schedule(model: model) }
+                    if phase == .background {
+                        BackgroundRefresh.schedule(model: model)
+                        model.publishWidgetSnapshot()
+                    }
                     if phase == .active {
                         Task {
                             await AccountSync.shared.sync(model: model)
@@ -288,7 +294,10 @@ struct SkywardPlusApp: App {
                 }
                 .task {
                     model.startScheduler()
+                    model.publishWidgetSnapshot()
                     await AccountSync.shared.sync(model: model)
+                    await StudyGroups.shared.load()
+                    await model.checkForUpdates(manual: false)
                 }
                 #if DEBUG
                 .task { await EngineTest.runIfRequested() }

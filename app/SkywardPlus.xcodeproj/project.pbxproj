@@ -20,6 +20,7 @@
 		178BFAB8770612BAAB838EDF /* Alerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BDDE05B482A479829E2CFFE /* Alerts.swift */; };
 		1914C71068429101E899BCCD /* GPA.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF57EB24B79476D792924EDC /* GPA.swift */; };
 		19ABB50E8F8FC4D75AD76714 /* BellBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 438C2C429D9F9B7D76A9422C /* BellBanner.swift */; };
+		1A4B96D8E28FB70F4919F64D /* Info-iOS.plist in Resources */ = {isa = PBXBuildFile; fileRef = 12BE083A34CA11269BC2EFF4 /* Info-iOS.plist */; };
 		1DFED5D124D8411E33608E04 /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5280696572B1B7A1D731C7F /* SyncEngine.swift */; };
 		1E0B9DAEF001A5A4630341DD /* CommandPalette.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6E03E9A9F7C7CFDC9BF0DB4 /* CommandPalette.swift */; };
 		1FC49A864B98A811D27B1388 /* SchoolViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4C2D6ABB3F6D75F9ED01D95 /* SchoolViews.swift */; };
@@ -35,28 +36,35 @@
 		300169E7384268B3A38A3E5F /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA50AAD86D1DD6BC29ABB70D /* Models.swift */; };
 		3163D0823448EC494A64109A /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAABF4803F58AFD6A009181A /* AppModel.swift */; };
 		34C10FB543B07A6E09BDF779 /* Unbounded.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9D2F605C228E051BE7873CA8 /* Unbounded.ttf */; };
+		3667CEA8D0A8DAC54AF6182B /* StudyGroups.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCE66710535E3CCE4E014321 /* StudyGroups.swift */; };
 		398318A6C68D395BDA78D33E /* HomeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F209AC43651B3CD6BF3FF5C /* HomeLayout.swift */; };
 		3D76EEC3B69461009C1A2DF6 /* CoreAndParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA1A605954E668AA5A75622 /* CoreAndParserTests.swift */; };
 		439F6A07083C49639E62A50E /* SkywardPlusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F8A4F79C534A801812B23D /* SkywardPlusApp.swift */; };
 		45395F9633F30EC4667C771F /* GradeMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55CAC84C164C53F6FD1EAB90 /* GradeMath.swift */; };
 		46A30703FBEA8E9A568333F2 /* Alerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BDDE05B482A479829E2CFFE /* Alerts.swift */; };
+		47CD4A111E92F5C0EAE04FA1 /* SkywardPlusWidgetiOS.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 366391CB412A387B0447517A /* SkywardPlusWidgetiOS.appex */; platformFilters = (ios, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		4ACCC885F5CBBEA7551A23B9 /* HelloOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 465AE02F163DACCF529D48A3 /* HelloOverlay.swift */; };
 		4D6A6B92CAA9CC60A10C1D92 /* ClassDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EEF0C82765F0A9A83B551425 /* ClassDetailView.swift */; };
 		4EF8FD011CB27AD3ED57D0F2 /* GPAView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0060ADAC5D0E31F5AF7F9259 /* GPAView.swift */; };
 		5152DA1FE79F5482FD28E697 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D58BD8809ED66960ABBD784A /* WidgetSnapshot.swift */; };
 		526DDAC273E0D16D47A920D8 /* QmlativScript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86284DF9E5D4125C6DF07FAA /* QmlativScript.swift */; };
+		5451B72109F900556714DC76 /* WidgetSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = D58BD8809ED66960ABBD784A /* WidgetSnapshot.swift */; };
 		57B6CD5E2D53B97ADD6C8B95 /* AppModel+Features.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2800EB42B59032D34A2EC82 /* AppModel+Features.swift */; };
 		585552DE9F6AA760B7410667 /* Hubs.swift in Sources */ = {isa = PBXBuildFile; fileRef = E091B189B46447F692A2A7C9 /* Hubs.swift */; };
+		5B7E391769CD577477C0DDD5 /* DeviceHandoffTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE749732129D478D06EBA7DB /* DeviceHandoffTests.swift */; };
 		5ECB3F926BD59DCFC525920F /* GradeMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55CAC84C164C53F6FD1EAB90 /* GradeMath.swift */; };
+		606A3697E7C834634ABDDC40 /* PlannerToolsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3389D824ED764670C8E5DCB8 /* PlannerToolsTests.swift */; };
 		60BA0CEA0E5CA4FCDCC85B06 /* ClassColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E56ABC5B448DF05DA93B942 /* ClassColor.swift */; };
 		6108EC8D34D5942C147768FA /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 526154364A8088FACCB1ECFC /* HomeView.swift */; };
 		61FC0B2180748B36DFEB05F5 /* chime-good.wav in Resources */ = {isa = PBXBuildFile; fileRef = B8E77F257CB6046CBE95C1D7 /* chime-good.wav */; };
 		643C7121DB172AE58D9F67ED /* SkywardClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA45D662A3F95CCE3A83746 /* SkywardClient.swift */; };
 		68FF1FB6BEED628870E17FCB /* HTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F22A200A187962B286EAD91 /* HTML.swift */; };
 		6A91FA660187FFE27493A742 /* QmlativModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8EF32BA21333B6040A8C7FD /* QmlativModels.swift */; };
+		6CBBE9F5724EF65FD4EE5D7F /* StudyGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F0104A3595B2BC5B439B2D8 /* StudyGroup.swift */; };
 		6D7C9EA795DE8E5201438A04 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2C972F9C3371733ED109098 /* OnboardingView.swift */; };
 		73474A506FD98E739B9DF238 /* SkywardParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294DA5B4D6FB9E894130C171 /* SkywardParser.swift */; };
 		7A40B97F99BCAA9AFA5586FB /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53B7A3593D65D0F76A561542 /* RootView.swift */; };
+		7BF03F02C36A06EDAE21F4D6 /* FocusPill.swift in Sources */ = {isa = PBXBuildFile; fileRef = E736CD651CD32D5EBD7CBB94 /* FocusPill.swift */; };
 		7FB914F0C5CCE57444B7DF70 /* Mascot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEE52413156E95BA38DA6C1 /* Mascot.swift */; };
 		7FBBB13BA2A1CDC8794FB95F /* ScheduleViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93007BE5100E31BD55F0FD7 /* ScheduleViews.swift */; };
 		7FC1B21C7890B04F72FDC20D /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 142F454C4B3CCB21DBA734A0 /* Typography.swift */; };
@@ -81,9 +89,11 @@
 		AC633C87E75560EA1804FAC3 /* SettingsCompatibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E260F82AEE42BD8E728CE32C /* SettingsCompatibilityTests.swift */; };
 		ACA99FCFCC6880F14B317E22 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 779F1E4800A5EB5267BB0140 /* Updater.swift */; };
 		ACC29FBDF5856A466865E788 /* Unbounded-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 66F6083DBB31E6CF2E95490B /* Unbounded-OFL.txt */; };
+		ADA47B7596F58C151BA339AA /* GroupsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC503A5494093A6BD6BBF8CA /* GroupsView.swift */; };
 		AF0B3E4E0F97964E4CBA6DD8 /* GradesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB787630CC9A188139A3CB8 /* GradesView.swift */; };
 		AF0E60B039A875E52D317B68 /* SyncMerge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55BD35D67244F0ABB427646B /* SyncMerge.swift */; };
 		B373AAF8A90F1AD8A90A5853 /* SkywardPlusWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF0E5F4282C181E730F63A5B /* SkywardPlusWidget.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		B494D116AEA48E244E121C0F /* Focus.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD907E27155D67AEDA5C6E69 /* Focus.swift */; };
 		B82D8C52575A39651B6F7E1F /* ScreenRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8A801E4FE78ED43836DFE0 /* ScreenRenderer.swift */; };
 		B91B39C12BB84E0EBAA72F03 /* FakeSkyward.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A5D20717E4F4320999EF990 /* FakeSkyward.swift */; };
 		B9B919A08A2CD969F13AF702 /* SyncMergeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5947ECD411C80B58DCE0A114 /* SyncMergeTests.swift */; };
@@ -94,8 +104,10 @@
 		BCE1ABB633FA8D8F7A4286A1 /* AlertTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55995CFD7BD7FEBC5FF9AA69 /* AlertTextTests.swift */; };
 		BD130E98E11EC81A62842B00 /* LoginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA9B17E8BAEDDEF6DB89570 /* LoginTests.swift */; };
 		BDBC349C828E541BC7D03D3A /* PlannerCalendar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA0C4C96B207ADF001C9040 /* PlannerCalendar.swift */; };
+		BE3992F2BE807589050C4A19 /* Focus.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD907E27155D67AEDA5C6E69 /* Focus.swift */; };
 		C0411EB28C31E7332E4D642B /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = FE20DF5BF5561E38EA6FFFCC /* GoogleService-Info.plist */; };
 		C10ED0BB52D5711DD582C48E /* RememberTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF95613240EC4C5437526932 /* RememberTest.swift */; };
+		C6513C197E08AA5BBFCAADE5 /* StudyGroupTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D898D553096E24D98F3D591 /* StudyGroupTests.swift */; };
 		C87FB6756FC2C1D523444670 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 2CF78A49BB78D9DAC2D04FE8 /* Assets.xcassets */; };
 		C8ED09A870DBE800B9528D26 /* GradeShareTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48F3BDA167C30EFB1F55FE42 /* GradeShareTests.swift */; };
 		CB5300E404A89729C32EB1D6 /* FakeSkyward.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A5D20717E4F4320999EF990 /* FakeSkyward.swift */; };
@@ -103,13 +115,17 @@
 		D48126C6C9A045E67E7B82A5 /* AppModel+Alerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50E6F9A4EA069DA606B4FAC /* AppModel+Alerts.swift */; };
 		D647BE729DF413F76764D27F /* AppModel+Style.swift in Sources */ = {isa = PBXBuildFile; fileRef = D834D725D8F287C2BC36D607 /* AppModel+Style.swift */; };
 		D9AE8F282A91DC3AC42C1EC7 /* Design.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8AC3F0C8DFCB827877A402D /* Design.swift */; };
+		DC91D586CF4430D902B1E449 /* UpdateBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = F56C16A00EDEB9F53DF20781 /* UpdateBanner.swift */; };
 		DEE4315E932ED3ECD2FE1B6B /* HomeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F209AC43651B3CD6BF3FF5C /* HomeLayout.swift */; };
 		E27651853247E3EA5934CDA5 /* Prefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290DD89A5C0F36A064B9CAF5 /* Prefs.swift */; };
+		E2C0C359B94B70C63C4F7428 /* SkywardPlusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08E0F70CE1E404FD5C1C3AB3 /* SkywardPlusWidget.swift */; };
 		E907586CFFA1F2F687E78BAD /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5280696572B1B7A1D731C7F /* SyncEngine.swift */; };
 		EEA8EFFCBECE2D2A462BFC67 /* JSLiteral.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A52C1E493421AD57F9F31F8 /* JSLiteral.swift */; };
 		F0CC1EF2F38037656E52DF04 /* HTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F22A200A187962B286EAD91 /* HTML.swift */; };
+		F18DFE5498727AA86614F58E /* StudyGroup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F0104A3595B2BC5B439B2D8 /* StudyGroup.swift */; };
 		F211317A363E06609A78724F /* QmlativMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60E605D9276B82CC3940FFB4 /* QmlativMapperTests.swift */; };
 		F35F7EF9C3CFFFC5C9A83F6A /* ClassColorPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1DD39641D005ED8F2825B8 /* ClassColorPicker.swift */; };
+		F46961C9F3C66AD99B91E8C8 /* GradeToolsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5FEBD0CEF7E14A272177FB3 /* GradeToolsTests.swift */; };
 		F4C1818F3AC5D9F8DFC7D7F6 /* tick.wav in Resources */ = {isa = PBXBuildFile; fileRef = 91680F633FD419CDFDE9EA57 /* tick.wav */; };
 		F823D058A0A48C4A6454169B /* Backgrounds.metal in Sources */ = {isa = PBXBuildFile; fileRef = 8852591FC6FC19DEFF7F2B7F /* Backgrounds.metal */; };
 /* End PBXBuildFile section */
@@ -122,6 +138,13 @@
 			remoteGlobalIDString = 118558DAEE19A704EAD06FEC;
 			remoteInfo = SkywardPlusWidget;
 		};
+		AA0E5BFE80B9F9A7CBD51C60 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 900798D16DA2234D9C27726B /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 1E7A8AA6CB9B2C9B826EF4AF;
+			remoteInfo = SkywardPlusWidgetiOS;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -132,6 +155,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				B373AAF8A90F1AD8A90A5853 /* SkywardPlusWidget.appex in Embed Foundation Extensions */,
+				47CD4A111E92F5C0EAE04FA1 /* SkywardPlusWidgetiOS.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -142,6 +166,8 @@
 		0060ADAC5D0E31F5AF7F9259 /* GPAView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPAView.swift; sourceTree = "<group>"; };
 		08E0F70CE1E404FD5C1C3AB3 /* SkywardPlusWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkywardPlusWidget.swift; sourceTree = "<group>"; };
 		0C01B32F71681DB9BDF9E0C6 /* QuickSearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearchPanel.swift; sourceTree = "<group>"; };
+		0F0104A3595B2BC5B439B2D8 /* StudyGroup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyGroup.swift; sourceTree = "<group>"; };
+		12BE083A34CA11269BC2EFF4 /* Info-iOS.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Info-iOS.plist"; sourceTree = "<group>"; };
 		141F3C5C83E4D68C71E9B0B1 /* Sidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sidebar.swift; sourceTree = "<group>"; };
 		142F454C4B3CCB21DBA734A0 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		18159BE75E7A652E7CEAFDB4 /* RememberSignInSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RememberSignInSheet.swift; sourceTree = "<group>"; };
@@ -157,8 +183,11 @@
 		2C8A801E4FE78ED43836DFE0 /* ScreenRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenRenderer.swift; sourceTree = "<group>"; };
 		2CDC546F7F6C56F02E3511DE /* chime-low.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = "chime-low.wav"; sourceTree = "<group>"; };
 		2CF78A49BB78D9DAC2D04FE8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2D898D553096E24D98F3D591 /* StudyGroupTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyGroupTests.swift; sourceTree = "<group>"; };
 		2EB8FA207328EBE9B0B728F5 /* MascotWeather.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MascotWeather.swift; sourceTree = "<group>"; };
 		32C3C60704411F1749EFAC03 /* PhoneViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneViews.swift; sourceTree = "<group>"; };
+		3389D824ED764670C8E5DCB8 /* PlannerToolsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannerToolsTests.swift; sourceTree = "<group>"; };
+		366391CB412A387B0447517A /* SkywardPlusWidgetiOS.appex */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = "wrapper.app-extension"; path = SkywardPlusWidgetiOS.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		3AA0C4C96B207ADF001C9040 /* PlannerCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannerCalendar.swift; sourceTree = "<group>"; };
 		3AA1A605954E668AA5A75622 /* CoreAndParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAndParserTests.swift; sourceTree = "<group>"; };
 		3CB787630CC9A188139A3CB8 /* GradesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradesView.swift; sourceTree = "<group>"; };
@@ -198,6 +227,7 @@
 		A0CB74FDCC42E1806BCC65A2 /* NotificationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettings.swift; sourceTree = "<group>"; };
 		A50E6F9A4EA069DA606B4FAC /* AppModel+Alerts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Alerts.swift"; sourceTree = "<group>"; };
 		A6E03E9A9F7C7CFDC9BF0DB4 /* CommandPalette.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandPalette.swift; sourceTree = "<group>"; };
+		AE9223D306CDF227459B4D8F /* SkywardPlus-iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "SkywardPlus-iOS.entitlements"; sourceTree = "<group>"; };
 		AF0E5F4282C181E730F63A5B /* SkywardPlusWidget.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = SkywardPlusWidget.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		AF95613240EC4C5437526932 /* RememberTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RememberTest.swift; sourceTree = "<group>"; };
 		B2800EB42B59032D34A2EC82 /* AppModel+Features.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Features.swift"; sourceTree = "<group>"; };
@@ -205,7 +235,9 @@
 		B752C3A0F48BEB3A28DB99DF /* QmlativSignInSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativSignInSheet.swift; sourceTree = "<group>"; };
 		B8E77F257CB6046CBE95C1D7 /* chime-good.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = "chime-good.wav"; sourceTree = "<group>"; };
 		B995DD4118D55AAED05B97B1 /* EngineTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineTest.swift; sourceTree = "<group>"; };
+		BCE66710535E3CCE4E014321 /* StudyGroups.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StudyGroups.swift; sourceTree = "<group>"; };
 		BCF9BEDC78B4CD9C4B4D97D6 /* QmlativSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativSync.swift; sourceTree = "<group>"; };
+		C5FEBD0CEF7E14A272177FB3 /* GradeToolsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradeToolsTests.swift; sourceTree = "<group>"; };
 		CC1DD39641D005ED8F2825B8 /* ClassColorPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassColorPicker.swift; sourceTree = "<group>"; };
 		D58BD8809ED66960ABBD784A /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
 		D6D4DF504678D7EF4573373C /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
@@ -213,19 +245,24 @@
 		D8AC3F0C8DFCB827877A402D /* Design.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Design.swift; sourceTree = "<group>"; };
 		DA50AAD86D1DD6BC29ABB70D /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		DAABF4803F58AFD6A009181A /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		DC503A5494093A6BD6BBF8CA /* GroupsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GroupsView.swift; sourceTree = "<group>"; };
+		DD907E27155D67AEDA5C6E69 /* Focus.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Focus.swift; sourceTree = "<group>"; };
 		DD9084561BADBEE571678FB3 /* AccountSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountSync.swift; sourceTree = "<group>"; };
 		E091B189B46447F692A2A7C9 /* Hubs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Hubs.swift; sourceTree = "<group>"; };
 		E260F82AEE42BD8E728CE32C /* SettingsCompatibilityTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsCompatibilityTests.swift; sourceTree = "<group>"; };
 		E31909742C82022679140233 /* PlannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannerView.swift; sourceTree = "<group>"; };
 		E6B0375B64F7FB146CAEA160 /* GradeShare.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradeShare.swift; sourceTree = "<group>"; };
+		E736CD651CD32D5EBD7CBB94 /* FocusPill.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusPill.swift; sourceTree = "<group>"; };
 		E8EF32BA21333B6040A8C7FD /* QmlativModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativModels.swift; sourceTree = "<group>"; };
 		E93007BE5100E31BD55F0FD7 /* ScheduleViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScheduleViews.swift; sourceTree = "<group>"; };
 		EB4A069FD1F428CFE318D292 /* BackgroundRefresh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundRefresh.swift; sourceTree = "<group>"; };
+		EE749732129D478D06EBA7DB /* DeviceHandoffTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceHandoffTests.swift; sourceTree = "<group>"; };
 		EEF0C82765F0A9A83B551425 /* ClassDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassDetailView.swift; sourceTree = "<group>"; };
 		EF57EB24B79476D792924EDC /* GPA.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPA.swift; sourceTree = "<group>"; };
 		F38BB8FC866CCF30BE2AB183 /* QmlativEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativEngine.swift; sourceTree = "<group>"; };
 		F4C2D6ABB3F6D75F9ED01D95 /* SchoolViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchoolViews.swift; sourceTree = "<group>"; };
 		F5280696572B1B7A1D731C7F /* SyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncEngine.swift; sourceTree = "<group>"; };
+		F56C16A00EDEB9F53DF20781 /* UpdateBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UpdateBanner.swift; sourceTree = "<group>"; };
 		F641BCDFB5AF1C2B7153B67F /* DistrictSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DistrictSearch.swift; sourceTree = "<group>"; };
 		FC2182B7E22EFB35D5B32C73 /* SoundEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundEffects.swift; sourceTree = "<group>"; };
 		FE20DF5BF5561E38EA6FFFCC /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -238,6 +275,7 @@
 				2CF78A49BB78D9DAC2D04FE8 /* Assets.xcassets */,
 				FE20DF5BF5561E38EA6FFFCC /* GoogleService-Info.plist */,
 				8EB620DA6E1023A9382A0776 /* Info.plist */,
+				AE9223D306CDF227459B4D8F /* SkywardPlus-iOS.entitlements */,
 				B010FC089261055F9A7C2F3A /* Fonts */,
 				9E842130DBCB3147B9635A85 /* Sounds */,
 			);
@@ -250,6 +288,7 @@
 				963DE5B4555B2696F55C5687 /* SkywardPlus.app */,
 				4E02AC6A1A6C250C5C317CD1 /* SkywardPlusTests.xctest */,
 				AF0E5F4282C181E730F63A5B /* SkywardPlusWidget.appex */,
+				366391CB412A387B0447517A /* SkywardPlusWidgetiOS.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -273,6 +312,7 @@
 				6E56ABC5B448DF05DA93B942 /* ClassColor.swift */,
 				F641BCDFB5AF1C2B7153B67F /* DistrictSearch.swift */,
 				8A5D20717E4F4320999EF990 /* FakeSkyward.swift */,
+				DD907E27155D67AEDA5C6E69 /* Focus.swift */,
 				EF57EB24B79476D792924EDC /* GPA.swift */,
 				55CAC84C164C53F6FD1EAB90 /* GradeMath.swift */,
 				E6B0375B64F7FB146CAEA160 /* GradeShare.swift */,
@@ -285,6 +325,7 @@
 				E8EF32BA21333B6040A8C7FD /* QmlativModels.swift */,
 				8DA45D662A3F95CCE3A83746 /* SkywardClient.swift */,
 				294DA5B4D6FB9E894130C171 /* SkywardParser.swift */,
+				0F0104A3595B2BC5B439B2D8 /* StudyGroup.swift */,
 				F5280696572B1B7A1D731C7F /* SyncEngine.swift */,
 				55BD35D67244F0ABB427646B /* SyncMerge.swift */,
 			);
@@ -302,6 +343,7 @@
 				BCF9BEDC78B4CD9C4B4D97D6 /* QmlativSync.swift */,
 				58DB90F266F03128CB7A947A /* Services.swift */,
 				FC2182B7E22EFB35D5B32C73 /* SoundEffects.swift */,
+				BCE66710535E3CCE4E014321 /* StudyGroups.swift */,
 				779F1E4800A5EB5267BB0140 /* Updater.swift */,
 				29CB6352585661A55E46D29E /* WebSignIn.swift */,
 			);
@@ -346,9 +388,11 @@
 				EEF0C82765F0A9A83B551425 /* ClassDetailView.swift */,
 				A6E03E9A9F7C7CFDC9BF0DB4 /* CommandPalette.swift */,
 				D8AC3F0C8DFCB827877A402D /* Design.swift */,
+				E736CD651CD32D5EBD7CBB94 /* FocusPill.swift */,
 				0060ADAC5D0E31F5AF7F9259 /* GPAView.swift */,
 				71CA3620709BC02CC75DD9CE /* GradeReport.swift */,
 				3CB787630CC9A188139A3CB8 /* GradesView.swift */,
+				DC503A5494093A6BD6BBF8CA /* GroupsView.swift */,
 				465AE02F163DACCF529D48A3 /* HelloOverlay.swift */,
 				526154364A8088FACCB1ECFC /* HomeView.swift */,
 				E091B189B46447F692A2A7C9 /* Hubs.swift */,
@@ -368,6 +412,7 @@
 				141F3C5C83E4D68C71E9B0B1 /* Sidebar.swift */,
 				65D574057ED29E7A68081882 /* SignInView.swift */,
 				142F454C4B3CCB21DBA734A0 /* Typography.swift */,
+				F56C16A00EDEB9F53DF20781 /* UpdateBanner.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -384,6 +429,7 @@
 		BD2732AEE38945368D99A14A /* SkywardPlusWidget */ = {
 			isa = PBXGroup;
 			children = (
+				12BE083A34CA11269BC2EFF4 /* Info-iOS.plist */,
 				72EFD546372DF138E1EE3836 /* Info.plist */,
 				08E0F70CE1E404FD5C1C3AB3 /* SkywardPlusWidget.swift */,
 				D58BD8809ED66960ABBD784A /* WidgetSnapshot.swift */,
@@ -406,11 +452,15 @@
 			children = (
 				55995CFD7BD7FEBC5FF9AA69 /* AlertTextTests.swift */,
 				3AA1A605954E668AA5A75622 /* CoreAndParserTests.swift */,
+				EE749732129D478D06EBA7DB /* DeviceHandoffTests.swift */,
 				48F3BDA167C30EFB1F55FE42 /* GradeShareTests.swift */,
+				C5FEBD0CEF7E14A272177FB3 /* GradeToolsTests.swift */,
 				2BA9B17E8BAEDDEF6DB89570 /* LoginTests.swift */,
+				3389D824ED764670C8E5DCB8 /* PlannerToolsTests.swift */,
 				60E605D9276B82CC3940FFB4 /* QmlativMapperTests.swift */,
 				8890F15E4EB9A65AF33B4CB0 /* Release15Tests.swift */,
 				E260F82AEE42BD8E728CE32C /* SettingsCompatibilityTests.swift */,
+				2D898D553096E24D98F3D591 /* StudyGroupTests.swift */,
 				5947ECD411C80B58DCE0A114 /* SyncMergeTests.swift */,
 			);
 			path = SkywardPlusTests;
@@ -424,6 +474,7 @@
 			buildConfigurationList = C311198FA6AF7C27759512EE /* Build configuration list for PBXNativeTarget "SkywardPlusWidget" */;
 			buildPhases = (
 				EB7153F1F196EB3E814F53EB /* Sources */,
+				5B25DE85A79CC5537B17C6F5 /* Resources */,
 			);
 			buildRules = (
 			);
@@ -434,6 +485,23 @@
 			);
 			productName = SkywardPlusWidget;
 			productReference = AF0E5F4282C181E730F63A5B /* SkywardPlusWidget.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		1E7A8AA6CB9B2C9B826EF4AF /* SkywardPlusWidgetiOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C476C6DCA4B2D30693349B9F /* Build configuration list for PBXNativeTarget "SkywardPlusWidgetiOS" */;
+			buildPhases = (
+				3E366AB1DB754A966CB20D78 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SkywardPlusWidgetiOS;
+			packageProductDependencies = (
+			);
+			productName = SkywardPlusWidgetiOS;
+			productReference = 366391CB412A387B0447517A /* SkywardPlusWidgetiOS.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
 		9AAB75A35830944BB823C05E /* SkywardPlusTests */ = {
@@ -465,6 +533,7 @@
 			);
 			dependencies = (
 				EDBB30E40D893CDDFC91EF9A /* PBXTargetDependency */,
+				0EE48D202FB7A244FDE28878 /* PBXTargetDependency */,
 			);
 			name = SkywardPlus;
 			packageProductDependencies = (
@@ -484,6 +553,9 @@
 				TargetAttributes = {
 					118558DAEE19A704EAD06FEC = {
 						ProvisioningStyle = Manual;
+					};
+					1E7A8AA6CB9B2C9B826EF4AF = {
+						ProvisioningStyle = Automatic;
 					};
 					F6905E02D882E8A686C7165E = {
 						ProvisioningStyle = Automatic;
@@ -506,6 +578,7 @@
 			targets = (
 				F6905E02D882E8A686C7165E /* SkywardPlus */,
 				118558DAEE19A704EAD06FEC /* SkywardPlusWidget */,
+				1E7A8AA6CB9B2C9B826EF4AF /* SkywardPlusWidgetiOS */,
 				9AAB75A35830944BB823C05E /* SkywardPlusTests */,
 			);
 		};
@@ -527,9 +600,26 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		5B25DE85A79CC5537B17C6F5 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1A4B96D8E28FB70F4919F64D /* Info-iOS.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		3E366AB1DB754A966CB20D78 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E2C0C359B94B70C63C4F7428 /* SkywardPlusWidget.swift in Sources */,
+				5451B72109F900556714DC76 /* WidgetSnapshot.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5FD5AE9AB560D0B96DDA3395 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -553,12 +643,15 @@
 				16104F32CEB91C481077F6A3 /* DistrictSearch.swift in Sources */,
 				A9060C550792BD09724A4F67 /* EngineTest.swift in Sources */,
 				B91B39C12BB84E0EBAA72F03 /* FakeSkyward.swift in Sources */,
+				BE3992F2BE807589050C4A19 /* Focus.swift in Sources */,
+				7BF03F02C36A06EDAE21F4D6 /* FocusPill.swift in Sources */,
 				97F727B59B98C78A757B3EAC /* GPA.swift in Sources */,
 				4EF8FD011CB27AD3ED57D0F2 /* GPAView.swift in Sources */,
 				5ECB3F926BD59DCFC525920F /* GradeMath.swift in Sources */,
 				1531E3636492770CF3A30D55 /* GradeReport.swift in Sources */,
 				0757D7BE9FDB8404F29473C0 /* GradeShare.swift in Sources */,
 				AF0B3E4E0F97964E4CBA6DD8 /* GradesView.swift in Sources */,
+				ADA47B7596F58C151BA339AA /* GroupsView.swift in Sources */,
 				F0CC1EF2F38037656E52DF04 /* HTML.swift in Sources */,
 				4ACCC885F5CBBEA7551A23B9 /* HelloOverlay.swift in Sources */,
 				DEE4315E932ED3ECD2FE1B6B /* HomeLayout.swift in Sources */,
@@ -595,9 +688,12 @@
 				82E2B992B167963EE99C0103 /* SkywardParser.swift in Sources */,
 				439F6A07083C49639E62A50E /* SkywardPlusApp.swift in Sources */,
 				BB05930E0C649AC007903C6F /* SoundEffects.swift in Sources */,
+				F18DFE5498727AA86614F58E /* StudyGroup.swift in Sources */,
+				3667CEA8D0A8DAC54AF6182B /* StudyGroups.swift in Sources */,
 				1DFED5D124D8411E33608E04 /* SyncEngine.swift in Sources */,
 				AF0E60B039A875E52D317B68 /* SyncMerge.swift in Sources */,
 				7FC1B21C7890B04F72FDC20D /* Typography.swift in Sources */,
+				DC91D586CF4430D902B1E449 /* UpdateBanner.swift in Sources */,
 				ACA99FCFCC6880F14B317E22 /* Updater.swift in Sources */,
 				D121280D68BE53A0187771B9 /* WebSignIn.swift in Sources */,
 				AA5E16C312D7979B17D06901 /* WidgetSnapshot.swift in Sources */,
@@ -613,18 +709,22 @@
 				178BFAB8770612BAAB838EDF /* Alerts.swift in Sources */,
 				98F25C115699CC462EF55A12 /* ClassColor.swift in Sources */,
 				3D76EEC3B69461009C1A2DF6 /* CoreAndParserTests.swift in Sources */,
+				5B7E391769CD577477C0DDD5 /* DeviceHandoffTests.swift in Sources */,
 				AB992F75649FF5E02A261311 /* DistrictSearch.swift in Sources */,
 				CB5300E404A89729C32EB1D6 /* FakeSkyward.swift in Sources */,
+				B494D116AEA48E244E121C0F /* Focus.swift in Sources */,
 				1914C71068429101E899BCCD /* GPA.swift in Sources */,
 				45395F9633F30EC4667C771F /* GradeMath.swift in Sources */,
 				034FC14D05FC7D34C2D1F98E /* GradeShare.swift in Sources */,
 				C8ED09A870DBE800B9528D26 /* GradeShareTests.swift in Sources */,
+				F46961C9F3C66AD99B91E8C8 /* GradeToolsTests.swift in Sources */,
 				68FF1FB6BEED628870E17FCB /* HTML.swift in Sources */,
 				398318A6C68D395BDA78D33E /* HomeLayout.swift in Sources */,
 				BAE4E033DF8B659804B8323C /* JSLiteral.swift in Sources */,
 				BD130E98E11EC81A62842B00 /* LoginTests.swift in Sources */,
 				BAE42B025AB8E6DDF5A71C05 /* MascotWeather.swift in Sources */,
 				300169E7384268B3A38A3E5F /* Models.swift in Sources */,
+				606A3697E7C834634ABDDC40 /* PlannerToolsTests.swift in Sources */,
 				2202954297275529DA1AA20B /* Prefs.swift in Sources */,
 				F211317A363E06609A78724F /* QmlativMapperTests.swift in Sources */,
 				2D5EC177E25B273AB960AF6B /* QmlativModels.swift in Sources */,
@@ -632,6 +732,8 @@
 				AC633C87E75560EA1804FAC3 /* SettingsCompatibilityTests.swift in Sources */,
 				643C7121DB172AE58D9F67ED /* SkywardClient.swift in Sources */,
 				73474A506FD98E739B9DF238 /* SkywardParser.swift in Sources */,
+				6CBBE9F5724EF65FD4EE5D7F /* StudyGroup.swift in Sources */,
+				C6513C197E08AA5BBFCAADE5 /* StudyGroupTests.swift in Sources */,
 				E907586CFFA1F2F687E78BAD /* SyncEngine.swift in Sources */,
 				0F36E9441AB282CF20B5FF3C /* SyncMerge.swift in Sources */,
 				B9B919A08A2CD969F13AF702 /* SyncMergeTests.swift in Sources */,
@@ -650,6 +752,14 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
+		0EE48D202FB7A244FDE28878 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			platformFilters = (
+				ios,
+			);
+			target = 1E7A8AA6CB9B2C9B826EF4AF /* SkywardPlusWidgetiOS */;
+			targetProxy = AA0E5BFE80B9F9A7CBD51C60 /* PBXContainerItemProxy */;
+		};
 		EDBB30E40D893CDDFC91EF9A /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			platformFilters = (
@@ -661,6 +771,29 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		181B4BB4FF6B3659C1883971 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = "";
+				CODE_SIGN_ENTITLEMENTS = "SkywardPlusWidget/SkywardPlusWidget-iOS.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = "SkywardPlusWidget/Info-iOS.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.skywardplus.app.widget;
+				PRODUCT_MODULE_NAME = SkywardPlusWidget;
+				PRODUCT_NAME = SkywardPlusWidgetiOS;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SP_APP_GROUP = group.com.skywardplus.app;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 		1C7D2613AE12674A54E3729D /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -695,7 +828,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 16;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -715,7 +848,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.5.1;
+				MARKETING_VERSION = 1.6;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -818,6 +951,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphone*]" = "SkywardPlus/Resources/SkywardPlus-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
@@ -831,6 +965,7 @@
 				PRODUCT_MODULE_NAME = SkywardPlus;
 				PRODUCT_NAME = "Skyward Plus";
 				SDKROOT = auto;
+				SP_APP_GROUP = group.com.skywardplus.app;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
@@ -845,6 +980,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
+				"CODE_SIGN_ENTITLEMENTS[sdk=iphone*]" = "SkywardPlus/Resources/SkywardPlus-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "-";
 				CODE_SIGN_STYLE = Automatic;
@@ -858,10 +994,34 @@
 				PRODUCT_MODULE_NAME = SkywardPlus;
 				PRODUCT_NAME = "Skyward Plus";
 				SDKROOT = auto;
+				SP_APP_GROUP = group.com.skywardplus.app.debug;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx";
 				SUPPORTS_MACCATALYST = NO;
 				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
 				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = YES;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		DD76DB898AB15E1D338B3B9A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = "";
+				CODE_SIGN_ENTITLEMENTS = "SkywardPlusWidget/SkywardPlusWidget-iOS.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				INFOPLIST_FILE = "SkywardPlusWidget/Info-iOS.plist";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.skywardplus.app.debug.widget;
+				PRODUCT_MODULE_NAME = SkywardPlusWidget;
+				PRODUCT_NAME = SkywardPlusWidgetiOS;
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SP_APP_GROUP = group.com.skywardplus.app.debug;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -900,7 +1060,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 15;
+				CURRENT_PROJECT_VERSION = 16;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -914,7 +1074,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.5.1;
+				MARKETING_VERSION = 1.6;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -950,6 +1110,15 @@
 			buildConfigurations = (
 				479E57EBA111E00A01C2DE26 /* Debug */,
 				8BEC32D9A2581663FE36F943 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C476C6DCA4B2D30693349B9F /* Build configuration list for PBXNativeTarget "SkywardPlusWidgetiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				DD76DB898AB15E1D338B3B9A /* Debug */,
+				181B4BB4FF6B3659C1883971 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Debug;

@@ -191,15 +191,24 @@ extension AppModel {
     // MARK: Calendar and Reminders
 
     func exportDueDates() {
+        let items = dueItems
         #if os(macOS)
         let target = settings.exportTarget
-        let items = dueItems
         let student = active?.firstName ?? ""
         exportTask?.cancel()
         exportTask = Task {
             await CalendarExport.shared.sync(target: target, items: items, student: student)
         }
         #endif
+        if AccountSync.shared.isCalendarConnected {
+            googleCalendarTask?.cancel()
+            googleCalendarTask = Task {
+                // Wait a moment so a burst of edits becomes one update.
+                try? await Task.sleep(for: .seconds(2))
+                guard !Task.isCancelled else { return }
+                await AccountSync.shared.syncCalendar(items, now: self.now())
+            }
+        }
     }
 
     // MARK: Login item
@@ -216,12 +225,20 @@ extension AppModel {
     static let releasesAPI = URL(string: "https://api.github.com/repos/ninjex2009-code/skyward-plus/releases/latest")!
 
     static var currentVersion: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+        #if DEBUG
+        // SKYWARDPLUS_VERSION=1.4 pretends to be an older version, to see the update prompts.
+        if let fake = ProcessInfo.processInfo.environment["SKYWARDPLUS_VERSION"] { return fake }
+        #endif
+        return Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
     }
 
     /// Looks for a newer GitHub release. Automatic checks run at most once a day and stay quiet.
     func checkForUpdates(manual: Bool) async {
-        if !manual, let last = settings.lastUpdateCheck, now().timeIntervalSince(last) < 86_400 { return }
+        var dailyLimit = true
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["SKYWARDPLUS_VERSION"] != nil { dailyLimit = false }
+        #endif
+        if !manual, dailyLimit, let last = settings.lastUpdateCheck, now().timeIntervalSince(last) < 86_400 { return }
         if manual { updateMessage = "Checking…" }
         var request = URLRequest(url: AppModel.releasesAPI)
         request.setValue("application/vnd.github+json", forHTTPHeaderField: "Accept")
@@ -239,8 +256,14 @@ extension AppModel {
             }
             let version = tag.trimmingCharacters(in: CharacterSet(charactersIn: "vV "))
             let assets = json["assets"] as? [[String: Any]] ?? []
-            let dmg = assets.first { ($0["name"] as? String)?.lowercased().hasSuffix(".dmg") == true }
-            let download = (dmg?["browser_download_url"] as? String).flatMap(URL.init(string:))
+            // The Mac installs the DMG itself; the iPhone points at its IPA (installed through AltStore).
+            #if os(macOS)
+            let wanted = ".dmg"
+            #else
+            let wanted = ".ipa"
+            #endif
+            let file = assets.first { ($0["name"] as? String)?.lowercased().hasSuffix(wanted) == true }
+            let download = (file?["browser_download_url"] as? String).flatMap(URL.init(string:))
             if AppModel.isNewer(version, than: AppModel.currentVersion) {
                 availableUpdate = UpdateInfo(version: version, pageURL: page, downloadURL: download, notes: json["body"] as? String ?? "")
                 if manual { updateMessage = "Version \(version) is available." }
@@ -321,14 +344,11 @@ extension AppModel {
     }
 }
 
-#if os(macOS)
 import WidgetKit
-#endif
 
 extension AppModel {
-    /// Writes what the desktop widgets show, then asks them to redraw.
+    /// Writes what the widgets show (desktop and Home Screen), then asks them to redraw.
     func publishWidgetSnapshot() {
-        #if os(macOS)
         guard let profile = active, let lit = selectedLit else { return }
         let list = courses(in: lit).filter { !gradeText($0, lit).isEmpty }
         let numbers = list.compactMap { percent($0, lit) }
@@ -349,7 +369,6 @@ extension AppModel {
         )
         snapshot.save()
         WidgetCenter.shared.reloadAllTimelines()
-        #endif
     }
 
     /// skywardplus://grades, skywardplus://planner (from widgets).
@@ -360,6 +379,9 @@ extension AppModel {
         case "class":
             let id = url.pathComponents.dropFirst().first?.removingPercentEncoding
             openClassFromAlert(id)
+        case "join":
+            pendingGroupCode = InviteCode.normalize(url.absoluteString)
+            section = .groups
         default: section = .home
         }
     }

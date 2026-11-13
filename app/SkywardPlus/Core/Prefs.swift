@@ -227,6 +227,8 @@ struct AppSettings: Codable, Hashable {
     var notifyBelowGoal = true
     /// Work newly marked missing in Skyward.
     var notifyMissing = true
+    /// A new absence or tardy in Skyward.
+    var notifyAttendance = true
     /// One evening note: today's grades, what's missing, what's due tomorrow.
     var notifySummary = true
     /// Hour (0-23) the evening summary and due-tomorrow reminder arrive.
@@ -286,6 +288,7 @@ struct AppSettings: Codable, Hashable {
         notifyBelowGoal = (try? c.decodeIfPresent(Bool.self, forKey: .notifyBelowGoal)) ?? d.notifyBelowGoal
         // Missing work used to share the due-tomorrow switch.
         notifyMissing = (try? c.decodeIfPresent(Bool.self, forKey: .notifyMissing)) ?? notifyDueTomorrow
+        notifyAttendance = (try? c.decodeIfPresent(Bool.self, forKey: .notifyAttendance)) ?? true
         notifySummary = (try? c.decodeIfPresent(Bool.self, forKey: .notifySummary)) ?? d.notifySummary
         summaryHour = (try? c.decodeIfPresent(Int.self, forKey: .summaryHour)) ?? d.summaryHour
         phoneRelayTopic = (try? c.decodeIfPresent(String.self, forKey: .phoneRelayTopic)) ?? d.phoneRelayTopic
@@ -414,6 +417,73 @@ struct PlannerTask: Codable, Identifiable, Hashable {
     var remindAt: Date?
     var done = false
     var createdAt = Date()
+    /// How the task comes back after it's done (nil: it doesn't).
+    var repeatRaw: TaskRepeat?
+    /// A checklist inside the task, shown when it's opened.
+    var subtasksRaw: [Subtask]?
+    /// Minutes of focus sessions spent on it.
+    var focusMinutesRaw: Int?
+
+    var repeats: TaskRepeat {
+        get { repeatRaw ?? .never }
+        set { repeatRaw = newValue == .never ? nil : newValue }
+    }
+
+    var subtasks: [Subtask] {
+        get { subtasksRaw ?? [] }
+        set { subtasksRaw = newValue.isEmpty ? nil : newValue }
+    }
+
+    /// The next copy of a repeating task, due on its next day after today
+    /// (a repeat that was left overdue doesn't pile up a backlog).
+    func nextOccurrence(today: Date, calendar: Calendar = .current) -> PlannerTask? {
+        guard repeats != .never else { return nil }
+        let start = calendar.startOfDay(for: today)
+        var next = due
+        repeat { next = repeats.advance(next, calendar: calendar) } while next < start
+        var copy = PlannerTask(title: title, notes: notes, courseID: courseID, due: next, kind: kind)
+        copy.repeats = repeats
+        copy.subtasks = subtasks.map { Subtask(title: $0.title) }
+        if let remind = remindAt {
+            let offset = remind.timeIntervalSince(due)
+            copy.remindAt = next.addingTimeInterval(offset)
+        }
+        return copy
+    }
+}
+
+/// One item on a task's checklist.
+struct Subtask: Codable, Identifiable, Hashable {
+    var id = UUID()
+    var title: String
+    var done = false
+}
+
+enum TaskRepeat: String, Codable, CaseIterable, Identifiable {
+    case never, daily, schoolDays, weekly
+
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .never: return "Never"
+        case .daily: return "Every Day"
+        case .schoolDays: return "Every School Day"
+        case .weekly: return "Every Week"
+        }
+    }
+
+    /// The next due date after `date`.
+    func advance(_ date: Date, calendar: Calendar = .current) -> Date {
+        switch self {
+        case .never: return date
+        case .daily: return calendar.date(byAdding: .day, value: 1, to: date) ?? date
+        case .weekly: return calendar.date(byAdding: .day, value: 7, to: date) ?? date
+        case .schoolDays:
+            var next = calendar.date(byAdding: .day, value: 1, to: date) ?? date
+            while calendar.isDateInWeekend(next) { next = calendar.date(byAdding: .day, value: 1, to: next) ?? next }
+            return next
+        }
+    }
 }
 
 // MARK: - Bell schedule
@@ -616,6 +686,12 @@ struct ProfilePrefs: Codable, Hashable {
     var classColorsRaw: [String: ClassColor]?
     /// Target percent per course id.
     var goalsRaw: [String: Double]?
+    /// How much a semester exam counts, in percent (nil: one seventh, the usual weight).
+    var examWeightRaw: Double?
+    /// The cumulative GPA the student is aiming for.
+    var gpaGoalRaw: Double?
+    /// Days (yyyy-MM-dd) with a finished focus session.
+    var focusDaysRaw: Set<String>?
     /// Classes already announced as below goal, so the alert fires once per drop.
     var belowGoalNotifiedRaw: Set<String>?
     /// Notifications already sent for newly missing work.
@@ -629,6 +705,12 @@ struct ProfilePrefs: Codable, Hashable {
     var goals: [String: Double] {
         get { goalsRaw ?? [:] }
         set { goalsRaw = newValue }
+    }
+
+    static let defaultExamWeight = 100.0 / 7
+    var examWeight: Double {
+        get { examWeightRaw ?? Self.defaultExamWeight }
+        set { examWeightRaw = newValue }
     }
 
     var belowGoalNotified: Set<String> {

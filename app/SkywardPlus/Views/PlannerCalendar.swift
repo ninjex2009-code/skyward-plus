@@ -8,6 +8,9 @@ struct PlannerCalendar: View {
     @Binding var selection: Date
     @State private var month: Date
     @State private var forward = true
+    /// Month or week, remembered.
+    @AppStorage("planner.span") private var span = "month"
+    private var isWeek: Bool { span == "week" }
 
     private var calendar: Calendar { Calendar.current }
 
@@ -19,9 +22,22 @@ struct PlannerCalendar: View {
 
     var body: some View {
         let roomy = metrics.width >= 640
-        let days = gridDays
+        let days = isWeek ? weekDays : gridDays
         VStack(alignment: .leading, spacing: roomy ? 14 : 10) {
             header
+            if isWeek && !roomy {
+                // A phone's week: one line per day, the work beside it.
+                VStack(spacing: 0) {
+                    ForEach(Array(days.enumerated()), id: \.element) { index, day in
+                        if index > 0 { RowDivider() }
+                        PlannerWeekRow(day: day, selected: calendar.isDate(day, inSameDayAs: selection)) {
+                            withAnimation(.snappy(duration: 0.2)) { selection = day }
+                        }
+                    }
+                }
+                .id(weekStart)
+                .transition(.opacity)
+            } else {
             HStack(spacing: 6) {
                 ForEach(weekdaySymbols, id: \.self) { symbol in
                     Text(symbol)
@@ -34,9 +50,11 @@ struct PlannerCalendar: View {
                 ForEach(days, id: \.self) { day in
                     PlannerDayCell(
                         day: day,
-                        inMonth: calendar.isDate(day, equalTo: month, toGranularity: .month),
+                        inMonth: isWeek || calendar.isDate(day, equalTo: month, toGranularity: .month),
                         selected: calendar.isDate(day, inSameDayAs: selection),
-                        roomy: roomy
+                        roomy: roomy,
+                        limit: isWeek ? 6 : 2,
+                        minHeight: isWeek ? 260 : nil
                     ) {
                         withAnimation(.snappy(duration: 0.2)) {
                             selection = day
@@ -45,11 +63,12 @@ struct PlannerCalendar: View {
                     }
                 }
             }
-            .id(month)
+            .id(isWeek ? weekStart : month)
             .transition(.asymmetric(
                 insertion: .move(edge: forward ? .trailing : .leading).combined(with: .opacity),
                 removal: .opacity
             ))
+            }
         }
         .clipped()
         .padding(roomy ? 18 : 12)
@@ -60,31 +79,69 @@ struct PlannerCalendar: View {
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
-            Text(month.formatted(.dateTime.month(.wide).year()))
-                .font(.display(22))
-                .contentTransition(.numericText())
-            Spacer()
-            Button("Previous month", systemImage: "chevron.left") { shift(-1) }
-                .labelStyle(.iconOnly)
-            Button("Today") {
-                withAnimation(.snappy(duration: 0.2)) {
-                    selection = calendar.startOfDay(for: model.now())
-                    month = startOfMonth(selection)
-                }
-            }
-            Button("Next month", systemImage: "chevron.right") { shift(1) }
-                .labelStyle(.iconOnly)
+        let roomy = metrics.width >= 640
+        let spanPicker = Picker("View", selection: Binding(get: { span }, set: { value in withAnimation(.snappy(duration: 0.25)) { span = value } })) {
+            Text("Month").tag("month")
+            Text("Week").tag("week")
         }
-        .buttonStyle(.bordered)
-        .controlSize(.regular)
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Text(isWeek ? weekTitle : month.formatted(.dateTime.month(.wide).year()))
+                    .font(.display(22))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.7)
+                    .contentTransition(.numericText())
+                Spacer(minLength: 8)
+                if roomy { spanPicker.fixedSize() }
+                Button("Previous", systemImage: "chevron.left") { shift(-1) }
+                    .labelStyle(.iconOnly)
+                Button("Today") {
+                    withAnimation(.snappy(duration: 0.2)) {
+                        selection = calendar.startOfDay(for: model.now())
+                        month = startOfMonth(selection)
+                    }
+                }
+                .fixedSize()
+                Button("Next", systemImage: "chevron.right") { shift(1) }
+                    .labelStyle(.iconOnly)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.regular)
+            // On a phone the switch gets its own row instead of squeezing the title.
+            if !roomy { spanPicker }
+        }
     }
 
-    private func shift(_ months: Int) {
-        forward = months > 0
+    private func shift(_ step: Int) {
+        forward = step > 0
         withAnimation(.snappy(duration: 0.28)) {
-            month = calendar.date(byAdding: .month, value: months, to: month) ?? month
+            if isWeek {
+                selection = calendar.date(byAdding: .day, value: 7 * step, to: selection) ?? selection
+                month = startOfMonth(selection)
+            } else {
+                month = calendar.date(byAdding: .month, value: step, to: month) ?? month
+            }
         }
+    }
+
+    /// The first day of the selected day's week.
+    private var weekStart: Date {
+        calendar.dateInterval(of: .weekOfYear, for: selection)?.start ?? calendar.startOfDay(for: selection)
+    }
+
+    private var weekDays: [Date] {
+        (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: weekStart) }
+    }
+
+    /// "Nov 9 – 15" or "Nov 30 – Dec 6".
+    private var weekTitle: String {
+        guard let end = calendar.date(byAdding: .day, value: 6, to: weekStart) else { return "" }
+        let sameMonth = calendar.isDate(weekStart, equalTo: end, toGranularity: .month)
+        let start = weekStart.formatted(.dateTime.month(.abbreviated).day())
+        let finish = sameMonth ? end.formatted(.dateTime.day()) : end.formatted(.dateTime.month(.abbreviated).day())
+        return "\(start) – \(finish)"
     }
 
     private func startOfMonth(_ day: Date) -> Date {
@@ -116,10 +173,12 @@ private struct PlannerDayCell: View {
     let inMonth: Bool
     let selected: Bool
     let roomy: Bool
+    var limit = 2
+    var minHeight: CGFloat? = nil
     let action: () -> Void
     @State private var hovering = false
 
-    private struct Entry: Identifiable {
+    struct Entry: Identifiable {
         var id: String
         var title: String
         var mine: Bool
@@ -132,7 +191,10 @@ private struct PlannerDayCell: View {
         let work = model.assignments(dueOn: day).map {
             Entry(id: "s" + $0.id, title: $0.assignment.name, mine: false, done: model.prefs.doneAssignments.contains($0.id), color: model.classColor($0.course.id))
         }
-        return (tasks + work).sorted { ($0.done ? 1 : 0) < ($1.done ? 1 : 0) }
+        let shared = StudyGroups.shared.plannerItems(on: day).map {
+            Entry(id: $0.id, title: $0.title, mine: false, done: false, color: model.theme.color)
+        }
+        return (tasks + work + shared).sorted { ($0.done ? 1 : 0) < ($1.done ? 1 : 0) }
     }
 
     var body: some View {
@@ -147,7 +209,7 @@ private struct PlannerDayCell: View {
                     .frame(minWidth: roomy ? 26 : 22, minHeight: roomy ? 26 : 22)
                     .background { if isToday { Circle().fill(model.theme.color) } }
                 if roomy {
-                    ForEach(items.prefix(2)) { entry in
+                    ForEach(items.prefix(limit)) { entry in
                         Text(entry.title)
                             .font(.caption2.weight(.medium))
                             .lineLimit(1)
@@ -164,8 +226,8 @@ private struct PlannerDayCell: View {
                                     .frame(width: 3)
                             }
                     }
-                    if items.count > 2 {
-                        Text("+\(items.count - 2) more")
+                    if items.count > limit {
+                        Text("+\(items.count - limit) more")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .padding(.horizontal, 6)
@@ -183,7 +245,7 @@ private struct PlannerDayCell: View {
                 Spacer(minLength: 0)
             }
             .padding(roomy ? 8 : 4)
-            .frame(maxWidth: .infinity, minHeight: roomy ? 96 : 50, alignment: roomy ? .topLeading : .top)
+            .frame(maxWidth: .infinity, minHeight: minHeight ?? (roomy ? 96 : 50), alignment: roomy ? .topLeading : .top)
             .background {
                 RoundedRectangle(cornerRadius: roomy ? 12 : 9, style: .continuous)
                     .fill(selected ? model.theme.color.opacity(0.16) : Color.primary.opacity(hovering ? 0.07 : inMonth ? 0.035 : 0.015))
@@ -199,5 +261,63 @@ private struct PlannerDayCell: View {
         .animation(.easeOut(duration: 0.12), value: hovering)
         .accessibilityLabel(day.formatted(date: .complete, time: .omitted) + (items.isEmpty ? "" : ", \(items.count) due"))
         .accessibilityAddTraits(selected ? .isSelected : [])
+    }
+}
+
+/// One day of the week on a phone: the date on the left, what's due beside it.
+private struct PlannerWeekRow: View {
+    @Environment(AppModel.self) private var model
+    let day: Date
+    let selected: Bool
+    let action: () -> Void
+
+    var body: some View {
+        let isToday = Calendar.current.isDate(day, inSameDayAs: model.now())
+        let tasks = model.tasks(dueOn: day).map { ($0.title, $0.done, model.classColor($0.courseID)) }
+        let work = model.assignments(dueOn: day).map { ($0.assignment.name, model.prefs.doneAssignments.contains($0.id), model.classColor($0.course.id)) }
+        let shared = StudyGroups.shared.plannerItems(on: day).map { ($0.title, false, model.theme.color) }
+        let items = tasks + work + shared
+        Button(action: action) {
+            HStack(alignment: .top, spacing: 14) {
+                VStack(spacing: 2) {
+                    Text(day.formatted(.dateTime.weekday(.abbreviated)))
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(isToday ? model.theme.color : .secondary)
+                    Text(day.formatted(.dateTime.day()))
+                        .font(.title3.weight(isToday ? .bold : .medium).monospacedDigit())
+                        .foregroundStyle(isToday ? model.theme.color : .primary)
+                }
+                .frame(width: 40)
+                VStack(alignment: .leading, spacing: 6) {
+                    if items.isEmpty {
+                        Text("Nothing due").font(.subheadline).foregroundStyle(.tertiary)
+                    }
+                    ForEach(Array(items.prefix(3).enumerated()), id: \.offset) { _, item in
+                        HStack(spacing: 8) {
+                            Circle().fill(item.2).frame(width: 6, height: 6)
+                            Text(item.0)
+                                .font(.subheadline)
+                                .lineLimit(1)
+                                .strikethrough(item.1)
+                                .foregroundStyle(item.1 ? .secondary : .primary)
+                        }
+                    }
+                    if items.count > 3 {
+                        Text("+\(items.count - 3) more").font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.vertical, 10)
+            .padding(.horizontal, 4)
+            .background {
+                if selected {
+                    RoundedRectangle(cornerRadius: 10, style: .continuous).fill(model.theme.color.opacity(0.1))
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(day.formatted(date: .complete, time: .omitted) + (items.isEmpty ? ", nothing due" : ", \(items.count) due"))
     }
 }

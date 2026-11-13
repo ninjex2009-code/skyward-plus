@@ -1,0 +1,47 @@
+{
+  "name": "Skyward Plus",
+  "identifier": "com.skywardplus.source",
+  "subtitle": "Your Skyward grades, beautifully.",
+  "iconURL": "https://raw.githubusercontent.com/ninjex2009-code/skyward-plus/main/altstore/icon.png",
+  "website": "https://github.com/ninjex2009-code/skyward-plus",
+  "tintColor": "#7C5CFF",
+  "apps": [
+    {
+      "name": "Skyward Plus",
+      "bundleIdentifier": "com.skywardplus.app",
+      "developerName": "Skyward Plus",
+      "subtitle": "Grades, planner and alerts for Skyward.",
+      "localizedDescription": "A friendly, fast app for Skyward grades: every class at a glance, what's missing or due, alerts for new grades, a planner, GPA tools and living background themes.",
+      "iconURL": "https://raw.githubusercontent.com/ninjex2009-code/skyward-plus/main/altstore/icon.png",
+      "tintColor": "#7C5CFF",
+      "category": "education",
+      "versions": [
+        {
+          "version": "1.6",
+          "buildVersion": "16",
+          "date": "2026-11-13",
+          "localizedDescription": "A big one: fewer sign-outs, study groups, a smarter planner, grade tools and iPhone widgets.\n\n## Fewer sign-outs\n- When your Mac is checking Skyward, your iPhone takes its grades from your account instead of signing in, so the two stop signing each other out. With the Mac off, the phone checks by itself as before.\n- iPhone: an optional Face ID lock (Settings → Student → Privacy).\n\n## Study groups\n- Make a group of up to 8, then invite friends with a link or a 6-character code.\n- Share a to-do list, plan study sessions and share due dates; sessions and due dates show up in everyone's planner.\n- Class averages are never shown unless you turn on sharing for that group.\n- Needs the account sign-in (Settings → Account).\n\n## Planner\n- Month / Week switch.\n- Repeating tasks: every day, every school day or every week.\n- A checklist inside each task.\n- Focus timer: 25 minutes on a task, with a quiet streak.\n- Google Calendar: due dates go into a \"Skyward Plus\" calendar of their own (Settings → Syncing).\n\n## Grades\n- New-grade alerts say how much the grade moved your class average.\n- Final exam weight defaults to one seventh and is remembered.\n- Set a GPA goal and see the term GPA you need.\n- Alerts for new absences and tardies.\n\n## iPhone\n- Home Screen widgets: Grades and Due Soon.\n- Lock Screen widgets: your average and the next thing due.\n- Nimbus lives at the bottom of Home.\n- An update banner when a new version is out, and an AltStore / SideStore source:\n  `https://raw.githubusercontent.com/ninjex2009-code/skyward-plus/main/altstore/source.json`",
+          "downloadURL": "https://github.com/ninjex2009-code/skyward-plus/releases/download/v1.6/Skyward-Plus-1.6.ipa",
+          "size": 7093587,
+          "minOSVersion": "17.0"
+        },
+        {
+          "version": "1.5.1",
+          "buildVersion": "15",
+          "date": "2026-11-13",
+          "localizedDescription": "Fixes for the 1.5 beta.\n\n## iPhone\n- Home: your grades are one row you swipe through again, so Needs You shows as soon as you open the app.\n- Big numbers (GPA, class grades, your name) stay on one line instead of breaking in half.\n- The teacher e-mail card is laid out properly on a phone.\n- Setup is shorter: six background themes with a \"Show all 15 themes\" button, and the accent colors fit in two rows.\n\n## Mac\n- Changing theme fades straight to the new scene instead of flashing through every other one.\n\n## Fewer password prompts\n- Starting with this version, the Mac app is signed the same way every release, so macOS recognizes each update as the same app. You may see one last \"wants to use your confidential information\" prompt after installing 1.5.1: choose **Always Allow**, and later updates won't ask again.",
+          "downloadURL": "https://github.com/ninjex2009-code/skyward-plus/releases/download/v1.5.1/Skyward-Plus-1.5.1.ipa",
+          "size": 6543046,
+          "minOSVersion": "17.0"
+        }
+      ],
+      "appPermissions": {
+        "entitlements": [],
+        "privacy": {
+          "NSFaceIDUsageDescription": "Skyward Plus uses Face ID to keep your grades private."
+        }
+      }
+    }
+  ],
+  "news": []
+}

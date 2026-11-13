@@ -31,7 +31,6 @@ struct ClassDetailView: View {
     @State private var neededTarget: Double = 90
     @State private var neededPossible: Double = 100
     @State private var neededCategory: String = ""
-    @State private var examWeight: Double = 20
     @State private var examTarget: Double = 90
 
     var body: some View {
@@ -580,7 +579,7 @@ struct ClassDetailView: View {
             whatIf: whatIf
         )
         let currentAvg = result?.percent ?? model.percent(course, lit) ?? 90
-        let examScore = GradeMath.finalExamNeeded(current: currentAvg, examWeight: examWeight, target: examTarget)
+        let examScore = GradeMath.finalExamNeeded(current: currentAvg, examWeight: model.prefs.examWeight, target: examTarget)
         let style = SubjectStyle(color: model.theme.color, symbol: "", label: "")
 
         return VStack(alignment: .leading, spacing: 16) {
@@ -641,7 +640,10 @@ struct ClassDetailView: View {
                 HStack(spacing: 12) {
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Exam Weight (%)").font(.caption).foregroundStyle(.secondary)
-                        TextField("20", value: $examWeight, format: .number)
+                        TextField("14.3", value: Binding(
+                            get: { model.prefs.examWeight },
+                            set: { weight in model.updatePrefs { $0.examWeight = min(100, max(0, weight)) } }
+                        ), format: .number.precision(.fractionLength(0...1)))
                             .textFieldStyle(.roundedBorder)
                     }
                     VStack(alignment: .leading, spacing: 4) {

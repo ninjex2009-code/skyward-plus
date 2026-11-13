@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum AppSection: String, CaseIterable, Identifiable, Hashable {
-    case home, grades, planner, gpa, schedule, bell, attendance, reports, transcript, teachers, students, settings
+    case home, grades, planner, gpa, schedule, bell, attendance, reports, transcript, teachers, students, groups, settings
 
     var id: String { rawValue }
 
@@ -18,6 +18,7 @@ enum AppSection: String, CaseIterable, Identifiable, Hashable {
         case .transcript: return "Transcript"
         case .teachers: return "Teachers"
         case .students: return "Students"
+        case .groups: return "Study Groups"
         case .settings: return "Settings"
         }
     }
@@ -35,6 +36,7 @@ enum AppSection: String, CaseIterable, Identifiable, Hashable {
         case .transcript: return "scroll.fill"
         case .teachers: return "envelope.fill"
         case .students: return "person.2.fill"
+        case .groups: return "person.3.fill"
         case .settings: return "gearshape.fill"
         }
     }
@@ -42,7 +44,7 @@ enum AppSection: String, CaseIterable, Identifiable, Hashable {
     /// The everyday sections (also the first iPhone tabs).
     static let tabs: [AppSection] = [.home, .grades, .planner]
     /// Bell and Teachers live inside Schedule.
-    static let school: [AppSection] = [.schedule, .attendance]
+    static let school: [AppSection] = [.schedule, .attendance, .groups]
     static let app: [AppSection] = [.settings]
     /// Everything in the sidebar, in order (also ⌘1…⌘8).
     static let sidebar: [AppSection] = tabs + school + app
@@ -232,6 +234,16 @@ struct MainView: View {
             if sizeClass == .compact { PhoneTabs() } else { SidebarLayout() }
             #endif
         }
+        .overlay(alignment: .bottom) {
+            FocusPill()
+                .padding(.horizontal, 16)
+                #if os(iOS)
+                .padding(.bottom, 92)
+                #else
+                .padding(.bottom, 18)
+                #endif
+        }
+        .animation(.snappy, value: model.focus)
         .overlay { CelebrationOverlay() }
 
     }
@@ -249,6 +261,7 @@ struct SectionHost: View {
                 .clearWindowBar()
                 .navigationDestination(for: CourseRoute.self) { ClassDetailView(courseID: $0.courseID).clearWindowBar() }
                 .navigationDestination(for: AppSection.self) { SectionScreen(section: $0).clearWindowBar() }
+                .navigationDestination(for: GroupRoute.self) { GroupDetailView(id: $0.id).clearWindowBar() }
         }
         .onAppear(perform: openRequestedCourse)
         .onChange(of: model.openCourse) { _, _ in openRequestedCourse() }
@@ -294,6 +307,7 @@ struct SectionScreen: View {
         case .schedule, .bell, .teachers: ScheduleHub()
         case .attendance: AttendanceView()
         case .students: StudentsView()
+        case .groups: GroupsView()
         case .settings: SettingsView()
         }
     }

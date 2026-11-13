@@ -6,8 +6,29 @@ import Foundation
 enum GradeShare {
     /// Small record stored beside the grades, so devices can tell whether to download them.
     struct Meta: Codable, Equatable {
+        /// When the shared grades were read from Skyward.
         var syncedAt: Double
         var hash: String
+        /// Which kind of device checked Skyward most recently ("mac" or "phone"),
+        /// when, and how often it checks, so other devices can leave Skyward alone.
+        var device: String?
+        var checkedAt: Double?
+        var everyMinutes: Double?
+    }
+
+    #if os(macOS)
+    static let thisDevice = "mac"
+    #else
+    static let thisDevice = "phone"
+    #endif
+
+    /// True when the phone should leave Skyward alone because the Mac is checking it:
+    /// the Mac checked within a few of its own intervals (at least 15 minutes).
+    /// Only phones defer, and only to a Mac; a Mac always checks for itself.
+    static func macIsChecking(_ meta: Meta?, thisDevice: String = thisDevice, now: Double) -> Bool {
+        guard thisDevice == "phone", let meta, meta.device == "mac", let checked = meta.checkedAt else { return false }
+        let window = max(15 * 60, (meta.everyMinutes ?? 5) * 60 * 3)
+        return now - checked >= 0 && now - checked < window
     }
 
     /// The warning a sync leaves when some classes' assignments didn't load.
