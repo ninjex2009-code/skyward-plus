@@ -14,6 +14,14 @@ struct AccountSecret: Codable {
 enum Keychain {
     static let service = "com.skywardplus.app.account"
 
+    /// Screenshot runs never touch the keychain: the real app's items would make
+    /// macOS ask for access and the run would wait on that prompt forever.
+    #if DEBUG
+    private static let offline = CommandLine.arguments.contains("--render-screens")
+    #else
+    private static let offline = false
+    #endif
+
     private static func query(_ account: String) -> [String: Any] {
         [
             kSecClass as String: kSecClassGenericPassword,
@@ -24,7 +32,7 @@ enum Keychain {
 
     @discardableResult
     static func save(_ secret: AccountSecret, for account: String) -> Bool {
-        guard let data = try? JSONEncoder().encode(secret) else { return false }
+        guard !offline, let data = try? JSONEncoder().encode(secret) else { return false }
         SecItemDelete(query(account) as CFDictionary)
         var attributes = query(account)
         attributes[kSecValueData as String] = data
@@ -33,6 +41,7 @@ enum Keychain {
     }
 
     static func load(_ account: String) -> AccountSecret? {
+        guard !offline else { return nil }
         var q = query(account)
         q[kSecReturnData as String] = true
         q[kSecMatchLimit as String] = kSecMatchLimitOne
@@ -42,6 +51,7 @@ enum Keychain {
     }
 
     static func remove(_ account: String) {
+        guard !offline else { return }
         SecItemDelete(query(account) as CFDictionary)
     }
 }
@@ -216,11 +226,14 @@ enum Notifier {
         #endif
     }
 
+    /// The chime grade alerts play, when grade chimes are on. Set from settings.
+    static var gradeSound: UNNotificationSound?
+
     static func content(for alert: Alert) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = alert.title
         content.body = alert.body
-        content.sound = .default
+        content.sound = alert.thread.hasPrefix("grades") ? (gradeSound ?? .default) : .default
         content.threadIdentifier = alert.thread
         if let courseID = alert.courseID { content.userInfo = ["courseID": courseID] }
         return content

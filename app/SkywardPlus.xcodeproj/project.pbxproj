@@ -8,11 +8,13 @@
 
 /* Begin PBXBuildFile section */
 		034FC14D05FC7D34C2D1F98E /* GradeShare.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6B0375B64F7FB146CAEA160 /* GradeShare.swift */; };
+		0513A3FF578ADD348669EE6F /* chime.wav in Resources */ = {isa = PBXBuildFile; fileRef = 422EC1ECFC0DBCB2E82D99FC /* chime.wav */; };
 		0757D7BE9FDB8404F29473C0 /* GradeShare.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6B0375B64F7FB146CAEA160 /* GradeShare.swift */; };
 		0AD791A4DD2C87B5F55FC9AD /* QmlativSignInSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = B752C3A0F48BEB3A28DB99DF /* QmlativSignInSheet.swift */; };
 		0F36E9441AB282CF20B5FF3C /* SyncMerge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55BD35D67244F0ABB427646B /* SyncMerge.swift */; };
 		125B7485A77D072D191508DD /* QmlativSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = BCF9BEDC78B4CD9C4B4D97D6 /* QmlativSync.swift */; };
 		1531E3636492770CF3A30D55 /* GradeReport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71CA3620709BC02CC75DD9CE /* GradeReport.swift */; };
+		1556E20009CF90F91F816A68 /* Celebration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 257BF33B16E2A90585FD05BE /* Celebration.swift */; };
 		16104F32CEB91C481077F6A3 /* DistrictSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F641BCDFB5AF1C2B7153B67F /* DistrictSearch.swift */; };
 		17725EEA400240B21081D8E9 /* QmlativEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F38BB8FC866CCF30BE2AB183 /* QmlativEngine.swift */; };
 		178BFAB8770612BAAB838EDF /* Alerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7BDDE05B482A479829E2CFFE /* Alerts.swift */; };
@@ -24,12 +26,16 @@
 		21AA79D0721D8B3FE1A54989 /* PhoneViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32C3C60704411F1749EFAC03 /* PhoneViews.swift */; };
 		2202954297275529DA1AA20B /* Prefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290DD89A5C0F36A064B9CAF5 /* Prefs.swift */; };
 		23E899A984ECC500832704FA /* QuickSearchPanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C01B32F71681DB9BDF9E0C6 /* QuickSearchPanel.swift */; };
+		24B46232D8369657CC76A9AF /* Release15Tests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8890F15E4EB9A65AF33B4CB0 /* Release15Tests.swift */; };
 		25BFAF129D7D441B84C55391 /* BackgroundRefresh.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB4A069FD1F428CFE318D292 /* BackgroundRefresh.swift */; };
+		2AF2D2B82EF6EB1E33C0115A /* chime-low.wav in Resources */ = {isa = PBXBuildFile; fileRef = 2CDC546F7F6C56F02E3511DE /* chime-low.wav */; };
 		2B15CCE3AFB3A8579D01E864 /* SignInView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65D574057ED29E7A68081882 /* SignInView.swift */; };
 		2D5EC177E25B273AB960AF6B /* QmlativModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8EF32BA21333B6040A8C7FD /* QmlativModels.swift */; };
 		2DBA0F9962B32A65486F2A38 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AD644083C9522EC4E13D598 /* SettingsView.swift */; };
 		300169E7384268B3A38A3E5F /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA50AAD86D1DD6BC29ABB70D /* Models.swift */; };
 		3163D0823448EC494A64109A /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = DAABF4803F58AFD6A009181A /* AppModel.swift */; };
+		34C10FB543B07A6E09BDF779 /* Unbounded.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9D2F605C228E051BE7873CA8 /* Unbounded.ttf */; };
+		398318A6C68D395BDA78D33E /* HomeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F209AC43651B3CD6BF3FF5C /* HomeLayout.swift */; };
 		3D76EEC3B69461009C1A2DF6 /* CoreAndParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AA1A605954E668AA5A75622 /* CoreAndParserTests.swift */; };
 		439F6A07083C49639E62A50E /* SkywardPlusApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29F8A4F79C534A801812B23D /* SkywardPlusApp.swift */; };
 		45395F9633F30EC4667C771F /* GradeMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55CAC84C164C53F6FD1EAB90 /* GradeMath.swift */; };
@@ -42,7 +48,9 @@
 		57B6CD5E2D53B97ADD6C8B95 /* AppModel+Features.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2800EB42B59032D34A2EC82 /* AppModel+Features.swift */; };
 		585552DE9F6AA760B7410667 /* Hubs.swift in Sources */ = {isa = PBXBuildFile; fileRef = E091B189B46447F692A2A7C9 /* Hubs.swift */; };
 		5ECB3F926BD59DCFC525920F /* GradeMath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55CAC84C164C53F6FD1EAB90 /* GradeMath.swift */; };
+		60BA0CEA0E5CA4FCDCC85B06 /* ClassColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E56ABC5B448DF05DA93B942 /* ClassColor.swift */; };
 		6108EC8D34D5942C147768FA /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 526154364A8088FACCB1ECFC /* HomeView.swift */; };
+		61FC0B2180748B36DFEB05F5 /* chime-good.wav in Resources */ = {isa = PBXBuildFile; fileRef = B8E77F257CB6046CBE95C1D7 /* chime-good.wav */; };
 		643C7121DB172AE58D9F67ED /* SkywardClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA45D662A3F95CCE3A83746 /* SkywardClient.swift */; };
 		68FF1FB6BEED628870E17FCB /* HTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F22A200A187962B286EAD91 /* HTML.swift */; };
 		6A91FA660187FFE27493A742 /* QmlativModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8EF32BA21333B6040A8C7FD /* QmlativModels.swift */; };
@@ -51,16 +59,20 @@
 		7A40B97F99BCAA9AFA5586FB /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53B7A3593D65D0F76A561542 /* RootView.swift */; };
 		7FB914F0C5CCE57444B7DF70 /* Mascot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CEE52413156E95BA38DA6C1 /* Mascot.swift */; };
 		7FBBB13BA2A1CDC8794FB95F /* ScheduleViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = E93007BE5100E31BD55F0FD7 /* ScheduleViews.swift */; };
+		7FC1B21C7890B04F72FDC20D /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = 142F454C4B3CCB21DBA734A0 /* Typography.swift */; };
 		821E455F2BF1A329C958E8CB /* RememberSignInSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18159BE75E7A652E7CEAFDB4 /* RememberSignInSheet.swift */; };
 		82E2B992B167963EE99C0103 /* SkywardParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 294DA5B4D6FB9E894130C171 /* SkywardParser.swift */; };
 		882E864053489E5ADDA53E5F /* MenuBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D6D4DF504678D7EF4573373C /* MenuBarView.swift */; };
 		8FBB96CCEA1F2408E1516CC1 /* NotificationSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A0CB74FDCC42E1806BCC65A2 /* NotificationSettings.swift */; };
+		9269029A0A42BA2EAC34E012 /* MascotWeather.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB8FA207328EBE9B0B728F5 /* MascotWeather.swift */; };
 		92D5D3D4B3131B17F9522A7E /* AccountSync.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD9084561BADBEE571678FB3 /* AccountSync.swift */; };
 		97F727B59B98C78A757B3EAC /* GPA.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF57EB24B79476D792924EDC /* GPA.swift */; };
+		98F25C115699CC462EF55A12 /* ClassColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6E56ABC5B448DF05DA93B942 /* ClassColor.swift */; };
 		9A69703E126C5D2DA904E38B /* CalendarExport.swift in Sources */ = {isa = PBXBuildFile; fileRef = 592943F4B020AC6B4A3E7F24 /* CalendarExport.swift */; };
 		9BB8A1B340ED96710E67A38D /* WindowEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D78D679D3873C1CB11B6F09 /* WindowEffects.swift */; };
 		9BFB0143C4BC7A3177E17E1D /* PlannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E31909742C82022679140233 /* PlannerView.swift */; };
 		9EC38A89FC9EF5CFC6616249 /* SkywardClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DA45D662A3F95CCE3A83746 /* SkywardClient.swift */; };
+		A1896C13BF02E5047A3379EC /* Sidebar.swift in Sources */ = {isa = PBXBuildFile; fileRef = 141F3C5C83E4D68C71E9B0B1 /* Sidebar.swift */; };
 		A5A3C1520295AA9566F1715A /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58DB90F266F03128CB7A947A /* Services.swift */; };
 		A5D5145501E1481EA73C0010 /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA50AAD86D1DD6BC29ABB70D /* Models.swift */; };
 		A9060C550792BD09724A4F67 /* EngineTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = B995DD4118D55AAED05B97B1 /* EngineTest.swift */; };
@@ -68,13 +80,16 @@
 		AB992F75649FF5E02A261311 /* DistrictSearch.swift in Sources */ = {isa = PBXBuildFile; fileRef = F641BCDFB5AF1C2B7153B67F /* DistrictSearch.swift */; };
 		AC633C87E75560EA1804FAC3 /* SettingsCompatibilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E260F82AEE42BD8E728CE32C /* SettingsCompatibilityTests.swift */; };
 		ACA99FCFCC6880F14B317E22 /* Updater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 779F1E4800A5EB5267BB0140 /* Updater.swift */; };
+		ACC29FBDF5856A466865E788 /* Unbounded-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 66F6083DBB31E6CF2E95490B /* Unbounded-OFL.txt */; };
 		AF0B3E4E0F97964E4CBA6DD8 /* GradesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CB787630CC9A188139A3CB8 /* GradesView.swift */; };
 		AF0E60B039A875E52D317B68 /* SyncMerge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55BD35D67244F0ABB427646B /* SyncMerge.swift */; };
 		B373AAF8A90F1AD8A90A5853 /* SkywardPlusWidget.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AF0E5F4282C181E730F63A5B /* SkywardPlusWidget.appex */; platformFilters = (macos, ); settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		B82D8C52575A39651B6F7E1F /* ScreenRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C8A801E4FE78ED43836DFE0 /* ScreenRenderer.swift */; };
 		B91B39C12BB84E0EBAA72F03 /* FakeSkyward.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A5D20717E4F4320999EF990 /* FakeSkyward.swift */; };
 		B9B919A08A2CD969F13AF702 /* SyncMergeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5947ECD411C80B58DCE0A114 /* SyncMergeTests.swift */; };
+		BAE42B025AB8E6DDF5A71C05 /* MascotWeather.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB8FA207328EBE9B0B728F5 /* MascotWeather.swift */; };
 		BAE4E033DF8B659804B8323C /* JSLiteral.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A52C1E493421AD57F9F31F8 /* JSLiteral.swift */; };
+		BB05930E0C649AC007903C6F /* SoundEffects.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC2182B7E22EFB35D5B32C73 /* SoundEffects.swift */; };
 		BB6F69729A0404AF5E523E0F /* SkywardPlusWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08E0F70CE1E404FD5C1C3AB3 /* SkywardPlusWidget.swift */; };
 		BCE1ABB633FA8D8F7A4286A1 /* AlertTextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55995CFD7BD7FEBC5FF9AA69 /* AlertTextTests.swift */; };
 		BD130E98E11EC81A62842B00 /* LoginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BA9B17E8BAEDDEF6DB89570 /* LoginTests.swift */; };
@@ -86,12 +101,17 @@
 		CB5300E404A89729C32EB1D6 /* FakeSkyward.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A5D20717E4F4320999EF990 /* FakeSkyward.swift */; };
 		D121280D68BE53A0187771B9 /* WebSignIn.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29CB6352585661A55E46D29E /* WebSignIn.swift */; };
 		D48126C6C9A045E67E7B82A5 /* AppModel+Alerts.swift in Sources */ = {isa = PBXBuildFile; fileRef = A50E6F9A4EA069DA606B4FAC /* AppModel+Alerts.swift */; };
+		D647BE729DF413F76764D27F /* AppModel+Style.swift in Sources */ = {isa = PBXBuildFile; fileRef = D834D725D8F287C2BC36D607 /* AppModel+Style.swift */; };
 		D9AE8F282A91DC3AC42C1EC7 /* Design.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8AC3F0C8DFCB827877A402D /* Design.swift */; };
+		DEE4315E932ED3ECD2FE1B6B /* HomeLayout.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F209AC43651B3CD6BF3FF5C /* HomeLayout.swift */; };
 		E27651853247E3EA5934CDA5 /* Prefs.swift in Sources */ = {isa = PBXBuildFile; fileRef = 290DD89A5C0F36A064B9CAF5 /* Prefs.swift */; };
 		E907586CFFA1F2F687E78BAD /* SyncEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5280696572B1B7A1D731C7F /* SyncEngine.swift */; };
 		EEA8EFFCBECE2D2A462BFC67 /* JSLiteral.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A52C1E493421AD57F9F31F8 /* JSLiteral.swift */; };
 		F0CC1EF2F38037656E52DF04 /* HTML.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F22A200A187962B286EAD91 /* HTML.swift */; };
 		F211317A363E06609A78724F /* QmlativMapperTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60E605D9276B82CC3940FFB4 /* QmlativMapperTests.swift */; };
+		F35F7EF9C3CFFFC5C9A83F6A /* ClassColorPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC1DD39641D005ED8F2825B8 /* ClassColorPicker.swift */; };
+		F4C1818F3AC5D9F8DFC7D7F6 /* tick.wav in Resources */ = {isa = PBXBuildFile; fileRef = 91680F633FD419CDFDE9EA57 /* tick.wav */; };
+		F823D058A0A48C4A6454169B /* Backgrounds.metal in Sources */ = {isa = PBXBuildFile; fileRef = 8852591FC6FC19DEFF7F2B7F /* Backgrounds.metal */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -122,20 +142,27 @@
 		0060ADAC5D0E31F5AF7F9259 /* GPAView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GPAView.swift; sourceTree = "<group>"; };
 		08E0F70CE1E404FD5C1C3AB3 /* SkywardPlusWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkywardPlusWidget.swift; sourceTree = "<group>"; };
 		0C01B32F71681DB9BDF9E0C6 /* QuickSearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickSearchPanel.swift; sourceTree = "<group>"; };
+		141F3C5C83E4D68C71E9B0B1 /* Sidebar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Sidebar.swift; sourceTree = "<group>"; };
+		142F454C4B3CCB21DBA734A0 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		18159BE75E7A652E7CEAFDB4 /* RememberSignInSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RememberSignInSheet.swift; sourceTree = "<group>"; };
 		1A52C1E493421AD57F9F31F8 /* JSLiteral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JSLiteral.swift; sourceTree = "<group>"; };
 		1D78D679D3873C1CB11B6F09 /* WindowEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowEffects.swift; sourceTree = "<group>"; };
+		1F209AC43651B3CD6BF3FF5C /* HomeLayout.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeLayout.swift; sourceTree = "<group>"; };
+		257BF33B16E2A90585FD05BE /* Celebration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Celebration.swift; sourceTree = "<group>"; };
 		290DD89A5C0F36A064B9CAF5 /* Prefs.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Prefs.swift; sourceTree = "<group>"; };
 		294DA5B4D6FB9E894130C171 /* SkywardParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkywardParser.swift; sourceTree = "<group>"; };
 		29CB6352585661A55E46D29E /* WebSignIn.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebSignIn.swift; sourceTree = "<group>"; };
 		29F8A4F79C534A801812B23D /* SkywardPlusApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkywardPlusApp.swift; sourceTree = "<group>"; };
 		2BA9B17E8BAEDDEF6DB89570 /* LoginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginTests.swift; sourceTree = "<group>"; };
 		2C8A801E4FE78ED43836DFE0 /* ScreenRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenRenderer.swift; sourceTree = "<group>"; };
+		2CDC546F7F6C56F02E3511DE /* chime-low.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = "chime-low.wav"; sourceTree = "<group>"; };
 		2CF78A49BB78D9DAC2D04FE8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		2EB8FA207328EBE9B0B728F5 /* MascotWeather.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MascotWeather.swift; sourceTree = "<group>"; };
 		32C3C60704411F1749EFAC03 /* PhoneViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneViews.swift; sourceTree = "<group>"; };
 		3AA0C4C96B207ADF001C9040 /* PlannerCalendar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlannerCalendar.swift; sourceTree = "<group>"; };
 		3AA1A605954E668AA5A75622 /* CoreAndParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoreAndParserTests.swift; sourceTree = "<group>"; };
 		3CB787630CC9A188139A3CB8 /* GradesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradesView.swift; sourceTree = "<group>"; };
+		422EC1ECFC0DBCB2E82D99FC /* chime.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = chime.wav; sourceTree = "<group>"; };
 		438C2C429D9F9B7D76A9422C /* BellBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BellBanner.swift; sourceTree = "<group>"; };
 		465AE02F163DACCF529D48A3 /* HelloOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HelloOverlay.swift; sourceTree = "<group>"; };
 		48F3BDA167C30EFB1F55FE42 /* GradeShareTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradeShareTests.swift; sourceTree = "<group>"; };
@@ -150,17 +177,23 @@
 		5947ECD411C80B58DCE0A114 /* SyncMergeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncMergeTests.swift; sourceTree = "<group>"; };
 		60E605D9276B82CC3940FFB4 /* QmlativMapperTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativMapperTests.swift; sourceTree = "<group>"; };
 		65D574057ED29E7A68081882 /* SignInView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInView.swift; sourceTree = "<group>"; };
+		66F6083DBB31E6CF2E95490B /* Unbounded-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Unbounded-OFL.txt"; sourceTree = "<group>"; };
 		6AD644083C9522EC4E13D598 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		6E56ABC5B448DF05DA93B942 /* ClassColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassColor.swift; sourceTree = "<group>"; };
 		71CA3620709BC02CC75DD9CE /* GradeReport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradeReport.swift; sourceTree = "<group>"; };
 		72EFD546372DF138E1EE3836 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		779F1E4800A5EB5267BB0140 /* Updater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Updater.swift; sourceTree = "<group>"; };
 		7BDDE05B482A479829E2CFFE /* Alerts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Alerts.swift; sourceTree = "<group>"; };
 		86284DF9E5D4125C6DF07FAA /* QmlativScript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativScript.swift; sourceTree = "<group>"; };
+		8852591FC6FC19DEFF7F2B7F /* Backgrounds.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Backgrounds.metal; sourceTree = "<group>"; };
+		8890F15E4EB9A65AF33B4CB0 /* Release15Tests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Release15Tests.swift; sourceTree = "<group>"; };
 		8A5D20717E4F4320999EF990 /* FakeSkyward.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FakeSkyward.swift; sourceTree = "<group>"; };
 		8DA45D662A3F95CCE3A83746 /* SkywardClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkywardClient.swift; sourceTree = "<group>"; };
 		8EB620DA6E1023A9382A0776 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		91680F633FD419CDFDE9EA57 /* tick.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = tick.wav; sourceTree = "<group>"; };
 		963DE5B4555B2696F55C5687 /* SkywardPlus.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SkywardPlus.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9CEE52413156E95BA38DA6C1 /* Mascot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mascot.swift; sourceTree = "<group>"; };
+		9D2F605C228E051BE7873CA8 /* Unbounded.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = Unbounded.ttf; sourceTree = "<group>"; };
 		9F22A200A187962B286EAD91 /* HTML.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTML.swift; sourceTree = "<group>"; };
 		A0CB74FDCC42E1806BCC65A2 /* NotificationSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NotificationSettings.swift; sourceTree = "<group>"; };
 		A50E6F9A4EA069DA606B4FAC /* AppModel+Alerts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Alerts.swift"; sourceTree = "<group>"; };
@@ -170,10 +203,13 @@
 		B2800EB42B59032D34A2EC82 /* AppModel+Features.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Features.swift"; sourceTree = "<group>"; };
 		B2C972F9C3371733ED109098 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		B752C3A0F48BEB3A28DB99DF /* QmlativSignInSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativSignInSheet.swift; sourceTree = "<group>"; };
+		B8E77F257CB6046CBE95C1D7 /* chime-good.wav */ = {isa = PBXFileReference; lastKnownFileType = audio.wav; path = "chime-good.wav"; sourceTree = "<group>"; };
 		B995DD4118D55AAED05B97B1 /* EngineTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EngineTest.swift; sourceTree = "<group>"; };
 		BCF9BEDC78B4CD9C4B4D97D6 /* QmlativSync.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QmlativSync.swift; sourceTree = "<group>"; };
+		CC1DD39641D005ED8F2825B8 /* ClassColorPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassColorPicker.swift; sourceTree = "<group>"; };
 		D58BD8809ED66960ABBD784A /* WidgetSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetSnapshot.swift; sourceTree = "<group>"; };
 		D6D4DF504678D7EF4573373C /* MenuBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuBarView.swift; sourceTree = "<group>"; };
+		D834D725D8F287C2BC36D607 /* AppModel+Style.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppModel+Style.swift"; sourceTree = "<group>"; };
 		D8AC3F0C8DFCB827877A402D /* Design.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Design.swift; sourceTree = "<group>"; };
 		DA50AAD86D1DD6BC29ABB70D /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
 		DAABF4803F58AFD6A009181A /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
@@ -191,6 +227,7 @@
 		F4C2D6ABB3F6D75F9ED01D95 /* SchoolViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SchoolViews.swift; sourceTree = "<group>"; };
 		F5280696572B1B7A1D731C7F /* SyncEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyncEngine.swift; sourceTree = "<group>"; };
 		F641BCDFB5AF1C2B7153B67F /* DistrictSearch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DistrictSearch.swift; sourceTree = "<group>"; };
+		FC2182B7E22EFB35D5B32C73 /* SoundEffects.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SoundEffects.swift; sourceTree = "<group>"; };
 		FE20DF5BF5561E38EA6FFFCC /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -201,6 +238,8 @@
 				2CF78A49BB78D9DAC2D04FE8 /* Assets.xcassets */,
 				FE20DF5BF5561E38EA6FFFCC /* GoogleService-Info.plist */,
 				8EB620DA6E1023A9382A0776 /* Info.plist */,
+				B010FC089261055F9A7C2F3A /* Fonts */,
+				9E842130DBCB3147B9635A85 /* Sounds */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -231,13 +270,16 @@
 			isa = PBXGroup;
 			children = (
 				7BDDE05B482A479829E2CFFE /* Alerts.swift */,
+				6E56ABC5B448DF05DA93B942 /* ClassColor.swift */,
 				F641BCDFB5AF1C2B7153B67F /* DistrictSearch.swift */,
 				8A5D20717E4F4320999EF990 /* FakeSkyward.swift */,
 				EF57EB24B79476D792924EDC /* GPA.swift */,
 				55CAC84C164C53F6FD1EAB90 /* GradeMath.swift */,
 				E6B0375B64F7FB146CAEA160 /* GradeShare.swift */,
+				1F209AC43651B3CD6BF3FF5C /* HomeLayout.swift */,
 				9F22A200A187962B286EAD91 /* HTML.swift */,
 				1A52C1E493421AD57F9F31F8 /* JSLiteral.swift */,
+				2EB8FA207328EBE9B0B728F5 /* MascotWeather.swift */,
 				DA50AAD86D1DD6BC29ABB70D /* Models.swift */,
 				290DD89A5C0F36A064B9CAF5 /* Prefs.swift */,
 				E8EF32BA21333B6040A8C7FD /* QmlativModels.swift */,
@@ -259,6 +301,7 @@
 				86284DF9E5D4125C6DF07FAA /* QmlativScript.swift */,
 				BCF9BEDC78B4CD9C4B4D97D6 /* QmlativSync.swift */,
 				58DB90F266F03128CB7A947A /* Services.swift */,
+				FC2182B7E22EFB35D5B32C73 /* SoundEffects.swift */,
 				779F1E4800A5EB5267BB0140 /* Updater.swift */,
 				29CB6352585661A55E46D29E /* WebSignIn.swift */,
 			);
@@ -271,6 +314,7 @@
 				DAABF4803F58AFD6A009181A /* AppModel.swift */,
 				A50E6F9A4EA069DA606B4FAC /* AppModel+Alerts.swift */,
 				B2800EB42B59032D34A2EC82 /* AppModel+Features.swift */,
+				D834D725D8F287C2BC36D607 /* AppModel+Style.swift */,
 				B995DD4118D55AAED05B97B1 /* EngineTest.swift */,
 				AF95613240EC4C5437526932 /* RememberTest.swift */,
 				53B7A3593D65D0F76A561542 /* RootView.swift */,
@@ -281,10 +325,24 @@
 			path = App;
 			sourceTree = "<group>";
 		};
+		9E842130DBCB3147B9635A85 /* Sounds */ = {
+			isa = PBXGroup;
+			children = (
+				B8E77F257CB6046CBE95C1D7 /* chime-good.wav */,
+				2CDC546F7F6C56F02E3511DE /* chime-low.wav */,
+				422EC1ECFC0DBCB2E82D99FC /* chime.wav */,
+				91680F633FD419CDFDE9EA57 /* tick.wav */,
+			);
+			path = Sounds;
+			sourceTree = "<group>";
+		};
 		A09CAC243D1DB612D419AE00 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				8852591FC6FC19DEFF7F2B7F /* Backgrounds.metal */,
 				438C2C429D9F9B7D76A9422C /* BellBanner.swift */,
+				257BF33B16E2A90585FD05BE /* Celebration.swift */,
+				CC1DD39641D005ED8F2825B8 /* ClassColorPicker.swift */,
 				EEF0C82765F0A9A83B551425 /* ClassDetailView.swift */,
 				A6E03E9A9F7C7CFDC9BF0DB4 /* CommandPalette.swift */,
 				D8AC3F0C8DFCB827877A402D /* Design.swift */,
@@ -307,9 +365,20 @@
 				E93007BE5100E31BD55F0FD7 /* ScheduleViews.swift */,
 				F4C2D6ABB3F6D75F9ED01D95 /* SchoolViews.swift */,
 				6AD644083C9522EC4E13D598 /* SettingsView.swift */,
+				141F3C5C83E4D68C71E9B0B1 /* Sidebar.swift */,
 				65D574057ED29E7A68081882 /* SignInView.swift */,
+				142F454C4B3CCB21DBA734A0 /* Typography.swift */,
 			);
 			path = Views;
+			sourceTree = "<group>";
+		};
+		B010FC089261055F9A7C2F3A /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				66F6083DBB31E6CF2E95490B /* Unbounded-OFL.txt */,
+				9D2F605C228E051BE7873CA8 /* Unbounded.ttf */,
+			);
+			path = Fonts;
 			sourceTree = "<group>";
 		};
 		BD2732AEE38945368D99A14A /* SkywardPlusWidget */ = {
@@ -340,6 +409,7 @@
 				48F3BDA167C30EFB1F55FE42 /* GradeShareTests.swift */,
 				2BA9B17E8BAEDDEF6DB89570 /* LoginTests.swift */,
 				60E605D9276B82CC3940FFB4 /* QmlativMapperTests.swift */,
+				8890F15E4EB9A65AF33B4CB0 /* Release15Tests.swift */,
 				E260F82AEE42BD8E728CE32C /* SettingsCompatibilityTests.swift */,
 				5947ECD411C80B58DCE0A114 /* SyncMergeTests.swift */,
 			);
@@ -448,6 +518,12 @@
 			files = (
 				C87FB6756FC2C1D523444670 /* Assets.xcassets in Resources */,
 				C0411EB28C31E7332E4D642B /* GoogleService-Info.plist in Resources */,
+				ACC29FBDF5856A466865E788 /* Unbounded-OFL.txt in Resources */,
+				34C10FB543B07A6E09BDF779 /* Unbounded.ttf in Resources */,
+				61FC0B2180748B36DFEB05F5 /* chime-good.wav in Resources */,
+				2AF2D2B82EF6EB1E33C0115A /* chime-low.wav in Resources */,
+				0513A3FF578ADD348669EE6F /* chime.wav in Resources */,
+				F4C1818F3AC5D9F8DFC7D7F6 /* tick.wav in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -462,10 +538,15 @@
 				46A30703FBEA8E9A568333F2 /* Alerts.swift in Sources */,
 				D48126C6C9A045E67E7B82A5 /* AppModel+Alerts.swift in Sources */,
 				57B6CD5E2D53B97ADD6C8B95 /* AppModel+Features.swift in Sources */,
+				D647BE729DF413F76764D27F /* AppModel+Style.swift in Sources */,
 				3163D0823448EC494A64109A /* AppModel.swift in Sources */,
 				25BFAF129D7D441B84C55391 /* BackgroundRefresh.swift in Sources */,
+				F823D058A0A48C4A6454169B /* Backgrounds.metal in Sources */,
 				19ABB50E8F8FC4D75AD76714 /* BellBanner.swift in Sources */,
 				9A69703E126C5D2DA904E38B /* CalendarExport.swift in Sources */,
+				1556E20009CF90F91F816A68 /* Celebration.swift in Sources */,
+				60BA0CEA0E5CA4FCDCC85B06 /* ClassColor.swift in Sources */,
+				F35F7EF9C3CFFFC5C9A83F6A /* ClassColorPicker.swift in Sources */,
 				4D6A6B92CAA9CC60A10C1D92 /* ClassDetailView.swift in Sources */,
 				1E0B9DAEF001A5A4630341DD /* CommandPalette.swift in Sources */,
 				D9AE8F282A91DC3AC42C1EC7 /* Design.swift in Sources */,
@@ -480,10 +561,12 @@
 				AF0B3E4E0F97964E4CBA6DD8 /* GradesView.swift in Sources */,
 				F0CC1EF2F38037656E52DF04 /* HTML.swift in Sources */,
 				4ACCC885F5CBBEA7551A23B9 /* HelloOverlay.swift in Sources */,
+				DEE4315E932ED3ECD2FE1B6B /* HomeLayout.swift in Sources */,
 				6108EC8D34D5942C147768FA /* HomeView.swift in Sources */,
 				585552DE9F6AA760B7410667 /* Hubs.swift in Sources */,
 				EEA8EFFCBECE2D2A462BFC67 /* JSLiteral.swift in Sources */,
 				7FB914F0C5CCE57444B7DF70 /* Mascot.swift in Sources */,
+				9269029A0A42BA2EAC34E012 /* MascotWeather.swift in Sources */,
 				882E864053489E5ADDA53E5F /* MenuBarView.swift in Sources */,
 				A5D5145501E1481EA73C0010 /* Models.swift in Sources */,
 				8FBB96CCEA1F2408E1516CC1 /* NotificationSettings.swift in Sources */,
@@ -506,12 +589,15 @@
 				B82D8C52575A39651B6F7E1F /* ScreenRenderer.swift in Sources */,
 				A5A3C1520295AA9566F1715A /* Services.swift in Sources */,
 				2DBA0F9962B32A65486F2A38 /* SettingsView.swift in Sources */,
+				A1896C13BF02E5047A3379EC /* Sidebar.swift in Sources */,
 				2B15CCE3AFB3A8579D01E864 /* SignInView.swift in Sources */,
 				9EC38A89FC9EF5CFC6616249 /* SkywardClient.swift in Sources */,
 				82E2B992B167963EE99C0103 /* SkywardParser.swift in Sources */,
 				439F6A07083C49639E62A50E /* SkywardPlusApp.swift in Sources */,
+				BB05930E0C649AC007903C6F /* SoundEffects.swift in Sources */,
 				1DFED5D124D8411E33608E04 /* SyncEngine.swift in Sources */,
 				AF0E60B039A875E52D317B68 /* SyncMerge.swift in Sources */,
+				7FC1B21C7890B04F72FDC20D /* Typography.swift in Sources */,
 				ACA99FCFCC6880F14B317E22 /* Updater.swift in Sources */,
 				D121280D68BE53A0187771B9 /* WebSignIn.swift in Sources */,
 				AA5E16C312D7979B17D06901 /* WidgetSnapshot.swift in Sources */,
@@ -525,6 +611,7 @@
 			files = (
 				BCE1ABB633FA8D8F7A4286A1 /* AlertTextTests.swift in Sources */,
 				178BFAB8770612BAAB838EDF /* Alerts.swift in Sources */,
+				98F25C115699CC462EF55A12 /* ClassColor.swift in Sources */,
 				3D76EEC3B69461009C1A2DF6 /* CoreAndParserTests.swift in Sources */,
 				AB992F75649FF5E02A261311 /* DistrictSearch.swift in Sources */,
 				CB5300E404A89729C32EB1D6 /* FakeSkyward.swift in Sources */,
@@ -533,12 +620,15 @@
 				034FC14D05FC7D34C2D1F98E /* GradeShare.swift in Sources */,
 				C8ED09A870DBE800B9528D26 /* GradeShareTests.swift in Sources */,
 				68FF1FB6BEED628870E17FCB /* HTML.swift in Sources */,
+				398318A6C68D395BDA78D33E /* HomeLayout.swift in Sources */,
 				BAE4E033DF8B659804B8323C /* JSLiteral.swift in Sources */,
 				BD130E98E11EC81A62842B00 /* LoginTests.swift in Sources */,
+				BAE42B025AB8E6DDF5A71C05 /* MascotWeather.swift in Sources */,
 				300169E7384268B3A38A3E5F /* Models.swift in Sources */,
 				2202954297275529DA1AA20B /* Prefs.swift in Sources */,
 				F211317A363E06609A78724F /* QmlativMapperTests.swift in Sources */,
 				2D5EC177E25B273AB960AF6B /* QmlativModels.swift in Sources */,
+				24B46232D8369657CC76A9AF /* Release15Tests.swift in Sources */,
 				AC633C87E75560EA1804FAC3 /* SettingsCompatibilityTests.swift in Sources */,
 				643C7121DB172AE58D9F67ED /* SkywardClient.swift in Sources */,
 				73474A506FD98E739B9DF238 /* SkywardParser.swift in Sources */,
@@ -605,7 +695,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
@@ -625,7 +715,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.3.6;
+				MARKETING_VERSION = 1.5;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -810,7 +900,7 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
-				CURRENT_PROJECT_VERSION = 13;
+				CURRENT_PROJECT_VERSION = 14;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -824,7 +914,7 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
-				MARKETING_VERSION = 1.3.6;
+				MARKETING_VERSION = 1.5;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";

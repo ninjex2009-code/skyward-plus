@@ -252,6 +252,7 @@ struct MainWindowTracker: NSViewRepresentable {
             window.isOpaque = false
             window.backgroundColor = .clear
             window.titlebarAppearsTransparent = true
+            window.titlebarSeparatorStyle = .none
             if AppDelegate.shared?.model.settings.helloShown == false { window.alphaValue = 0 }
             AppDelegate.shared?.aura.attach(to: window)
         }

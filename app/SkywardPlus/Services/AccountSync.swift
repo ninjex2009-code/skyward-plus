@@ -293,6 +293,8 @@ extension AccountSync {
         var goals: [String: Double]
         var courseOrder: [String]
         var hiddenCourses: Set<String>
+        /// Optional so records from older versions (which lack it) still load.
+        var classColors: [String: ClassColor]?
 
         init(_ prefs: ProfilePrefs) {
             tasks = Dictionary(prefs.tasks.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
@@ -300,6 +302,7 @@ extension AccountSync {
             goals = prefs.goals
             courseOrder = prefs.courseOrder
             hiddenCourses = prefs.hiddenCourses
+            classColors = prefs.classColors
         }
 
         func apply(to prefs: inout ProfilePrefs) {
@@ -308,6 +311,7 @@ extension AccountSync {
             prefs.goals = goals
             prefs.courseOrder = courseOrder
             prefs.hiddenCourses = hiddenCourses
+            if let classColors { prefs.classColors = classColors }
         }
 
         /// A three-way merge against what this device last synced: a change made
@@ -320,16 +324,19 @@ extension AccountSync {
                 done: Merge.set(local: local.done, remote: remote.done, base: base?.done),
                 goals: Merge.map(local: local.goals, remote: remote.goals, base: base?.goals),
                 courseOrder: Merge.value(local: local.courseOrder, remote: remote.courseOrder, base: base?.courseOrder),
-                hiddenCourses: Merge.set(local: local.hiddenCourses, remote: remote.hiddenCourses, base: base?.hiddenCourses)
+                hiddenCourses: Merge.set(local: local.hiddenCourses, remote: remote.hiddenCourses, base: base?.hiddenCourses),
+                // An older version's record has no colors: treat that as "unchanged", not "all removed".
+                classColors: Merge.map(local: local.classColors ?? [:], remote: remote.classColors ?? base?.classColors ?? [:], base: base?.classColors)
             )
         }
 
-        private init(tasks: [UUID: PlannerTask], done: Set<String>, goals: [String: Double], courseOrder: [String], hiddenCourses: Set<String>) {
+        private init(tasks: [UUID: PlannerTask], done: Set<String>, goals: [String: Double], courseOrder: [String], hiddenCourses: Set<String>, classColors: [String: ClassColor]) {
             self.tasks = tasks
             self.done = done
             self.goals = goals
             self.courseOrder = courseOrder
             self.hiddenCourses = hiddenCourses
+            self.classColors = classColors
         }
     }
 }

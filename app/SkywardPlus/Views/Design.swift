@@ -52,6 +52,12 @@ extension BackgroundTheme {
         case .ocean: return Color.white.opacity(0.80)
         case .paper: return Color(hex: 0xFFFCF6).opacity(0.86)
         case .graphite: return Color.white.opacity(0.86)
+        case .galaxy: return Color(hex: 0x0B0822).opacity(0.62)
+        case .synthwave: return Color(hex: 0x14062C).opacity(0.66)
+        case .winter: return Color(hex: 0x09172A).opacity(0.60)
+        case .autumn: return Color(hex: 0x1A0E07).opacity(0.62)
+        case .spring: return Color.white.opacity(0.80)
+        case .broncos: return Color(hex: 0x081130).opacity(0.64)
         }
     }
     var cardStroke: Color { isDark ? Color.white.opacity(0.12) : Color.black.opacity(0.08) }
@@ -109,6 +115,16 @@ private struct SurfaceModifier: ViewModifier {
                 shape.strokeBorder(hovering ? theme.hoverStroke : theme.cardStroke, lineWidth: hovering ? 1 : 0.75)
                     .allowsHitTesting(false)
             }
+            #if os(macOS)
+            .background {
+                // Tells Nimbus where the cards are, so he can sit on them.
+                if !elevated {
+                    GeometryReader { geo in
+                        Color.clear.preference(key: NimbusPerchKey.self, value: [geo.frame(in: .named(NimbusPerchKey.space))])
+                    }
+                }
+            }
+            #endif
             .compositingGroup()
             .shadow(color: hovering ? Color.black.opacity(theme.isDark ? 0.55 : 0.18) : theme.cardShadow,
                     radius: hovering ? 18 : (elevated ? 18 : 10), y: hovering ? 8 : (elevated ? 9 : 4))
@@ -217,6 +233,18 @@ struct WindowMetrics: Equatable {
     }
 }
 
+private struct PageBackgroundProvidedKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// True inside a layout that already draws the living background behind everything.
+    var pageBackgroundProvided: Bool {
+        get { self[PageBackgroundProvidedKey.self] }
+        set { self[PageBackgroundProvidedKey.self] = newValue }
+    }
+}
+
 private struct WindowMetricsKey: EnvironmentKey {
     static let defaultValue = WindowMetrics()
 }
@@ -269,9 +297,9 @@ struct PageBackground: View {
     @Environment(\.scenePhase) private var phase
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 24, paused: reduceMotion || phase != .active)) { context in
-            let t = reduceMotion ? 0 : context.date.timeIntervalSinceReferenceDate
-            ThemeField(theme: theme, time: t)
+        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || phase != .active)) { context in
+            let t = reduceMotion ? 0 : SceneClock.seconds(context.date)
+            ThemeField(theme: theme, time: t, look: reduceMotion ? .zero : ParallaxEye.shared.look(at: t))
         }
         .opacity(translucent ? 0.9 : 1)
         .ignoresSafeArea()
@@ -280,43 +308,88 @@ struct PageBackground: View {
     }
 }
 
-/// One frame of a theme's colour field. Also used, still, for the theme swatches.
+/// One frame of a theme's living scene, drawn on the graphics card by
+/// Backgrounds.metal. Also used, still, for the theme swatches.
 struct ThemeField: View {
     let theme: BackgroundTheme
     var time: TimeInterval = 0
+    /// Where the viewer is looking from, -1...1 on each axis, for parallax.
+    var look: CGPoint = .zero
 
     var body: some View {
         GeometryReader { geo in
-            let w = geo.size.width, h = geo.size.height
-            let d = max(w, h)
-            // Each glow wanders on its own slow loop (periods of 70 to 110 seconds).
-            let paths: [(x: Double, y: Double, ax: Double, ay: Double, period: Double, size: Double, alpha: Double)] = [
-                (0.18, 0.12, 0.10, 0.08, 97, 1.05, theme.isDark ? 0.85 : 0.75),
-                (0.86, 0.30, 0.08, 0.12, 113, 0.95, theme.isDark ? 0.70 : 0.70),
-                (0.42, 0.95, 0.14, 0.06, 71, 1.15, theme.isDark ? 0.55 : 0.60),
-            ]
-            ZStack {
-                theme.baseColor
-                ForEach(0..<3, id: \.self) { i in
-                    let p = paths[i]
-                    let phase = time / p.period * 2 * .pi
-                    let size = d * p.size
-                    Circle()
-                        .fill(RadialGradient(
-                            colors: [theme.glowColors[i].opacity(p.alpha), theme.glowColors[i].opacity(0)],
-                            center: .center, startRadius: 0, endRadius: size / 2
-                        ))
-                        .frame(width: size, height: size)
-                        .position(
-                            x: w * (p.x + p.ax * sin(phase + Double(i))),
-                            y: h * (p.y + p.ay * cos(phase * 0.8 + Double(i) * 2))
-                        )
-                }
-            }
-            .frame(width: w, height: h)
-            .clipped()
+            Rectangle()
+                .fill(theme.baseColor)
+                .colorEffect(theme.sceneShader(size: geo.size, time: time, look: look))
         }
     }
+}
+
+extension BackgroundTheme {
+    /// Which scene Backgrounds.metal draws for this theme.
+    var sceneKind: Float {
+        switch self {
+        case .midnight: return 0
+        case .obsidian: return 1
+        case .aurora: return 2
+        case .sunset: return 3
+        case .ember: return 4
+        case .forest: return 5
+        case .ocean: return 6
+        case .paper: return 7
+        case .graphite: return 8
+        case .galaxy: return 9
+        case .synthwave: return 10
+        case .winter: return 11
+        case .autumn: return 12
+        case .spring: return 13
+        case .broncos: return 14
+        }
+    }
+
+    func sceneShader(size: CGSize, time: TimeInterval, look: CGPoint = .zero) -> Shader {
+        let glows = glowColors
+        return Shader(function: ShaderFunction(library: .default, name: "themeScene"), arguments: [
+            .float2(size), .float(Float(time)), .float(sceneKind),
+            .color(baseColor), .color(glows[0]), .color(glows[1]), .color(glows[2]),
+            .float(isDark ? 1 : 0), .float2(look),
+        ])
+    }
+}
+
+/// Where the scene is seen from. On the Mac it follows the pointer across the
+/// screen, eased so the layers glide; on iPhone it sways slowly by itself.
+@MainActor
+final class ParallaxEye {
+    static let shared = ParallaxEye()
+    private var current = CGPoint.zero
+    private var lastTime: TimeInterval = 0
+
+    func look(at time: TimeInterval) -> CGPoint {
+        #if os(macOS)
+        let mouse = NSEvent.mouseLocation
+        let screen = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) } ?? NSScreen.main
+        var target = CGPoint.zero
+        if let frame = screen?.frame, frame.width > 0, frame.height > 0 {
+            target = CGPoint(x: ((mouse.x - frame.minX) / frame.width - 0.5) * 2,
+                             y: (0.5 - (mouse.y - frame.minY) / frame.height) * 2)
+        }
+        #else
+        let target = CGPoint(x: sin(time * 0.07) * 0.6, y: sin(time * 0.05) * 0.3)
+        #endif
+        let dt = min(max(time - lastTime, 0), 0.1)
+        lastTime = time
+        let ease = 1 - exp(-dt * 3.0)
+        current.x += (target.x - current.x) * ease
+        current.y += (target.y - current.y) * ease
+        return current
+    }
+}
+
+/// Seconds since launch, small enough to keep full precision in a shader.
+enum SceneClock {
+    static let start = Date()
+    static func seconds(_ date: Date) -> TimeInterval { date.timeIntervalSince(start) }
 }
 
 /// The theme gallery: each swatch is a little window of the theme with a card on it.
@@ -727,9 +800,11 @@ struct Screen<Content: View>: View {
     @ViewBuilder var content: Content
     @State private var viewSize: CGSize = CGSize(width: 390, height: 844)
     @State private var contentHeight: CGFloat = .infinity
+    @Environment(\.pageBackgroundProvided) private var backgroundProvided
     @Environment(\.displayScale) private var displayScale
     #if os(macOS)
     @Environment(AppModel.self) private var model
+    @State private var perches = NimbusPerches()
     #endif
 
     var body: some View {
@@ -758,12 +833,15 @@ struct Screen<Content: View>: View {
         .onPreferenceChange(ScreenContentHeightKey.self) { height in
             if abs(height - contentHeight) > 1 { contentHeight = height }
         }
+        .modifier(NoScrollEdgeBlur())
         #if os(macOS)
-        .overlay(alignment: .bottom) {
-            // Nimbus walks along the bottom when the page leaves room for him.
+        // Nimbus lives in the room the page leaves at the bottom, and climbs onto its cards.
+        .coordinateSpace(.named(NimbusPerchKey.space))
+        .onPreferenceChange(NimbusPerchKey.self) { perches.rects = $0 }
+        .overlay {
             let free = viewSize.height - (contentHeight - 60 * scale) - 8
             if model.settings.showMascot, free >= MascotLane.minimumHeight {
-                MascotLane(height: min(free, 420))
+                MascotLane(freeHeight: free, perches: perches)
                     .transition(.opacity)
             }
         }
@@ -779,7 +857,10 @@ struct Screen<Content: View>: View {
                 viewSize = size
             }
         }
-        .background { PageBackground().overlay { PointerLight() } }
+        .background {
+            // The sidebar layout draws one background behind the whole window.
+            if !backgroundProvided { PageBackground().overlay { PointerLight() } }
+        }
         .navigationTitle(title)
         .environment(\.windowMetrics, metrics)
     }
@@ -799,7 +880,7 @@ extension Screen {
 
 /// Lays its one child out at width / scale; the child draws itself scaled back up
 /// (scaleEffect from the top leading corner), so the result fills the full width.
-private struct ScaledLayout: Layout {
+struct ScaledLayout: Layout {
     var scale: CGFloat
 
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
@@ -968,7 +1049,7 @@ struct StatTile: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
             Text(value)
-                .font(.system(.title, design: .rounded).weight(.semibold).monospacedDigit())
+                .font(.display(24, relativeTo: .title).monospacedDigit())
                 .foregroundStyle(tint)
                 .contentTransition(.numericText())
                 .lineLimit(1)
@@ -1602,11 +1683,59 @@ private struct Bubble: ViewModifier {
     @Environment(\.colorScheme) private var scheme
     var cornerRadius: CGFloat = 16
 
+    @Environment(\.inRowGroup) private var inRowGroup
+
+    func body(content: Content) -> some View {
+        if inRowGroup {
+            // Inside a grouped list the group is the card; the row is just a row.
+            content.modifier(GroupedRow())
+        } else {
+            content
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .surface(cornerRadius: cornerRadius, hoverable: true)
+                .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        }
+    }
+}
+
+/// A row inside a grouped list: no card of its own, a soft highlight under the pointer.
+private struct GroupedRow: ViewModifier {
+    @State private var hovering = false
+
     func body(content: Content) -> some View {
         content
             .frame(maxWidth: .infinity, alignment: .leading)
-            .surface(cornerRadius: cornerRadius, hoverable: true)
-            .contentShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .background {
+                RoundedRectangle(cornerRadius: 11, style: .continuous)
+                    .fill(Color.primary.opacity(hovering ? 0.06 : 0))
+                    .padding(4)
+            }
+            .contentShape(Rectangle())
+            .onHover { hovering = $0 }
+            .animation(.easeOut(duration: 0.15), value: hovering)
+    }
+}
+
+private struct InRowGroupKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    /// True for rows drawn inside one shared grouped surface.
+    var inRowGroup: Bool {
+        get { self[InRowGroupKey.self] }
+        set { self[InRowGroupKey.self] = newValue }
+    }
+}
+
+/// The hairline between rows of a grouped list.
+struct RowDivider: View {
+    var body: some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.07))
+            .frame(height: 1)
+            .padding(.leading, 16)
+            .accessibilityHidden(true)
     }
 }
 
@@ -1688,15 +1817,21 @@ struct CollapsibleList<Item: Identifiable, Row: View, Accessory: View>: View {
         VStack(alignment: .leading, spacing: 10) {
             CollapsibleHeader(title: title, count: items.count, collapsed: $collapsed) { accessory }
             if !collapsed {
-                VStack(spacing: spacing) {
-                    ForEach(showAll ? items : Array(items.prefix(preview))) { item in
+                // One card for the whole list, rows divided by hairlines.
+                let visible = showAll ? items : Array(items.prefix(preview))
+                VStack(spacing: 0) {
+                    ForEach(Array(visible.enumerated()), id: \.element.id) { index, item in
+                        if index > 0 { RowDivider() }
                         row(item)
                             .transition(.opacity.combined(with: .offset(y: -6)))
                     }
+                    if items.count > preview {
+                        RowDivider()
+                        ShowAllButton(showAll: $showAll, total: items.count)
+                    }
                 }
-                if items.count > preview {
-                    ShowAllButton(showAll: $showAll, total: items.count)
-                }
+                .environment(\.inRowGroup, true)
+                .surface(cornerRadius: 16)
             }
         }
     }
@@ -1763,8 +1898,7 @@ struct ShowAllButton: View {
             .font(.subheadline.weight(.medium))
             .foregroundStyle(.tint)
             .frame(maxWidth: .infinity, minHeight: 40)
-            .surface(cornerRadius: 14, hoverable: true)
-            .contentShape(.rect(cornerRadius: 14))
+            .bubble(cornerRadius: 14)
         }
         .buttonStyle(BubbleButtonStyle())
     }
@@ -1792,5 +1926,21 @@ struct CollapsibleSection<Content: View>: View {
                 content.transition(.opacity.combined(with: .offset(y: -6)))
             }
         }
+    }
+}
+
+/// macOS 26 blurs and grays content scrolling under the title bar; over the living
+/// background that reads as the stock gray bar coming back, so it's turned off.
+private struct NoScrollEdgeBlur: ViewModifier {
+    func body(content: Content) -> some View {
+        #if os(macOS)
+        if #available(macOS 26, *) {
+            content.scrollEdgeEffectHidden(true, for: .top)
+        } else {
+            content
+        }
+        #else
+        content
+        #endif
     }
 }

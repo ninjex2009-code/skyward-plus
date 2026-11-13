@@ -87,6 +87,37 @@ enum ScreenRenderer {
         if want("class"), let firstCourse = model.courses.first {
             await snap("class-detail", NavigationStack { ClassDetailView(courseID: firstCourse.id) })
         }
+        if want("themes") {
+            // Every theme's living scene at the same moment, for checking the shader.
+            let t = Double(ProcessInfo.processInfo.environment["SKYWARDPLUS_SCENE_TIME"] ?? "37") ?? 37
+            await snap("themes", LazyVGrid(columns: Array(repeating: GridItem(.fixed(480), spacing: 12), count: 3), spacing: 12) {
+                ForEach(BackgroundTheme.allCases) { theme in
+                    ThemeField(theme: theme, time: t)
+                        .frame(width: 480, height: 300)
+                        .overlay(alignment: .topLeading) {
+                            Text(theme.title).font(.headline).foregroundStyle(theme.isDark ? .white : .black).padding(10)
+                        }
+                        .clipShape(.rect(cornerRadius: 12))
+                }
+            }.padding(12), size: CGSize(width: 1500, height: 1600))
+            // The window capture above can't see GPU effects, so also render it directly.
+            let gallery = LazyVGrid(columns: Array(repeating: GridItem(.fixed(480), spacing: 12), count: 3), spacing: 12) {
+                ForEach(BackgroundTheme.allCases) { theme in
+                    ThemeField(theme: theme, time: t)
+                        .frame(width: 480, height: 300)
+                        .overlay(alignment: .topLeading) {
+                            Text(theme.title).font(.headline).foregroundStyle(theme.isDark ? .white : .black).padding(10)
+                        }
+                        .clipShape(.rect(cornerRadius: 12))
+                }
+            }.padding(12).frame(width: 1500, height: 1600).background(Color.black)
+            let renderer = ImageRenderer(content: gallery)
+            renderer.scale = 1
+            if let image = renderer.nsImage, let tiff = image.tiffRepresentation,
+               let rep = NSBitmapImageRep(data: tiff), let png = rep.representation(using: .png, properties: [:]) {
+                try? png.write(to: outDir.appendingPathComponent("themes-gpu.png"))
+            }
+        }
         if want("palette") {
             model.section = .home
             model.showPalette = true

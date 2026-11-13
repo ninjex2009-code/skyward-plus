@@ -3,7 +3,7 @@ import SwiftUI
 
 /// What Nimbus is up to.
 enum MascotAct: Equatable {
-    case walk, look, sit, fiddle, nap, float, cheer, sad, wave, stretch, hop
+    case walk, look, sit, fiddle, nap, float, cheer, sad, wave, stretch, hop, study, perch
 }
 
 /// A grade reaction the model asks for after a sync.
@@ -47,6 +47,16 @@ final class MascotBrain {
     private var nextBlink: Double = 0
     private var lastSpawn: Double = 0
     private var lastWisp: Double = 0
+    /// Where he's headed and what he'll do when he gets there.
+    private var pending: MascotAct?
+    private var perchPending = false
+    /// Where his desk and hammock stand, in lane pixels, when there's room for them.
+    private(set) var deskX: Int?
+    private(set) var hammockX: Int?
+    private(set) var inHammock = false
+    private var perchTop: Int?
+    private(set) var mood: MascotWeather = .clear
+    private var moodAt: Double = -100
 
     static let width = 20
 
@@ -59,8 +69,35 @@ final class MascotBrain {
         case "cheer": act = .cheer; reactionUntil = .greatestFiniteMagnitude; x = 60; target = 60
         case "wave": act = .wave; until = .greatestFiniteMagnitude; x = 60; target = 60
         case "stretch": act = .stretch; until = .greatestFiniteMagnitude; x = 60; target = 60
+        case "study", "hammock", "perch": debugPlace = ProcessInfo.processInfo.environment["SKYWARDPLUS_MASCOT"]
+        case "rain": debugMood = .rain; act = .look; until = .greatestFiniteMagnitude; x = 60; target = 60
+        case "sun": debugMood = .sun; act = .sit; until = .greatestFiniteMagnitude; x = 60; target = 60
+        case "rainbow": debugMood = .rainbow; act = .look; until = .greatestFiniteMagnitude; x = 60; target = 60
         default: break
         }
+        if let debugMood { mood = debugMood }
+    }
+    private var debugPlace: String?
+    private var debugMood: MascotWeather?
+
+    /// Puts him straight into a scene for screenshots.
+    private func placeForDebug(perches: [CGRect], pixel: CGFloat) {
+        guard let place = debugPlace else { return }
+        switch place {
+        case "study":
+            guard let deskX else { return }
+            act = .study; x = Double(deskX + 3); target = x; face = 1
+        case "hammock":
+            guard let hammockX else { return }
+            act = .nap; inHammock = true; x = Double(hammockX + 4); target = x
+        default:
+            guard let rect = perches.filter({ $0.width > 200 && $0.minY > 100 }).max(by: { $0.minY < $1.minY }) else { return }
+            let top = Int(rect.minY / pixel)
+            act = .perch; perchTop = top; x = Double(Int(rect.minX / pixel) + 6); target = x
+            altitude = Double(ground - top); altitudeTarget = altitude
+        }
+        until = .greatestFiniteMagnitude
+        debugPlace = nil
     }
     #endif
 
@@ -71,6 +108,9 @@ final class MascotBrain {
     func react(_ next: MascotAct, now: Double, seconds: Double = 6) {
         act = next
         reactionUntil = now + seconds
+        pending = nil
+        perchPending = false
+        inHammock = false
         particles.removeAll { $0.kind != .wisp }
     }
 
@@ -80,17 +120,81 @@ final class MascotBrain {
                width: CGFloat(Self.width + 4) * pixel, height: 15 * pixel)
     }
 
-    func step(now: Double, cols: Int, rows: Int, reduceMotion: Bool) {
+    /// Rechecks his weather now and then; it only changes with new grades.
+    func updateMood(_ changes: [GradeChange], date: Date) {
+        let now = date.timeIntervalSinceReferenceDate
+        #if DEBUG
+        if debugMood != nil { return }
+        #endif
+        guard now - moodAt > 5 else { return }
+        moodAt = now
+        mood = MascotWeather.from(changes: changes, now: date)
+    }
+
+    /// Shows his weather for a few seconds at a time, while he's idle.
+    func showsWeather(_ now: Double) -> Bool {
+        #if DEBUG
+        if debugMood != nil { return true }
+        #endif
+        return mood != .clear && [.look, .sit, .fiddle, .stretch, .study, .perch, .wave].contains(act) && Int(now / 7) % 3 == 0
+    }
+
+    /// - Parameters:
+    ///   - rows: the whole page's height in pixels; the ground is the bottom row.
+    ///   - freeRows: how much of that, from the bottom, is empty for him to roam.
+    ///   - perches: card frames (in points) he can climb onto and sit on.
+    func step(now: Double, cols: Int, rows: Int, freeRows: Int, perches: [CGRect], pixel: CGFloat, reduceMotion: Bool) {
         let dt = last == 0 ? 0 : min(0.05, now - last)
         last = now
         ground = rows - 1
         let minX = 3.0, maxX = max(3.0, Double(cols - Self.width - 4))
-        // Room to float: the lane minus his height, the cap and a margin for sparkles.
-        let maxAltitude = Double(max(0, rows - 22))
+        deskX = cols >= 70 ? max(4, Int(Double(cols) * 0.12)) : nil
+        hammockX = cols >= 110 ? Int(Double(cols) * 0.62) : nil
+        // Room to float: the free space minus his height, the cap and a margin for sparkles.
+        let maxAltitude = Double(max(0, freeRows - 22))
         let canFloat = maxAltitude >= 6 && !reduceMotion
         x = min(max(x, minX), maxX)
         target = min(max(target, minX), maxX)
-        altitudeTarget = min(altitudeTarget, maxAltitude)
+        if !perchPending && act != .perch { altitudeTarget = min(altitudeTarget, maxAltitude) }
+        #if DEBUG
+        placeForDebug(perches: perches, pixel: pixel)
+        #endif
+
+        // A card edge to sit on: wide enough, with room above it, nearest the free space.
+        func perchSpot() -> (col: Double, altitude: Double)? {
+            let usable = perches.filter { $0.width >= CGFloat(Self.width + 8) * pixel && $0.minY > 16 * pixel && $0.minY < CGFloat(ground - 20) * pixel }
+            // One of the lowest few cards, so he doesn't always pick the same one.
+            guard let rect = usable.sorted(by: { $0.minY > $1.minY }).prefix(3).randomElement() else { return nil }
+            let lo = Double(Int(rect.minX / pixel) + 2), hi = Double(Int(rect.maxX / pixel) - Self.width - 2)
+            guard hi > lo else { return nil }
+            let top = Int(rect.minY / pixel)
+            return (Double.random(in: lo...hi), Double(ground - top))
+        }
+
+        func choose() {
+            var choices: [(MascotAct, Double)] = [(.look, 3), (.look, 3), (.fiddle, 6), (.sit, 6), (.nap, 10),
+                                                 (.wave, 2.4), (.stretch, 2.6), (.hop, 1.9)]
+            if canFloat { choices += [(.float, 0), (.float, 0)] }
+            if deskX != nil { choices += [(.study, 12), (.study, 12)] }
+            if canFloat, !perches.isEmpty { choices += [(.perch, 0), (.perch, 0)] }
+            let pick = choices.randomElement()!
+            switch pick.0 {
+            case .float:
+                startFloating()
+            case .study:
+                if let deskX { target = Double(deskX + 3); pending = .study; act = .walk }
+            case .nap where hammockX != nil:
+                target = Double(hammockX! + 4); pending = .nap; act = .walk
+            case .perch:
+                if let spot = perchSpot() {
+                    act = .float; target = min(max(spot.col, minX), maxX); altitudeTarget = spot.altitude; perchPending = true
+                } else {
+                    act = .look; until = now + 3
+                }
+            default:
+                act = pick.0; until = now + pick.1
+            }
+        }
 
         func startFloating() {
             act = .float
@@ -107,22 +211,33 @@ final class MascotBrain {
             if act == .float { target = x }
         } else if reduceMotion || maxX - minX < 4 {
             act = .sit
+            pending = nil
+            perchPending = false
             altitudeTarget = 0
             altitude = 0
         } else {
             switch act {
             case .walk:
                 if abs(target - x) < 0.5 {
-                    var choices: [(MascotAct, Double)] = [(.look, 3), (.look, 3), (.fiddle, 6), (.sit, 6), (.nap, 10),
-                                                         (.wave, 2.4), (.stretch, 2.6), (.hop, 1.9)]
-                    if canFloat { choices += [(.float, 0), (.float, 0)] }
-                    let pick = choices.randomElement()!
-                    if pick.0 == .float { startFloating() } else { act = pick.0; until = now + pick.1 }
+                    if let next = pending {
+                        pending = nil
+                        act = next
+                        until = now + (next == .study ? Double.random(in: 10...16) : Double.random(in: 9...14))
+                        inHammock = next == .nap && hammockX != nil
+                        if next == .study { face = 1 }
+                    } else {
+                        choose()
+                    }
                 }
             case .float:
                 let there = abs(target - x) < 0.5 && abs(altitudeTarget - altitude) < 0.3
                 if there {
-                    if altitudeTarget > 0, Bool.random() {
+                    if perchPending {
+                        perchPending = false
+                        act = .perch
+                        perchTop = ground - Int(altitudeTarget.rounded())
+                        until = now + Double.random(in: 8...14)
+                    } else if altitudeTarget > 0, Bool.random() {
                         // Drift somewhere else, or come down for a rest.
                         target = Double.random(in: minX...maxX)
                         altitudeTarget = Double.random(in: min(6, maxAltitude)...max(min(6, maxAltitude), maxAltitude))
@@ -135,8 +250,26 @@ final class MascotBrain {
                     }
                 }
             default:
+                if act == .perch, let lastTop = perchTop {
+                    // Ride along with the card as the page scrolls, and hop off if it goes.
+                    let center = CGFloat(x + Double(Self.width) / 2) * pixel
+                    let tops = perches.filter { $0.minX < center && $0.maxX > center }.map { Int($0.minY / pixel) }
+                    if let top = tops.min(by: { abs($0 - lastTop) < abs($1 - lastTop) }), abs(top - lastTop) < 40,
+                       top > 16, top < ground - 12 {
+                        perchTop = top
+                        altitudeTarget = Double(ground - top)
+                        altitude = altitudeTarget
+                    } else {
+                        until = 0
+                    }
+                }
                 if now > until {
-                    if canFloat, Double.random(in: 0...1) < 0.45 { startFloating() } else {
+                    inHammock = false
+                    perchTop = nil
+                    if act == .perch {
+                        // Float back down from the card.
+                        act = .float; altitudeTarget = 0; target = x
+                    } else if canFloat, Double.random(in: 0...1) < 0.45 { startFloating() } else {
                         act = .walk
                         target = Double.random(in: minX...maxX)
                     }
@@ -153,7 +286,7 @@ final class MascotBrain {
         }
         // Rise and settle smoothly, wherever he is.
         if act != .walk {
-            let goal = act == .float || now < reactionUntil ? altitudeTarget : 0
+            let goal = act == .float || act == .perch || now < reactionUntil ? altitudeTarget : 0
             altitude += (goal - altitude) * min(1, 1.6 * dt)
             if abs(goal - altitude) < 0.05 { altitude = goal }
         } else {
@@ -165,8 +298,10 @@ final class MascotBrain {
         if now > nextBlink { blinkUntil = now + 0.13; nextBlink = now + Double.random(in: 2.2...4.2) }
 
         // Where his body sits this frame: standing, sitting, breathing, floating or mid-jump.
-        let sitting = act == .sit || act == .fiddle || act == .nap
+        let sitting = act == .sit || act == .fiddle || act == .nap || act == .perch
         var top = sitting ? ground - 9 : ground - 11
+        if act == .study { top = ground - 16 }  // head and arms above the desk
+        if act == .nap && inHammock { top = ground - 14 }  // face above the fabric
         if act == .nap { top += Int(now / 0.9) % 2 }
         if act == .walk { top -= frame }  // a little bounce in his step
         if act == .hop {
@@ -176,7 +311,7 @@ final class MascotBrain {
         if act == .stretch { top -= Int(now / 0.65) % 2 }
         if airborne {
             top -= Int(altitude.rounded())
-            top += Int((sin(now * 2.1) * 1.2).rounded())
+            if act != .perch { top += Int((sin(now * 2.1) * 1.2).rounded()) }
         }
         if act == .cheer {
             let phase = now.truncatingRemainder(dividingBy: 0.95) / 0.7
@@ -198,7 +333,7 @@ final class MascotBrain {
         default:
             break
         }
-        if airborne, now - lastWisp > 0.22 {
+        if airborne, act != .perch, now - lastWisp > 0.22 {
             let behind = face > 0 ? x - 1 : x + Double(Self.width)
             particles.append(Particle(kind: .wisp, x: behind, y: Double(oy) + Double.random(in: 3...8), born: now))
             lastWisp = now
@@ -222,13 +357,26 @@ final class MascotBrain {
     }
 }
 
-/// The free space at the bottom of a page where Nimbus lives. Shown only when the
-/// page leaves room for him; the more room, the higher he can float.
+/// Card frames Nimbus can perch on, collected from the page without re-rendering it.
+final class NimbusPerches {
+    var rects: [CGRect] = []
+}
+
+struct NimbusPerchKey: PreferenceKey {
+    static let space = "nimbus.page"
+    static var defaultValue: [CGRect] = []
+    static func reduce(value: inout [CGRect], nextValue: () -> [CGRect]) { value.append(contentsOf: nextValue()) }
+}
+
+/// Nimbus's layer over a page. He roams the free space at the bottom (the more
+/// room, the higher he floats) and climbs onto the cards above it. Only Nimbus
+/// himself catches clicks; everything else passes through to the page.
 struct MascotLane: View {
     static let pixel: CGFloat = 5
     /// Enough for him to stand, with his cap and a hop.
     static let minimumHeight: CGFloat = 21 * pixel
-    var height: CGFloat
+    var freeHeight: CGFloat
+    var perches: NimbusPerches
 
     @Environment(AppModel.self) private var model
     @Environment(\.backgroundTheme) private var theme
@@ -242,23 +390,29 @@ struct MascotLane: View {
                 let now = timeline.date.timeIntervalSinceReferenceDate
                 let cols = Int(geo.size.width / Self.pixel)
                 let rows = Int(geo.size.height / Self.pixel)
-                let _ = brain.step(now: now, cols: cols, rows: rows, reduceMotion: reduceMotion)
-                Canvas { context, _ in
-                    MascotPainter(brain: brain, now: now, pixel: Self.pixel, accent: model.theme.color,
-                                  dark: theme.isDark).paint(in: &context)
-                }
-            }
-            .contentShape(Rectangle())
-            .onTapGesture(coordinateSpace: .local) { point in
-                if brain.bounds(pixel: Self.pixel).contains(point) {
-                    brain.react(.cheer, now: Date().timeIntervalSinceReferenceDate, seconds: 1.4)
+                let _ = brain.updateMood(model.data.changes, date: timeline.date)
+                let _ = brain.step(now: now, cols: cols, rows: rows, freeRows: Int(freeHeight / Self.pixel),
+                                   perches: perches.rects, pixel: Self.pixel, reduceMotion: reduceMotion)
+                ZStack(alignment: .topLeading) {
+                    Canvas { context, _ in
+                        MascotPainter(brain: brain, now: now, pixel: Self.pixel, accent: model.theme.color,
+                                      dark: theme.isDark).paint(in: &context)
+                    }
+                    .allowsHitTesting(false)
+                    let hit = brain.bounds(pixel: Self.pixel)
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .frame(width: hit.width, height: hit.height)
+                        .offset(x: hit.minX, y: hit.minY)
+                        .onTapGesture {
+                            brain.react(.cheer, now: Date().timeIntervalSinceReferenceDate, seconds: 1.4)
+                        }
+                        .accessibilityElement()
+                        .accessibilityLabel("Nimbus, a little cloud")
+                        .accessibilityHint("Reacts to new grades")
                 }
             }
         }
-        .frame(height: height)
-        .accessibilityElement()
-        .accessibilityLabel("Nimbus, a little cloud")
-        .accessibilityHint("Reacts to new grades")
         .onChange(of: model.mascotReaction) { _, reaction in
             guard let reaction else { return }
             brain.react(reaction.act, now: Date().timeIntervalSinceReferenceDate)
@@ -296,10 +450,139 @@ private struct MascotPainter {
     private let zColor = Color(hex: 0x9AA6C8)
     private let rim = Color(hex: 0x8F9BC0)
 
+    // MARK: His world
+
+    private let woodTop = Color(hex: 0xC48C58)
+    private let woodEdge = Color(hex: 0x8C5B33)
+    private let woodDark = Color(hex: 0x5E3B20)
+    private let paper = Color(hex: 0xF3EFE4)
+    private let canvas = Color(hex: 0xF1E9DA)
+
+    /// Fills one lane pixel (not mirrored with his facing).
+    private func cell(_ context: inout GraphicsContext, _ c: Int, _ r: Int, _ color: Color, _ alpha: Double = 1) {
+        context.fill(Path(CGRect(x: CGFloat(c) * pixel, y: CGFloat(r) * pixel, width: pixel, height: pixel)),
+                     with: .color(color.opacity(alpha)))
+    }
+
+    /// The study desk: a lamp, a stack of books and a sheet of paper. With him at
+    /// it, it's drawn over him so he sits behind it.
+    private func paintDesk(_ context: inout GraphicsContext, at d: Int, lit: Bool) {
+        let g = brain.ground
+        if lit {
+            // Warm lamp light pooling on the desk and the wall behind.
+            context.drawLayer { layer in
+                layer.addFilter(.blur(radius: 14))
+                let glow = CGRect(x: CGFloat(d + 12) * pixel, y: CGFloat(g - 17) * pixel, width: 20 * pixel, height: 13 * pixel)
+                layer.fill(Path(ellipseIn: glow), with: .color(Color(hex: 0xFFD27A).opacity(dark ? 0.32 : 0.4)))
+            }
+        }
+        for c in d...(d + 31) { cell(&context, c, g - 7, woodTop); cell(&context, c, g - 6, woodEdge) }
+        for r in (g - 5)...(g - 1) {
+            cell(&context, d + 1, r, woodDark); cell(&context, d + 30, r, woodDark)
+            if r > g - 5 { cell(&context, d + 2, r, woodEdge.opacity(0.6)) }
+        }
+        // Books, spines out.
+        for c in (d + 1)...(d + 5) { cell(&context, c, g - 8, Color(hex: 0x4F7CAC)); cell(&context, c, g - 9, accent) }
+        for c in (d + 2)...(d + 4) { cell(&context, c, g - 10, Color(hex: 0x6BAF7B)) }
+        // The page he's working on.
+        for c in (d + 9)...(d + 15) { cell(&context, c, g - 8, paper) }
+        // The lamp: base, arm, shade and a bulb that glows while he works.
+        for c in (d + 25)...(d + 28) { cell(&context, c, g - 8, woodDark) }
+        for r in (g - 12)...(g - 9) { cell(&context, d + 26, r, Color(hex: 0x3C415C)) }
+        for c in (d + 24)...(d + 29) { cell(&context, c, g - 13, accent) }
+        for c in (d + 25)...(d + 28) { cell(&context, c, g - 14, accent) }
+        if lit { for c in (d + 25)...(d + 28) { cell(&context, c, g - 12, Color(hex: 0xFFE4A3)) } }
+    }
+
+    /// The hammock between two posts. Its fabric sags; with him in it, the fabric
+    /// is drawn over him so he lies in it.
+    private func paintHammockPosts(_ context: inout GraphicsContext, at h: Int) {
+        let g = brain.ground
+        for r in (g - 15)...(g - 1) { cell(&context, h, r, woodDark); cell(&context, h + 28, r, woodDark) }
+        cell(&context, h - 1, g - 15, woodEdge); cell(&context, h + 29, g - 15, woodEdge)
+        // Ropes down to the fabric's ends.
+        cell(&context, h + 1, g - 13, Color(hex: 0xC9B79A)); cell(&context, h + 2, g - 12, Color(hex: 0xC9B79A))
+        cell(&context, h + 27, g - 13, Color(hex: 0xC9B79A)); cell(&context, h + 26, g - 12, Color(hex: 0xC9B79A))
+    }
+
+    private func paintHammockFabric(_ context: inout GraphicsContext, at h: Int, occupied: Bool) {
+        let g = brain.ground
+        let sway = occupied ? sin(now * 1.3) * 0.6 : 0
+        for c in 3...25 {
+            let t = Double(c - 3) / 22
+            let r = g - 11 + Int((Double(occupied ? 5 : 3) * sin(.pi * t) + sway).rounded())
+            let stripe = (c / 3) % 2 == 0 ? accent : canvas
+            cell(&context, h + c, r, stripe)
+            cell(&context, h + c, r + 1, stripe.opacity(0.85))
+            if occupied {
+                // Deeper cloth wrapped around him, so he sinks into it.
+                cell(&context, h + c, r + 2, stripe.opacity(0.7))
+                cell(&context, h + c, r + 3, stripe.opacity(0.55))
+            }
+            cell(&context, h + c, r + (occupied ? 4 : 2), Color.black, dark ? 0.18 : 0.08)
+        }
+    }
+
+    /// His own little weather, above his cap: a raincloud, a sun or a rainbow.
+    private func paintWeather(_ context: inout GraphicsContext) {
+        let ox = Int(brain.x.rounded()), top = brain.oy - 4
+        switch brain.mood {
+        case .rain:
+            let cloud = Color(hex: 0x8892AE)
+            for c in 6...14 { cell(&context, ox + c, top - 3, cloud) }
+            for c in 5...15 { cell(&context, ox + c, top - 2, cloud) }
+            for c in 7...10 { cell(&context, ox + c, top - 4, cloud) }
+            for c in 11...13 { cell(&context, ox + c, top - 4, cloud.opacity(0.85)) }
+            let fall = Int(now / 0.14) % 3
+            for (i, c) in [6, 9, 12, 15].enumerated() {
+                let r = top - 1 + (fall + i) % 3
+                cell(&context, ox + c, r, rain)
+            }
+        case .sun:
+            let sun = Color(hex: 0xFFC94A), cx = ox + 17, cy = top - 4
+            for dr in -2...2 { for dc in -2...2 where abs(dr) + abs(dc) < 4 { cell(&context, cx + dc, cy + dr, sun) } }
+            if Int(now / 0.5) % 2 == 0 {
+                for (dc, dr) in [(0, -4), (0, 4), (-4, 0), (4, 0), (3, -3), (-3, -3), (3, 3), (-3, 3)] {
+                    cell(&context, cx + dc, cy + dr, sun, 0.8)
+                }
+            }
+        case .rainbow:
+            let bands = [Color(hex: 0xF0707A), Color(hex: 0xF5C04A), Color(hex: 0x7CC67E), Color(hex: 0x6FA8E8)]
+            for (i, band) in bands.enumerated() {
+                let radius = 12.0 - Double(i)
+                for c in -12...12 {
+                    let dx = Double(c)
+                    guard abs(dx) <= radius else { continue }
+                    let dy = (radius * radius - dx * dx).squareRoot() * 0.5
+                    cell(&context, ox + 10 + c, top - Int(dy.rounded()), band, 0.9)
+                }
+            }
+        case .clear:
+            break
+        }
+    }
+
     func paint(in context: inout GraphicsContext) {
         let act = brain.act
-        let sitting = act == .sit || act == .fiddle || act == .nap
-        let airborne = brain.airborne
+        // Props he's using go in front of him; otherwise he walks in front of them.
+        let atDesk = act == .study && !brain.airborne
+        let inHammock = act == .nap && brain.inHammock
+        if let d = brain.deskX, !atDesk { paintDesk(&context, at: d, lit: false) }
+        if let h = brain.hammockX {
+            paintHammockPosts(&context, at: h)
+            if !inHammock { paintHammockFabric(&context, at: h, occupied: false) }
+        }
+        paintNimbus(in: &context)
+        if let d = brain.deskX, atDesk { paintDesk(&context, at: d, lit: true) }
+        if let h = brain.hammockX, inHammock { paintHammockFabric(&context, at: h, occupied: true) }
+        if brain.showsWeather(now) { paintWeather(&context) }
+    }
+
+    private func paintNimbus(in context: inout GraphicsContext) {
+        let act = brain.act
+        let sitting = act == .sit || act == .fiddle || act == .nap || act == .study
+        let perched = act == .perch
+        let airborne = brain.airborne && !perched
         let f = brain.frame
         var cells: [(Int, Int, Color)] = []
         func px(_ c: Int, _ r: Int, _ color: Color) { cells.append((c, r, color)) }
@@ -325,6 +608,13 @@ private struct MascotPainter {
         case .cheer: px(-1, 4, shade); px(-2, 3, shade); px(20, 4, shade); px(21, 3, shade)
         case .fiddle: px(-1, 6, shade); px(20, 4, shade); px(21, 3, shade)
         case .sad, .nap: px(-1, 6, shade); px(20, 6, shade)
+        case .study:
+            // Writing: one arm on the page, the pencil scratching away.
+            let scribble = Int(now / 0.16) % 3
+            px(-1, 6, shade); px(20, 6, shade); px(21, 6, shade)
+            px(22 - scribble % 2, 5, pencil); px(22 - scribble % 2, 4, pencil)
+        case .perch:
+            px(-1, 7, shade); px(20, 7, shade)  // hands on the edge
         case .wave:
             let up = Int(now / 0.22) % 2 == 0
             px(-1, 5, shade); px(20, up ? 3 : 4, shade); px(21, up ? 2 : 3, shade)
@@ -339,7 +629,11 @@ private struct MascotPainter {
         }
 
         // Legs: tucked up while floating, just two little nubs.
-        if airborne {
+        if perched {
+            // Sitting on the edge of a card, legs swinging over it.
+            let swing = Int(now / 0.4) % 2
+            px(6, 9, shade); px(6 + swing, 10, shade); px(13, 9, shade); px(13 - swing, 10, shade)
+        } else if airborne {
             px(7, 9, shade); px(12, 9, shade)
         } else if act == .walk {
             if f == 1 { px(6, 9, shade); px(5, 10, shade); px(13, 9, shade); px(14, 10, shade) }
@@ -349,13 +643,16 @@ private struct MascotPainter {
         }
 
         // Face.
-        let lx = act == .walk || act == .float ? 1 : act == .look ? brain.look : 0
+        let lx = act == .walk || act == .float || act == .study ? 1 : act == .look ? brain.look : 0
         for (i, ec) in [6 + lx, 13 + lx].enumerated() {
             switch act {
             case .cheer, .wave, .hop: px(ec - 1, 5, ink); px(ec, 4, ink); px(ec + 1, 5, ink)
             case .stretch: px(ec - 1, 5, ink); px(ec, 5, ink)
             case .nap: px(ec, 5, ink); px(ec + (i == 1 ? -1 : 1), 5, ink)
             case .sad: px(ec, 5, ink); px(ec, 6, ink)
+            case .study:
+                // Eyes down on the page, with a blink now and then.
+                if brain.isBlinking(now) { px(ec, 6, ink) } else { px(ec, 5, ink); px(ec, 6, ink) }
             default:
                 if brain.isBlinking(now) { px(ec, 5, ink) } else { px(ec, 4, ink); px(ec, 5, ink) }
             }
@@ -387,9 +684,9 @@ private struct MascotPainter {
 
         // Shading that sets him in the page.
         // 1. A soft contact shadow on the ground, smaller and fainter the higher he floats.
-        let height = CGFloat(brain.altitude)
+        let height = perched ? 0 : CGFloat(brain.altitude)
         let spread = max(0.45, 1 - height / 40)
-        let groundY = CGFloat(brain.ground) * pixel
+        let groundY = CGFloat(perched ? oy + 9 : brain.ground) * pixel
         let centerX = CGFloat(ox) * pixel + CGFloat(MascotBrain.width) * pixel / 2
         let shadowWidth = 17 * pixel * spread
         context.drawLayer { layer in

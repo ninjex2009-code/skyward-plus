@@ -76,6 +76,7 @@ enum Appearance: String, Codable, CaseIterable, Identifiable {
 /// Each theme sets its own light or dark look and its own accent colour.
 enum BackgroundTheme: String, Codable, CaseIterable, Identifiable {
     case midnight, obsidian, aurora, sunset, ember, forest, ocean, paper, graphite
+    case galaxy, synthwave, winter, autumn, spring, broncos
 
     var id: String { rawValue }
 
@@ -101,12 +102,18 @@ enum BackgroundTheme: String, Codable, CaseIterable, Identifiable {
         case .ocean: return "Ocean"
         case .paper: return "Paper"
         case .graphite: return "Graphite"
+        case .galaxy: return "Galaxy"
+        case .synthwave: return "Synthwave"
+        case .winter: return "Winter"
+        case .autumn: return "Autumn"
+        case .spring: return "Spring"
+        case .broncos: return "Broncos"
         }
     }
 
     var isDark: Bool {
         switch self {
-        case .ocean, .paper, .graphite: return false
+        case .ocean, .paper, .graphite, .spring: return false
         default: return true
         }
     }
@@ -122,6 +129,12 @@ enum BackgroundTheme: String, Codable, CaseIterable, Identifiable {
         case .ocean: return .sky
         case .paper: return .indigo
         case .graphite: return .graphite
+        case .galaxy: return .violet
+        case .synthwave: return .rose
+        case .winter: return .sky
+        case .autumn: return .amber
+        case .spring: return .rose
+        case .broncos: return .crimson
         }
     }
 
@@ -137,6 +150,12 @@ enum BackgroundTheme: String, Codable, CaseIterable, Identifiable {
         case .ocean: return 0xE6F2FB
         case .paper: return 0xF6F1E7
         case .graphite: return 0xECEEF2
+        case .galaxy: return 0x07051A
+        case .synthwave: return 0x12052A
+        case .winter: return 0x081424
+        case .autumn: return 0x170C06
+        case .spring: return 0xFDF2F6
+        case .broncos: return 0x081130
         }
     }
 
@@ -152,6 +171,12 @@ enum BackgroundTheme: String, Codable, CaseIterable, Identifiable {
         case .ocean: return [0x7CCBF5, 0x6EE7D6, 0xAFB9FA]
         case .paper: return [0xE6D2AE, 0xF0DFC6, 0xCFDDEB]
         case .graphite: return [0xC5CEDB, 0xDDE3EC, 0xCDD1D8]
+        case .galaxy: return [0x5B21B6, 0x1E3A8A, 0xBE185D]
+        case .synthwave: return [0xDB2777, 0x7C3AED, 0x0EA5E9]
+        case .winter: return [0x1D4ED8, 0x38BDF8, 0x4338CA]
+        case .autumn: return [0xC2410C, 0xB45309, 0x7F1D1D]
+        case .spring: return [0xF9A8D4, 0xBBF7D0, 0xFDE68A]
+        case .broncos: return [0xC8102E, 0x1E3A8A, 0x6B0F1A]
         }
     }
 }
@@ -210,6 +235,13 @@ struct AppSettings: Codable, Hashable {
     var phoneRelayTopic = ""
     /// Include scores and averages in alerts copied to the phone.
     var phoneRelayScores = true
+    /// Home's sections in the student's order, and the ones they hid.
+    var homeOrder: [String]?
+    var homeHidden: [String]?
+    /// Sounds: one switch for all, then each kind.
+    var soundsOn = true
+    var soundGradeChimes = true
+    var soundTaskTicks = true
     /// Share grades with the student's other devices through their account.
     var shareGrades = true
     /// Nimbus, the little cloud who walks around empty space on the Mac.
@@ -261,6 +293,11 @@ struct AppSettings: Codable, Hashable {
         searchShortcut = (try? c.decodeIfPresent(String.self, forKey: .searchShortcut)) ?? d.searchShortcut
         showMascot = (try? c.decodeIfPresent(Bool.self, forKey: .showMascot)) ?? d.showMascot
         shareGrades = (try? c.decodeIfPresent(Bool.self, forKey: .shareGrades)) ?? d.shareGrades
+        homeOrder = try? c.decodeIfPresent([String].self, forKey: .homeOrder)
+        homeHidden = try? c.decodeIfPresent([String].self, forKey: .homeHidden)
+        soundsOn = (try? c.decodeIfPresent(Bool.self, forKey: .soundsOn)) ?? d.soundsOn
+        soundGradeChimes = (try? c.decodeIfPresent(Bool.self, forKey: .soundGradeChimes)) ?? d.soundGradeChimes
+        soundTaskTicks = (try? c.decodeIfPresent(Bool.self, forKey: .soundTaskTicks)) ?? d.soundTaskTicks
         exportTarget = (try? c.decodeIfPresent(ExportTarget.self, forKey: .exportTarget)) ?? d.exportTarget
         // Anyone upgrading has already seen the app, so the hello only plays on a true first launch.
         helloShown = (try? c.decodeIfPresent(Bool.self, forKey: .helloShown)) ?? true
@@ -575,12 +612,19 @@ struct ProfilePrefs: Codable, Hashable {
     var lastSeenGrades: [String: Double] = [:]
     var lastSeenAt: Date?
     var hasCompletedOnboarding: Bool?
+    /// Colors the student picked per course id; the rest are automatic.
+    var classColorsRaw: [String: ClassColor]?
     /// Target percent per course id.
     var goalsRaw: [String: Double]?
     /// Classes already announced as below goal, so the alert fires once per drop.
     var belowGoalNotifiedRaw: Set<String>?
     /// Notifications already sent for newly missing work.
     var missingNotifiedRaw: Set<String>?
+
+    var classColors: [String: ClassColor] {
+        get { classColorsRaw ?? [:] }
+        set { classColorsRaw = newValue.isEmpty ? nil : newValue }
+    }
 
     var goals: [String: Double] {
         get { goalsRaw ?? [:] }

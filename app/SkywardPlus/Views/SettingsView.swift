@@ -82,7 +82,7 @@ struct SettingsView: View {
                 .buttonStyle(BubbleButtonStyle())
             }
         }
-        .navigationDestination(for: SettingsPage.self) { SettingsPageView(page: $0) }
+        .navigationDestination(for: SettingsPage.self) { SettingsPageView(page: $0).clearWindowBar() }
     }
 
     private func summary(_ page: SettingsPage) -> String {
@@ -221,6 +221,14 @@ struct SettingsPageView: View {
                 }
                 .labelsHidden()
                 .fixedSize()
+            }
+        }
+        SettingsGroup(title: "Sounds", footer: "Chimes play for new grades while the app is open, and on grade alerts. A tick plays when you finish a task or assignment.") {
+            ToggleRow(title: "Sounds", isOn: setting(\.soundsOn))
+            if model.settings.soundsOn {
+                ToggleRow(title: "Chime for new grades", isOn: setting(\.soundGradeChimes))
+                ToggleRow(title: "Tick when you finish something", isOn: setting(\.soundTaskTicks))
+                ActionRow(title: "Play the Grade Chime") { SoundEffects.play(.gradeGreat, settings: model.settings) }
             }
         }
         #if os(macOS)

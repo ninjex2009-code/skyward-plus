@@ -295,7 +295,7 @@ private struct StepTitle: View {
     var body: some View {
         VStack(spacing: 8) {
             Text(title)
-                .font(.system(size: 34, weight: .semibold, design: .rounded))
+                .font(.display(30))
                 .multilineTextAlignment(.center)
             Text(subtitle)
                 .font(.title3)
@@ -860,7 +860,7 @@ private struct DoneStep: View {
     private func figure(_ value: String, _ label: String) -> some View {
         VStack(spacing: 2) {
             Text(value)
-                .font(.system(size: 44, weight: .semibold, design: .rounded).monospacedDigit())
+                .font(.display(38).monospacedDigit())
                 .contentTransition(.numericText())
             Text(label).font(.callout).foregroundStyle(.white.opacity(0.6))
         }

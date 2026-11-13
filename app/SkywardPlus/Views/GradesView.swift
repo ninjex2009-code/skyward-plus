@@ -201,49 +201,38 @@ struct GradesSummary: View {
         let gpa = GPA.compute(GPA.currentEntries(data: model.data, lit: lit, settings: model.prefs.gpa))
         let missing = lit == model.data.currentLit ? model.missingAssignments.count : 0
 
-        if sizeClass == .compact {
-            // On a phone: one row of three figures instead of three tiles.
-            Card {
-                HStack(alignment: .firstTextBaseline, spacing: 0) {
-                    figure(average.map { Fmt.percent($0) } ?? "—", "Average", average.map { GradeColor.color(percent: $0) } ?? .primary)
-                    figure(Fmt.gpa(gpa.weighted), "GPA", .primary)
-                    figure("\(missing)", "Missing", missing == 0 ? .secondary : Palette.bad)
-                }
+        // One quiet band of three figures, not three big-number tiles.
+        let roomy = sizeClass != .compact
+        Card {
+            HStack(alignment: .top, spacing: 0) {
+                figure(average.map { Fmt.percent($0) } ?? "—", "Average", average.map { GradeColor.color(percent: $0) } ?? .primary,
+                       caption: roomy ? (model.data.bucket(lit)?.displayName ?? lit) : nil)
+                separator
+                figure(Fmt.gpa(gpa.weighted), "GPA", .primary,
+                       caption: roomy ? "Unweighted " + Fmt.gpa(gpa.unweighted) : nil)
+                separator
+                figure("\(missing)", "Missing", missing == 0 ? .secondary : Palette.bad,
+                       caption: roomy ? (missing == 0 ? "All turned in" : "Needs attention") : nil)
             }
-        } else {
-        StatGrid(count: 3) {
-            StatTile(
-                title: "Average",
-                value: average.map { Fmt.percent($0) } ?? "—",
-                caption: model.data.bucket(lit)?.displayName ?? lit,
-                tint: average.map { GradeColor.color(percent: $0) } ?? model.theme.color,
-                symbol: "chart.bar.fill"
-            )
-            StatTile(
-                title: "GPA",
-                value: Fmt.gpa(gpa.weighted),
-                caption: "Unweighted " + Fmt.gpa(gpa.unweighted),
-                tint: model.theme.color,
-                symbol: "graduationcap.fill"
-            )
-            StatTile(
-                title: "Missing",
-                value: "\(missing)",
-                caption: missing == 0 ? "All turned in" : "Needs attention",
-                tint: missing == 0 ? Palette.good : Palette.bad,
-                symbol: missing == 0 ? "checkmark.circle.fill" : "exclamationmark.circle.fill"
-            )
-        }
+            .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    private func figure(_ value: String, _ label: String, _ tint: Color) -> some View {
+    private var separator: some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.08))
+            .frame(width: 1)
+            .padding(.horizontal, 16)
+    }
+
+    private func figure(_ value: String, _ label: String, _ tint: Color, caption: String? = nil) -> some View {
         VStack(alignment: .leading, spacing: 2) {
+            Text(label).font(.subheadline).foregroundStyle(.secondary)
             Text(value)
-                .font(.system(.title2, design: .rounded).weight(.semibold).monospacedDigit())
+                .font(.display(sizeClass == .compact ? 19 : 22, relativeTo: .title2).monospacedDigit())
                 .foregroundStyle(tint)
                 .contentTransition(.numericText())
-            Text(label).font(.footnote).foregroundStyle(.secondary)
+            if let caption { Text(caption).font(.footnote).foregroundStyle(.tertiary).lineLimit(1) }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
@@ -283,6 +272,7 @@ struct ClassRow: View {
         ].compactMap { $0 }.joined(separator: " · ")
 
         HStack(spacing: 14) {
+            ClassBadge(courseID: course.id, size: 32)
             VStack(alignment: .leading, spacing: 2) {
                 Text(Str.titleCase(course.name))
                     .font(.body.weight(.medium))

@@ -85,6 +85,7 @@ struct PhoneClassRow: View {
     var body: some View {
         let missing = model.detail(course.id, lit)?.assignments.filter { $0.missing }.count ?? 0
         HStack(spacing: 12) {
+            ClassBadge(courseID: course.id, size: 30)
             VStack(alignment: .leading, spacing: 2) {
                 Text(Str.titleCase(course.name))
                     .font(.body.weight(.medium))

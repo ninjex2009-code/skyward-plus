@@ -232,6 +232,8 @@ struct MainView: View {
             if sizeClass == .compact { PhoneTabs() } else { SidebarLayout() }
             #endif
         }
+        .overlay { CelebrationOverlay() }
+
     }
 }
 
@@ -244,8 +246,9 @@ struct SectionHost: View {
     var body: some View {
         NavigationStack(path: $path) {
             SectionScreen(section: section)
-                .navigationDestination(for: CourseRoute.self) { ClassDetailView(courseID: $0.courseID) }
-                .navigationDestination(for: AppSection.self) { SectionScreen(section: $0) }
+                .clearWindowBar()
+                .navigationDestination(for: CourseRoute.self) { ClassDetailView(courseID: $0.courseID).clearWindowBar() }
+                .navigationDestination(for: AppSection.self) { SectionScreen(section: $0).clearWindowBar() }
         }
         .onAppear(perform: openRequestedCourse)
         .onChange(of: model.openCourse) { _, _ in openRequestedCourse() }
@@ -256,6 +259,27 @@ struct SectionHost: View {
         guard section == .grades, let id = model.openCourse else { return }
         model.openCourse = nil
         path = NavigationPath([CourseRoute(courseID: id)])
+    }
+}
+
+extension View {
+    /// Keeps the Mac window's title bar see-through on every page, including pages
+    /// pushed onto a stack (each page sets its own toolbar, so each has to ask).
+    @ViewBuilder func clearWindowBar() -> some View {
+        #if os(macOS)
+        if #available(macOS 26, *) {
+            self.toolbarBackground(.hidden, for: .windowToolbar)
+                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+                .scrollEdgeEffectHidden(true, for: .top)
+        } else if #available(macOS 15, *) {
+            self.toolbarBackground(.hidden, for: .windowToolbar)
+                .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+        } else {
+            self.toolbarBackground(.hidden, for: .windowToolbar)
+        }
+        #else
+        self
+        #endif
     }
 }
 
@@ -279,46 +303,25 @@ struct SectionScreen: View {
 
 struct SidebarLayout: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.displayScale) private var displayScale
+    @AppStorage("sidebar.compact") private var compactSidebar = false
+    @State private var windowWidth: CGFloat = 1100
 
     var body: some View {
-        let selection = Binding<AppSection?>(
-            get: { model.section },
-            set: { value in
-                if let value {
-                    withAnimation(Motion.snappy) {
-                        model.section = value
-                    }
-                }
+        // The sidebar zooms with the window by the same amount as the page beside it,
+        // so the two always look like one app at one size.
+        let base: CGFloat = compactSidebar ? 76 : 256
+        let scale = Screen<EmptyView>.scale(forWidth: max(320, windowWidth - base - 10))
+        HStack(spacing: 0) {
+            ScaledLayout(scale: scale) {
+                AppSidebar(compact: $compactSidebar)
+                    .environment(\.displayScale, displayScale * scale)
+                    .scaleEffect(scale, anchor: .topLeading)
             }
-        )
-        NavigationSplitView {
-            List(selection: selection) {
-                Section {
-                    ProfileSwitcher()
-                }
-                Section("Overview") {
-                    ForEach(AppSection.tabs) { section in
-                        Label(section.title, systemImage: section.symbol).tag(section)
-                    }
-                }
-                Section("School") {
-                    ForEach(AppSection.school) { section in
-                        Label(section.title, systemImage: section.symbol).tag(section)
-                    }
-                }
-                Section("App") {
-                    ForEach(AppSection.app) { section in
-                        Label(section.title, systemImage: section.symbol).tag(section)
-                    }
-                }
-            }
-            .navigationTitle("Skyward Plus")
-            .environment(\.sidebarRowSize, .large)
-            #if os(macOS)
-            .navigationSplitViewColumnWidth(min: 220, ideal: 250, max: 320)
-            #endif
-            .safeAreaInset(edge: .bottom) { SidebarFooter() }
-        } detail: {
+            .frame(width: base * scale)
+            .padding(.leading, 10)
+            .padding(.vertical, 10)
+            .zIndex(1)
             SectionHost(section: model.section)
                 .id(model.section)
                 .transition(.asymmetric(
@@ -326,7 +329,18 @@ struct SidebarLayout: View {
                     removal: .opacity.animation(.easeOut(duration: 0.12))
                 ))
                 .overlay(alignment: .top) { SyncLine() }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        .background { PageBackground().overlay { PointerLight() } }
+        .background {
+            GeometryReader { geo in
+                Color.clear
+                    .onAppear { windowWidth = geo.size.width }
+                    .onChange(of: geo.size.width) { _, width in windowWidth = width }
+            }
+        }
+        .environment(\.pageBackgroundProvided, true)
+        .animation(.spring(response: 0.38, dampingFraction: 0.86), value: compactSidebar)
     }
 }
 

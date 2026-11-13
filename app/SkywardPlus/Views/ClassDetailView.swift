@@ -127,6 +127,9 @@ struct ClassDetailView: View {
         }
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
+                ClassColorButton(courseID: courseID)
+            }
+            ToolbarItem(placement: .primaryAction) {
                 // Everything secondary for this class in one menu.
                 Menu {
                     Button {
@@ -202,7 +205,7 @@ struct ClassDetailView: View {
 
         let grade = VStack(alignment: compact ? .leading : .trailing, spacing: 2) {
             Text(displayText)
-                .font(.system(size: 46, weight: .semibold, design: .rounded).monospacedDigit())
+                .font(.display(40).monospacedDigit())
                 .foregroundStyle(tint)
                 .contentTransition(.numericText())
                 .animation(.snappy, value: displayText)
@@ -234,7 +237,7 @@ struct ClassDetailView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .firstTextBaseline, spacing: 10) {
                         Text(displayText)
-                            .font(.system(size: 46, weight: .semibold, design: .rounded).monospacedDigit())
+                            .font(.display(40).monospacedDigit())
                             .foregroundStyle(tint)
                             .contentTransition(.numericText())
                             .animation(.snappy, value: displayText)
@@ -253,9 +256,12 @@ struct ClassDetailView: View {
             } else {
                 HStack(alignment: .top, spacing: 20) {
                     VStack(alignment: .leading, spacing: 6) {
-                        Text(Str.titleCase(course.name))
-                            .font(.system(.largeTitle, design: .rounded).bold())
-                            .lineLimit(2)
+                        HStack(alignment: .center, spacing: 12) {
+                            ClassBadge(courseID: course.id, size: 34)
+                            Text(Str.titleCase(course.name))
+                                .font(.display(30, weight: .bold))
+                                .lineLimit(2)
+                        }
                         facts
                     }
                     Spacer(minLength: 12)
@@ -533,7 +539,7 @@ struct ClassDetailView: View {
                 }
                 VStack(alignment: .trailing, spacing: 1) {
                     Text(pct.map { Fmt.percent($0) } ?? (assignment.gradeText.isEmpty ? "—" : assignment.gradeText))
-                        .font(.system(.title3, design: .rounded).weight(.semibold).monospacedDigit())
+                        .font(.display(17, relativeTo: .title3).monospacedDigit())
                         .foregroundStyle(pct == nil ? Color.secondary : GradeColor.color(percent: pct))
                         .contentTransition(.numericText())
                     if assignment.earned != nil, assignment.possible != nil {

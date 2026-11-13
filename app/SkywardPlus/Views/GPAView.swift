@@ -38,13 +38,13 @@ struct GPAView: View {
             HStack(alignment: .bottom, spacing: 28) {
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Fmt.gpa(result.weighted))
-                        .font(.system(size: 52, weight: .semibold, design: .rounded).monospacedDigit())
+                        .font(.display(44).monospacedDigit())
                         .contentTransition(.numericText())
                     Text("Weighted GPA").font(.callout).foregroundStyle(.secondary)
                 }
                 VStack(alignment: .leading, spacing: 2) {
                     Text(Fmt.gpa(result.unweighted))
-                        .font(.system(size: 30, weight: .medium, design: .rounded).monospacedDigit())
+                        .font(.display(26, weight: .medium).monospacedDigit())
                         .foregroundStyle(.secondary)
                         .contentTransition(.numericText())
                     Text("Unweighted").font(.callout).foregroundStyle(.secondary)

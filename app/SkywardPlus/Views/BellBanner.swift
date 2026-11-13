@@ -20,7 +20,7 @@ struct BellBannerCard: View {
                             Spacer(minLength: 12)
                             if let seconds = status.secondsLeft {
                                 Text(BellMath.countdown(seconds))
-                                    .font(.system(.title2, design: .rounded).weight(.semibold).monospacedDigit())
+                                    .font(.display(19, relativeTo: .title2).monospacedDigit())
                                     .contentTransition(.numericText(countsDown: true))
                                     .accessibilityLabel("\(seconds / 60) minutes left")
                             }

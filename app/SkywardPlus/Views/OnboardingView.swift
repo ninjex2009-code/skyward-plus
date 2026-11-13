@@ -252,7 +252,7 @@ struct OnboardingSheet: View {
                         HStack(alignment: .firstTextBaseline, spacing: 14) {
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(Fmt.gpa(computed.weighted))
-                                    .font(.system(size: 30, weight: .bold, design: .rounded).monospacedDigit())
+                                    .font(.display(26, weight: .bold).monospacedDigit())
                                     .foregroundStyle(model.theme.color)
                                     .contentTransition(.numericText())
                                 Text("Weighted (\(currentScale.name))")
@@ -262,7 +262,7 @@ struct OnboardingSheet: View {
                             Divider().frame(height: 34)
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(Fmt.gpa(computed.unweighted))
-                                    .font(.system(size: 24, weight: .bold, design: .rounded).monospacedDigit())
+                                    .font(.display(21, weight: .bold).monospacedDigit())
                                     .contentTransition(.numericText())
                                 Text("Unweighted (4.00)")
                                     .font(.caption)

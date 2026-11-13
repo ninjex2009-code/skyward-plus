@@ -98,6 +98,8 @@ extension AppModel {
     /// Asks once, the first time the app runs with any alert switched on.
     func askForNotificationsIfNeeded() async {
         Notifier.relay = phoneRelayConfig
+        Notifier.gradeSound = settings.soundsOn && settings.soundGradeChimes
+            ? UNNotificationSound(named: UNNotificationSoundName("chime.wav")) : nil
         let anyOn = settings.notifyNewGrades || settings.notifyMissing || settings.notifyDueTomorrow
             || settings.notifyBelowGoal || settings.notifySummary
         guard anyOn, active != nil, settings.helloShown else { return }
@@ -140,7 +142,10 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
-        [.banner, .list, .sound]
+        // With the app open, a grade alert's sound is the in-app chime instead.
+        let chimes = await MainActor.run { model?.settings.soundsOn == true && model?.settings.soundGradeChimes == true }
+        if chimes, notification.request.content.threadIdentifier.hasPrefix("grades") { return [.banner, .list] }
+        return [.banner, .list, .sound]
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {

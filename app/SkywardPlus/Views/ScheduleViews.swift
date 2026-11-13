@@ -70,7 +70,7 @@ struct ScheduleView: View {
                             let pattern = model.prefs.dayPatterns[course.id] ?? .every
                             HStack(spacing: compact ? 8 : 14) {
                                 Text(course.period.isEmpty ? "–" : course.period)
-                                    .font(.system(.title3, design: .rounded).weight(.semibold).monospacedDigit())
+                                    .font(.display(17, relativeTo: .title3).monospacedDigit())
                                     .foregroundStyle(.secondary)
                                     .frame(width: compact ? 28 : 54, alignment: .leading)
                                     .lineLimit(1)

@@ -7,6 +7,7 @@ struct PlannerCalendar: View {
     @Environment(\.windowMetrics) private var metrics
     @Binding var selection: Date
     @State private var month: Date
+    @State private var forward = true
 
     private var calendar: Calendar { Calendar.current }
 
@@ -44,7 +45,13 @@ struct PlannerCalendar: View {
                     }
                 }
             }
+            .id(month)
+            .transition(.asymmetric(
+                insertion: .move(edge: forward ? .trailing : .leading).combined(with: .opacity),
+                removal: .opacity
+            ))
         }
+        .clipped()
         .padding(roomy ? 18 : 12)
         .bubble(cornerRadius: 20)
         .onChange(of: selection) { _, day in
@@ -55,7 +62,7 @@ struct PlannerCalendar: View {
     private var header: some View {
         HStack(spacing: 8) {
             Text(month.formatted(.dateTime.month(.wide).year()))
-                .font(.title2.weight(.semibold))
+                .font(.display(22))
                 .contentTransition(.numericText())
             Spacer()
             Button("Previous month", systemImage: "chevron.left") { shift(-1) }
@@ -74,7 +81,8 @@ struct PlannerCalendar: View {
     }
 
     private func shift(_ months: Int) {
-        withAnimation(.snappy(duration: 0.2)) {
+        forward = months > 0
+        withAnimation(.snappy(duration: 0.28)) {
             month = calendar.date(byAdding: .month, value: months, to: month) ?? month
         }
     }
@@ -116,12 +124,13 @@ private struct PlannerDayCell: View {
         var title: String
         var mine: Bool
         var done: Bool
+        var color: Color
     }
 
     private var entries: [Entry] {
-        let tasks = model.tasks(dueOn: day).map { Entry(id: "t" + $0.id.uuidString, title: $0.title, mine: true, done: $0.done) }
+        let tasks = model.tasks(dueOn: day).map { Entry(id: "t" + $0.id.uuidString, title: $0.title, mine: true, done: $0.done, color: model.classColor($0.courseID)) }
         let work = model.assignments(dueOn: day).map {
-            Entry(id: "s" + $0.id, title: $0.assignment.name, mine: false, done: model.prefs.doneAssignments.contains($0.id))
+            Entry(id: "s" + $0.id, title: $0.assignment.name, mine: false, done: model.prefs.doneAssignments.contains($0.id), color: model.classColor($0.course.id))
         }
         return (tasks + work).sorted { ($0.done ? 1 : 0) < ($1.done ? 1 : 0) }
     }
@@ -143,12 +152,17 @@ private struct PlannerDayCell: View {
                             .font(.caption2.weight(.medium))
                             .lineLimit(1)
                             .strikethrough(entry.done)
-                            .foregroundStyle(entry.mine ? model.theme.color : .primary)
+                            .foregroundStyle(.primary)
                             .opacity(entry.done ? 0.5 : 1)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .frame(maxWidth: .infinity, alignment: .leading)
-                            .background((entry.mine ? model.theme.color : Color.primary).opacity(0.12), in: .rect(cornerRadius: 5))
+                            .background(entry.color.opacity(0.2), in: .rect(cornerRadius: 5))
+                            .overlay(alignment: .leading) {
+                                UnevenRoundedRectangle(topLeadingRadius: 5, bottomLeadingRadius: 5)
+                                    .fill(entry.color)
+                                    .frame(width: 3)
+                            }
                     }
                     if items.count > 2 {
                         Text("+\(items.count - 2) more")
@@ -160,7 +174,7 @@ private struct PlannerDayCell: View {
                     HStack(spacing: 3) {
                         ForEach(items.prefix(3)) { entry in
                             Circle()
-                                .fill(entry.mine ? model.theme.color : Color.secondary)
+                                .fill(entry.color)
                                 .opacity(entry.done ? 0.35 : 1)
                                 .frame(width: 5, height: 5)
                         }

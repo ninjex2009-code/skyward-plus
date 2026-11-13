@@ -5,13 +5,13 @@ import SwiftUI
 /// week of due work lives in Planner.
 struct HomeView: View {
     @Environment(AppModel.self) private var model
+    @State private var editing = false
 
     var body: some View {
         Screen(title: "Home", spacing: 22) {
             HomeHeader()
                 .staggered(0)
             SyncStatusView { model.requestReauth() }
-            BellBannerCard()
             if model.data.courses.isEmpty {
                 Card {
                     EmptyState(
@@ -21,12 +21,35 @@ struct HomeView: View {
                     )
                 }
             } else {
-                HomeColumns().staggered(1)
+                ForEach(Array(HomeSection.rows(sectionsWithContent).enumerated()), id: \.offset) { index, row in
+                    HomeRow(sections: row).staggered(index + 1)
+                }
             }
         }
         .refreshable { await model.refresh() }
+        .sheet(isPresented: $editing) {
+            NavigationStack { HomeEditor() }
+            #if os(macOS)
+                .frame(minWidth: 380, minHeight: 420)
+            #endif
+        }
+        #if os(iOS)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Edit Home", systemImage: "slider.horizontal.3") { editing = true }
+            }
+        }
+        #endif
         #if os(macOS)
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    editing = true
+                } label: {
+                    Label("Edit Home", systemImage: "slider.horizontal.3")
+                }
+                .help("Reorder or hide Home's sections")
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     Task { await model.refresh() }
@@ -41,33 +64,168 @@ struct HomeView: View {
     }
 }
 
-private struct HomeColumns: View {
+/// One row of Home: a wide section alone, or a run of sections sharing columns.
+extension HomeView {
+    /// Visible sections that have something to show, so an empty one never leaves
+    /// a blank column beside its neighbour.
+    var sectionsWithContent: [HomeSection] {
+        model.homeSectionsVisible.filter { section in
+            switch section {
+            case .recent: return model.recentChanges.contains { $0.kind == .newGrade || $0.kind == .updatedGrade }
+            default: return true
+            }
+        }
+    }
+}
+
+private struct HomeRow: View {
+    @Environment(\.windowMetrics) private var metrics
+    let sections: [HomeSection]
+
+    var body: some View {
+        if sections.count == 1 || metrics.columns <= 1 {
+            VStack(alignment: .leading, spacing: 22) {
+                ForEach(sections) { HomeSectionView(section: $0) }
+            }
+        } else {
+            let columns = min(metrics.columns, sections.count)
+            HStack(alignment: .top, spacing: 22) {
+                ForEach(0..<columns, id: \.self) { c in
+                    VStack(alignment: .leading, spacing: 22) {
+                        // Fill columns left to right; extra sections stack in the last one.
+                        ForEach(Array(sections.enumerated()).filter { min($0.offset, columns - 1) == c }, id: \.element) { _, section in
+                            HomeSectionView(section: section)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .top)
+                }
+            }
+        }
+    }
+}
+
+private struct HomeSectionView: View {
+    let section: HomeSection
+
+    var body: some View {
+        switch section {
+        case .gradesStrip: GradesStrip()
+        case .bell: BellBannerCard()
+        case .needsYou: NeedsYouSection()
+        case .recent: RecentSection()
+        }
+    }
+}
+
+/// Every class average in one row, in each class's color. Tap one to open it.
+private struct GradesStrip: View {
+    @Environment(AppModel.self) private var model
     @Environment(\.windowMetrics) private var metrics
 
     var body: some View {
-        switch metrics.columns {
-        case 3:
-            HStack(alignment: .top, spacing: 22) {
-                NeedsYouSection().frame(maxWidth: .infinity, alignment: .top)
-                ClassGrid().frame(maxWidth: .infinity, alignment: .top)
-                RecentSection().frame(maxWidth: .infinity, alignment: .top)
-            }
-        case 2:
-            HStack(alignment: .top, spacing: 22) {
-                NeedsYouSection().frame(maxWidth: .infinity, alignment: .top)
-                VStack(alignment: .leading, spacing: 22) {
-                    ClassGrid()
-                    RecentSection()
+        if let lit = model.selectedLit {
+            let courses = model.courses(in: lit).filter { !model.gradeText($0, lit).isEmpty }
+            // Every class shows, in balanced rows (8 classes: 4 + 4, never 7 + 1).
+            let available = min(metrics.width - metrics.horizontalPadding * 2, metrics.contentMaxWidth)
+            let fit = max(1, Int((available + 10) / 160))
+            let rows = max(1, Int(ceil(Double(courses.count) / Double(fit))))
+            let columns = max(1, Int(ceil(Double(courses.count) / Double(rows))))
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: columns), spacing: 10) {
+                ForEach(courses) { course in
+                    NavigationLink(value: CourseRoute(courseID: course.id)) {
+                        GlanceChip(course: course, lit: lit)
+                    }
+                    .buttonStyle(BubbleButtonStyle())
                 }
-                .frame(maxWidth: .infinity, alignment: .top)
-            }
-        default:
-            VStack(alignment: .leading, spacing: 22) {
-                NeedsYouSection()
-                ClassGrid()
-                RecentSection()
             }
         }
+    }
+}
+
+private struct GlanceChip: View {
+    @Environment(AppModel.self) private var model
+    let course: Course
+    let lit: String
+
+    var body: some View {
+        let percent = model.percent(course, lit)
+        let color = model.classColor(course.id)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Circle().fill(color).frame(width: 8, height: 8)
+                Text(Str.titleCase(course.name))
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Text(model.gradeText(course, lit))
+                .font(.display(20, relativeTo: .title3).monospacedDigit())
+                .foregroundStyle(percent.map { GradeColor.color(percent: $0) } ?? .primary)
+                .contentTransition(.numericText())
+            // How far through the A range (or whichever band) this class sits.
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.primary.opacity(0.08))
+                    Capsule().fill(color.gradient)
+                        .frame(width: geo.size.width * CGFloat(max(0.04, min(1, ((percent ?? 0) - 60) / 40))))
+                }
+            }
+            .frame(height: 4)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .bubble()
+    }
+}
+
+/// Reorder and hide Home's sections.
+struct HomeEditor: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+    @State private var order: [HomeSection] = []
+
+    var body: some View {
+        List {
+            Section {
+                ForEach(order) { section in
+                    HStack(spacing: 12) {
+                        Image(systemName: section.symbol)
+                            .foregroundStyle(model.theme.color)
+                            .frame(width: 24)
+                        Text(section.title)
+                        Spacer()
+                        Toggle(section.title, isOn: Binding(
+                            get: { !(model.settings.homeHidden ?? []).contains(section.rawValue) },
+                            set: { model.setHomeSection(section, visible: $0) }
+                        ))
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                    }
+                    .padding(.vertical, 4)
+                }
+                .onMove { from, to in
+                    order.move(fromOffsets: from, toOffset: to)
+                    model.setHomeOrder(order)
+                }
+            } footer: {
+                Text("Drag to reorder. Switch a section off to hide it.")
+            }
+        }
+        #if os(iOS)
+        .environment(\.editMode, .constant(.active))
+        #endif
+        .navigationTitle("Edit Home")
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } }
+            ToolbarItem(placement: .cancellationAction) {
+                Button("Reset") {
+                    order = HomeSection.defaultOrder
+                    model.setHomeOrder(order)
+                    model.updateSettings { $0.homeHidden = nil }
+                }
+            }
+        }
+        .onAppear { order = model.homeSectionsAll }
     }
 }
 
@@ -83,12 +241,15 @@ private struct HomeHeader: View {
         let average = numbers.isEmpty ? nil : numbers.reduce(0, +) / Double(numbers.count)
         let gpa = lit.map { GPA.compute(GPA.currentEntries(data: model.data, lit: $0, settings: model.prefs.gpa)) }
 
-        let figures = HStack(spacing: 12) {
+        let figures = HStack(alignment: .bottom, spacing: 6) {
             if let average {
                 FigureButton(number: average, format: { Fmt.percent($0) }, label: (lit ?? "") + " average", tint: GradeColor.color(percent: average)) {
                     model.gradesTab = .classes
                     model.section = .grades
                 }
+            }
+            if average != nil, gpa?.weighted != nil {
+                Rectangle().fill(Color.primary.opacity(0.1)).frame(width: 1, height: 40).padding(.bottom, 8)
             }
             if let weighted = gpa?.weighted {
                 FigureButton(number: weighted, format: { Fmt.gpa($0) }, label: "GPA", tint: .primary) {
@@ -107,17 +268,14 @@ private struct HomeHeader: View {
         } else {
             HStack(alignment: .bottom, spacing: 20) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(model.now().formatted(.dateTime.weekday(.wide).month(.wide).day()).uppercased())
-                        .font(.subheadline.weight(.semibold))
+                    Text(model.now().formatted(.dateTime.weekday(.wide).month(.wide).day()))
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                     Text(model.active?.firstName ?? "Home")
-                        .font(.system(size: 40, weight: .bold, design: .rounded))
-                    Text("Updated " + Fmt.ago(model.data.lastSync, now: model.now()))
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
+                        .font(.display(34, weight: .bold))
                 }
                 Spacer(minLength: 16)
-                figures.frame(maxWidth: 420)
+                figures.fixedSize()
             }
             .padding(.top, 4)
         }
@@ -128,32 +286,36 @@ private struct HomeHeader: View {
     }
 }
 
-/// A big number that is also the way to the screen it summarises.
+/// A figure set into the header, not boxed in a tile, that is also the way to
+/// the screen it summarises.
 private struct FigureButton: View {
     let number: Double
     let format: (Double) -> String
     let label: String
     let tint: Color
     let action: () -> Void
+    @State private var hovering = false
 
     var body: some View {
         Button(action: action) {
             VStack(alignment: .leading, spacing: 2) {
                 RollingNumber(value: number, format: format)
-                    .font(.system(size: 32, weight: .semibold, design: .rounded).monospacedDigit())
+                    .font(.display(27).monospacedDigit())
                     .foregroundStyle(tint)
                 HStack(spacing: 4) {
                     Text(label).font(.subheadline).foregroundStyle(.secondary)
-                    Spacer(minLength: 0)
                     Image(systemName: "chevron.right").font(.caption2.weight(.bold)).foregroundStyle(.tertiary)
+                        .offset(x: hovering ? 2 : 0)
                 }
             }
-            .padding(16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .surface(cornerRadius: 18, hoverable: true)
-            .contentShape(.rect(cornerRadius: 18))
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(RoundedRectangle(cornerRadius: 12, style: .continuous).fill(Color.primary.opacity(hovering ? 0.06 : 0)))
+            .contentShape(.rect(cornerRadius: 12))
         }
-        .buttonStyle(BubbleButtonStyle())
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .animation(.easeOut(duration: 0.15), value: hovering)
         .accessibilityLabel("\(label) \(format(number))")
     }
 }
@@ -326,71 +488,6 @@ private struct DueNeedRow: View {
         .frame(minHeight: 58)
         .contentShape(Rectangle())
         .swipeToComplete(done: false, action: complete)
-        .bubble()
-    }
-}
-
-// MARK: - Classes
-
-/// Every class as a chip: name and grade, nothing else. Six show; the rest are
-/// one tap away. Tap a chip for the class.
-private struct ClassGrid: View {
-    @Environment(AppModel.self) private var model
-    @AppStorage("collapsed.home.classes") private var collapsed = false
-    @State private var showAll = false
-
-    var body: some View {
-        if let lit = model.selectedLit {
-            let courses = model.courses(in: lit).filter { !model.gradeText($0, lit).isEmpty || $0.grade(lit)?.hasDetail == true }
-            VStack(alignment: .leading, spacing: 10) {
-                CollapsibleHeader(title: "Classes", count: courses.count, collapsed: $collapsed) {
-                    Button("All Grades") {
-                        model.gradesTab = .classes
-                        model.section = .grades
-                    }
-                    .buttonStyle(.borderless)
-                }
-                if !collapsed {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 160), spacing: 10)], spacing: 10) {
-                        ForEach(showAll ? courses : Array(courses.prefix(6))) { course in
-                            NavigationLink(value: CourseRoute(courseID: course.id)) {
-                                ClassChip(course: course, lit: lit)
-                            }
-                            .buttonStyle(BubbleButtonStyle())
-                        }
-                    }
-                    if courses.count > 6 {
-                        ShowAllButton(showAll: $showAll, total: courses.count)
-                    }
-                }
-            }
-        }
-    }
-}
-
-private struct ClassChip: View {
-    @Environment(AppModel.self) private var model
-    let course: Course
-    let lit: String
-
-    var body: some View {
-        let missing = model.detail(course.id, lit)?.assignments.filter { $0.missing }.count ?? 0
-        HStack(alignment: .center, spacing: 10) {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(Str.titleCase(course.name))
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.primary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                if missing > 0 {
-                    Text("\(missing) missing").font(.caption).foregroundStyle(Palette.bad)
-                }
-            }
-            Spacer(minLength: 4)
-            GradeBubble(text: model.gradeText(course, lit), percent: model.percent(course, lit), size: .small)
-        }
-        .padding(12)
-        .frame(minHeight: 66)
         .bubble()
     }
 }

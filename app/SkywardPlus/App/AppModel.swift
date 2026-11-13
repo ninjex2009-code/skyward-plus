@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import SwiftUI
+import UserNotifications
 
 enum SyncState: Equatable {
     case idle
@@ -113,6 +114,8 @@ final class AppModel {
     var whatIfs: [String: WhatIf] = [:]
     private(set) var loadingDetails: Set<String> = []
     private(set) var detailErrors: [String: String] = [:]
+    /// A burst of confetti for great new grades; the overlay plays it once per id.
+    var celebration: Celebration?
     #if os(macOS)
     /// Asks Nimbus to react to a sync's new grades.
     var mascotReaction: MascotReaction?
@@ -343,6 +346,8 @@ final class AppModel {
         settings = copy
         save()
         if before.backgroundSync != copy.backgroundSync { updateAwakeActivity() }
+        Notifier.gradeSound = copy.soundsOn && copy.soundGradeChimes
+            ? UNNotificationSound(named: UNNotificationSoundName("chime.wav")) : nil
         #if os(macOS)
         if before.searchShortcut != copy.searchShortcut {
             QuickSearch.shared.apply(QuickSearch.Shortcut(rawValue: copy.searchShortcut) ?? .off)
@@ -799,17 +804,25 @@ final class AppModel {
                 for alert in AlertText.grades(fresh, averages: averages) { Notifier.post(alert) }
             }
         }
-        #if os(macOS)
         if previous?.lastSync != nil, id == active?.id {
             let known = Set((previous?.changes ?? []).map { $0.id })
             let graded = updated.changes.filter { !known.contains($0.id) && ($0.kind == .newGrade || $0.kind == .updatedGrade) }
+            let scores = graded.compactMap(\.newValue)
+            if !scores.isEmpty {
+                SoundEffects.play(SoundEffects.effect(forScores: scores), settings: settings)
+                if let best = scores.max(), best >= 90 {
+                    celebration = Celebration(strength: best >= 100 ? 3 : best >= 95 ? 2 : 1,
+                                              colors: graded.map { classColorChoice($0.courseID) })
+                }
+            }
+            #if os(macOS)
             if graded.contains(where: { ($0.newValue ?? 100) < 70 }) {
                 mascotReaction = MascotReaction(act: .sad)
             } else if graded.contains(where: { ($0.newValue ?? 0) >= 90 }) {
                 mascotReaction = MascotReaction(act: .cheer)
             }
+            #endif
         }
-        #endif
         afterSyncFeatures(id, previous: previous, updated: updated)
     }
 
@@ -961,10 +974,12 @@ final class AppModel {
     func toggleTask(_ id: UUID) {
         guard var task = prefs.tasks.first(where: { $0.id == id }) else { return }
         task.done.toggle()
+        if task.done { SoundEffects.play(.tick, settings: settings) }
         saveTask(task)
     }
 
     func toggleAssignmentDone(_ item: DatedAssignment) {
+        if !prefs.doneAssignments.contains(item.id) { SoundEffects.play(.tick, settings: settings) }
         updatePrefs { prefs in
             if prefs.doneAssignments.contains(item.id) { prefs.doneAssignments.remove(item.id) } else { prefs.doneAssignments.insert(item.id) }
         }
