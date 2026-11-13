@@ -295,11 +295,32 @@ struct PageBackground: View {
     @Environment(\.windowTranslucent) private var translucent
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var phase
+    #if os(macOS)
+    @Environment(\.controlActiveState) private var activeState
+    #endif
+
+    /// The scene is soft and painterly, so it's drawn at half resolution and scaled
+    /// up: a quarter of the work for the graphics card, and it looks the same.
+    private let renderScale: CGFloat = 0.5
+
+    private var paused: Bool {
+        #if os(macOS)
+        // Still while you're in another app; it picks up again when you come back.
+        if activeState == .inactive { return true }
+        #endif
+        return reduceMotion || phase != .active
+    }
 
     var body: some View {
-        TimelineView(.animation(minimumInterval: 1.0 / 30, paused: reduceMotion || phase != .active)) { context in
-            let t = reduceMotion ? 0 : SceneClock.seconds(context.date)
-            ThemeField(theme: theme, time: t, look: reduceMotion ? .zero : ParallaxEye.shared.look(at: t))
+        GeometryReader { geo in
+            TimelineView(.animation(minimumInterval: 1.0 / 20, paused: paused)) { context in
+                let t = reduceMotion ? 0 : SceneClock.seconds(context.date)
+                ThemeField(theme: theme, time: t, look: reduceMotion ? .zero : ParallaxEye.shared.look(at: t))
+                    .frame(width: geo.size.width * renderScale, height: geo.size.height * renderScale)
+                    .scaleEffect(1 / renderScale, anchor: .topLeading)
+            }
+            .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading)
+            .clipped()
         }
         .opacity(translucent ? 0.9 : 1)
         .ignoresSafeArea()

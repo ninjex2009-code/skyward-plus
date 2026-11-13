@@ -21,6 +21,7 @@ struct MenuBarLabel: View {
 
 /// The menu bar window: today's grades at a glance, without opening the app.
 struct MenuBarView: View {
+    @State private var bannerVisible = false
     @Environment(AppModel.self) private var model
 
     var body: some View {
@@ -48,7 +49,8 @@ struct MenuBarView: View {
     /// A little window onto the living theme, with who you are and your average.
     private var banner: some View {
         ZStack(alignment: .bottomLeading) {
-            TimelineView(.animation(minimumInterval: 1.0 / 24)) { context in
+            // Only moves while the menu bar window is open.
+            TimelineView(.animation(minimumInterval: 1.0 / 20, paused: !bannerVisible)) { context in
                 ThemeField(theme: model.settings.backgroundTheme, time: SceneClock.seconds(context.date))
             }
             LinearGradient(colors: [.clear, .black.opacity(0.55)], startPoint: .top, endPoint: .bottom)
@@ -75,6 +77,8 @@ struct MenuBarView: View {
             .padding(14)
         }
         .frame(height: 112)
+        .onAppear { bannerVisible = true }
+        .onDisappear { bannerVisible = false }
         .clipped()
         .overlay(alignment: .topTrailing) {
             Button {

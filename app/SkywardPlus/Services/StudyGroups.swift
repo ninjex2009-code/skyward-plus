@@ -57,7 +57,8 @@ final class StudyGroups {
         let code = InviteCode.make()
         let now = Date().timeIntervalSince1970
         let group = StudyGroup(name: name, owner: uid, code: code, createdAt: now,
-                               members: [uid: .init(name: myName, joinedAt: now, code: code)])
+                               members: [uid: .init(name: myName, joinedAt: now, code: code, seat: 0)],
+                               seats: ["0": uid])
         try await account.plainPut("groups/\(id)", group)
         try await account.plainPut("invites/\(code)", String(id))
         try await account.plainPut("users/\(uid)/groups/\(id)", true)
@@ -72,11 +73,18 @@ final class StudyGroups {
         guard let id: String = try await account.plainGet("invites/\(code)") else {
             throw AccountError("No group has that code.")
         }
+        // Claim the first free seat; a taken one refuses the write.
+        var claimed: Int?
+        for seat in 0..<StudyGroup.maxMembers {
+            if (try? await account.plainPut("groups/\(id)/seats/\(seat)", uid)) != nil { claimed = seat; break }
+        }
+        guard let seat = claimed else { throw AccountError("That group is full (\(StudyGroup.maxMembers) people).") }
         do {
             try await account.plainPut("groups/\(id)/members/\(uid)",
-                                       StudyGroup.Member(name: myName, joinedAt: Date().timeIntervalSince1970, code: code))
+                                       StudyGroup.Member(name: myName, joinedAt: Date().timeIntervalSince1970, code: code, seat: seat))
         } catch {
-            throw AccountError("Couldn't join. The group may be full (\(StudyGroup.maxMembers) people) or the code changed.")
+            try? await account.plainDelete("groups/\(id)/seats/\(seat)")
+            throw AccountError("Couldn't join. The code may have changed.")
         }
         try await account.plainPut("users/\(uid)/groups/\(id)", true)
         await reload(id)
@@ -91,7 +99,9 @@ final class StudyGroups {
             try await account.plainDelete("groups/\(group.id)")
         } else {
             try? await account.plainDelete("groups/\(group.id)/averages/\(uid)")
+            let seat = group.members?[uid]?.seat
             try await account.plainDelete("groups/\(group.id)/members/\(uid)")
+            if let seat { try? await account.plainDelete("groups/\(group.id)/seats/\(seat)") }
         }
         try await account.plainDelete("users/\(uid)/groups/\(group.id)")
         groups.removeAll { $0.id == group.id }
@@ -99,7 +109,9 @@ final class StudyGroups {
 
     func remove(memberID: String, from group: StudyGroup) async throws {
         try? await account.plainDelete("groups/\(group.id)/averages/\(memberID)")
+        let seat = group.members?[memberID]?.seat
         try await account.plainDelete("groups/\(group.id)/members/\(memberID)")
+        if let seat { try? await account.plainDelete("groups/\(group.id)/seats/\(seat)") }
         await reload(group.id)
     }
 

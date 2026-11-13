@@ -39,12 +39,14 @@ struct WidgetSnapshot: Codable {
             ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         return folder.appendingPathComponent(fileName)
         #else
+        // The test widget reads the test app's folder.
+        let folder = (Bundle.main.bundleIdentifier ?? "").contains(".debug") ? "SkywardPlus-Debug" : "SkywardPlus"
         let home: String = {
             if let pw = getpwuid(getuid()), let dir = pw.pointee.pw_dir { return String(cString: dir) }
             return NSHomeDirectory()
         }()
         return URL(fileURLWithPath: home)
-            .appendingPathComponent("Library/Application Support/SkywardPlus", isDirectory: true)
+            .appendingPathComponent("Library/Application Support/" + folder, isDirectory: true)
             .appendingPathComponent(fileName)
         #endif
     }

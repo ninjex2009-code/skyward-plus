@@ -17,6 +17,15 @@
       "category": "education",
       "versions": [
         {
+          "version": "1.6.1",
+          "buildVersion": "17",
+          "date": "2026-11-13",
+          "localizedDescription": "A speed and stability update.\n\n## Smoother, cooler, fewer spinning wheels\n- The living backgrounds now draw at half resolution, 20 frames a second, and pause while you're in another app. Same look, a fraction of the work: idle CPU dropped from about 38% to under 25% (near 0% in the background).\n- Nimbus animates at 12 frames a second and also rests while you're away.\n- The menu bar window's moving header only runs while it's open.\n- Reading your saved Skyward sign-in no longer freezes the window while macOS asks for keychain access.\n\n## Fixes\n- Study groups: joining now claims one of eight seats, which works with Firebase's rules. If you set up groups, re-publish the rules from `firebase/database.rules.json`.\n- A focus session that ended while the app was in the background no longer leaves a stuck 0:00 pill.\n- Test builds keep their own data folder.",
+          "downloadURL": "https://github.com/ninjex2009-code/skyward-plus/releases/download/v1.6.1/Skyward-Plus-1.6.1.ipa",
+          "size": 7109187,
+          "minOSVersion": "17.0"
+        },
+        {
           "version": "1.6",
           "buildVersion": "16",
           "date": "2026-11-13",

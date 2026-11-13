@@ -23,7 +23,12 @@
         },
         "members": {
           "$uid": {
-            ".write": "auth != null && (($uid === auth.uid && !newData.exists()) || ($uid === auth.uid && !data.exists() && newData.child('code').val() === root.child('groups').child($gid).child('code').val() && root.child('groups').child($gid).child('members').numChildren() < 8) || (root.child('groups').child($gid).child('owner').val() === auth.uid && !newData.exists()))"
+            ".write": "auth != null && (($uid === auth.uid && !newData.exists()) || ($uid === auth.uid && !data.exists() && newData.child('code').val() === root.child('groups').child($gid).child('code').val() && root.child('groups').child($gid).child('seats').child(newData.child('seat').val() + '').val() === auth.uid) || (root.child('groups').child($gid).child('owner').val() === auth.uid && !newData.exists()))"
+          }
+        },
+        "seats": {
+          "$seat": {
+            ".write": "auth != null && $seat.matches(/^[0-7]$/) && ((!data.exists() && newData.val() === auth.uid) || (data.val() === auth.uid && !newData.exists()) || (root.child('groups').child($gid).child('owner').val() === auth.uid && !newData.exists()))"
           }
         },
         "tasks": {

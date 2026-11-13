@@ -28,7 +28,8 @@ struct FocusPill: View {
                 .padding(.vertical, 10)
                 .frame(maxWidth: 420)
                 .surface(cornerRadius: 22, elevated: true)
-                .onChange(of: left == 0) { _, done in
+                // `initial`: a session that ended while the app was away closes on return.
+                .onChange(of: left == 0, initial: true) { _, done in
                     if done { withAnimation(.snappy) { model.finishFocus() } }
                 }
                 .accessibilityElement(children: .combine)

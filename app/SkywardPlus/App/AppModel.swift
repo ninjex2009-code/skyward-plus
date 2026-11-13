@@ -27,6 +27,13 @@ struct Store {
 
     let directory: URL
 
+    /// Test builds keep their own folder, so they never read or change the real app's data.
+    #if DEBUG
+    static let folderName = "SkywardPlus-Debug"
+    #else
+    static let folderName = "SkywardPlus"
+    #endif
+
     init(directory: URL? = nil) {
         if let directory {
             self.directory = directory
@@ -35,7 +42,7 @@ struct Store {
         } else {
             let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
                 ?? URL(fileURLWithPath: NSTemporaryDirectory())
-            self.directory = base.appendingPathComponent("SkywardPlus", isDirectory: true)
+            self.directory = base.appendingPathComponent(Store.folderName, isDirectory: true)
         }
         try? FileManager.default.createDirectory(at: self.directory, withIntermediateDirectories: true)
     }
@@ -424,7 +431,7 @@ final class AppModel {
         let key = normalized + "|" + user
 
         let session = SkywardSession(endpoint: endpoint, transport: URLSessionTransport())
-        let saved = Keychain.load(key)
+        let saved = await Keychain.loadInBackground(key)
         if let cookie = saved?.deviceCookie { await session.restoreDeviceCookie(cookie) }
         let result = try await session.login(username: user, password: password, securityCode: securityCode, trustDevice: trustDevice)
 
@@ -652,7 +659,7 @@ final class AppModel {
             if profile.isDemo {
                 try await session.login(username: FakeSkyward.username, password: FakeSkyward.password)
             } else {
-                guard let secret = Keychain.load(key) else {
+                guard let secret = await Keychain.loadInBackground(key) else {
                     throw SkywardError.invalidLogin("Enter your Skyward password again to keep syncing.")
                 }
                 if let cookie = secret.deviceCookie { await session.restoreDeviceCookie(cookie) }
@@ -716,9 +723,10 @@ final class AppModel {
             let updated: StudentData
             if isQmlativ(profile) {
                 let engine = try qmlativEngine(for: profile)
+                let credentials = await Keychain.usableDistrictInBackground(address: profile.address)
                 do {
                     updated = try await SyncEngine.syncQmlativ(
-                        engine: engine, credentials: Keychain.usableDistrict(address: profile.address),
+                        engine: engine, credentials: credentials,
                         previous: previous, now: now(), mayReSignIn: mayReSignIn, full: full
                     ) { [weak self] step in
                         Task { @MainActor in
@@ -895,7 +903,7 @@ final class AppModel {
                     await engine.load("Grading/StudentSection/StudentAccess")
                 }
                 if (await engine.state())?.signedIn != true {
-                    if !(await engine.silentSignIn(credentials: Keychain.usableDistrict(address: profile.address))) {
+                    if !(await engine.silentSignIn(credentials: await Keychain.usableDistrictInBackground(address: profile.address))) {
                         if engine.lastSilentRejected { Keychain.markDistrictRejected(address: profile.address) }
                         blockedAccounts.insert(profile.accountKey)
                         syncStates[profile.id] = .needsSignIn("Sign in again to keep syncing.")

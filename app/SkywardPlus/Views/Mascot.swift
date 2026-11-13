@@ -381,11 +381,21 @@ struct MascotLane: View {
     @Environment(\.backgroundTheme) private var theme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.scenePhase) private var phase
+    #if os(macOS)
+    @Environment(\.controlActiveState) private var activeState
+    #endif
+
+    private var paused: Bool {
+        #if os(macOS)
+        if activeState == .inactive { return true }
+        #endif
+        return phase != .active
+    }
     private let brain = MascotBrain.shared
 
     var body: some View {
         GeometryReader { geo in
-            TimelineView(.animation(minimumInterval: 1.0 / 24, paused: phase != .active)) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / 12, paused: paused)) { timeline in
                 let now = timeline.date.timeIntervalSinceReferenceDate
                 let cols = Int(geo.size.width / Self.pixel)
                 let rows = Int(geo.size.height / Self.pixel)

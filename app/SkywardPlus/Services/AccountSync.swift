@@ -425,7 +425,7 @@ extension AccountSync {
     enum Base {
         private static var folder: URL {
             let base = ProcessInfo.processInfo.environment["SKYWARDPLUS_HOME"].map { URL(fileURLWithPath: $0, isDirectory: true) }
-                ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent("SkywardPlus", isDirectory: true)
+                ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0].appendingPathComponent(Store.folderName, isDirectory: true)
             return base.appendingPathComponent("sync", isDirectory: true)
         }
 

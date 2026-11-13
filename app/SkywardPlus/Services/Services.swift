@@ -56,6 +56,16 @@ enum Keychain {
         return try? JSONDecoder().decode(AccountSecret.self, from: data)
     }
 
+    /// Reads off the main thread. If macOS asks for the login password to allow
+    /// access, the window keeps working while the question is up.
+    static func loadInBackground(_ account: String) async -> AccountSecret? {
+        await Task.detached(priority: .userInitiated) { load(account) }.value
+    }
+
+    static func usableDistrictInBackground(address: String) async -> DistrictCredentials? {
+        await Task.detached(priority: .userInitiated) { usableDistrict(address: address) }.value
+    }
+
     static func remove(_ account: String) {
         guard !offline else { return }
         SecItemDelete(query(account) as CFDictionary)

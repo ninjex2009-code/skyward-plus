@@ -9,6 +9,8 @@ struct StudyGroup: Codable, Identifiable, Equatable {
     var code: String
     var createdAt: Double
     var members: [String: Member]?
+    /// Eight numbered places ("0"…"7") holding a member's id; joining claims a free one.
+    var seats: [String: String]?
     var tasks: [String: Task]?
     var sessions: [String: Session]?
     var dues: [String: Due]?
@@ -20,8 +22,9 @@ struct StudyGroup: Codable, Identifiable, Equatable {
     struct Member: Codable, Equatable {
         var name: String
         var joinedAt: Double
-        /// The invite code they joined with (the rules check it).
+        /// The invite code they joined with, and the seat they hold (the rules check both).
         var code: String?
+        var seat: Int?
     }
 
     struct Task: Codable, Equatable {
